@@ -17,7 +17,6 @@ This guide covers deploying clibot in production using systemd or supervisor.
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
-- [Creating a Dedicated User](#creating-a-dedicated-user)
 - [Deployment with systemd](#deployment-with-systemd)
 - [Deployment with Supervisor](#deployment-with-supervisor)
 - [Verification](#verification)
@@ -29,6 +28,13 @@ This guide covers deploying clibot in production using systemd or supervisor.
 1. **Install clibot**:
 ```bash
 go install github.com/keepmind9/clibot@latest
+```
+
+**Note**: `go install` places the binary at `$GOPATH/bin/clibot` (usually `~/go/bin/clibot`).
+Make sure `~/go/bin` is in your PATH:
+```bash
+# Add to PATH (add to ~/.bashrc or ~/.zshrc for persistence)
+export PATH=$PATH:~/go/bin
 ```
 
 2. **Install tmux** (required):
@@ -43,50 +49,36 @@ brew install tmux
 sudo dnf install tmux
 ```
 
-**Note**: You can choose any config file location. Common options:
-- `/etc/clibot/config.yaml` - System-wide (used in examples below)
-- `~/.config/clibot/config.yaml` - User-specific
-- `/opt/clibot/config.yaml` - Custom location
+**Note**: You must specify the config file path with `--config`. Common options:
+- `~/.config/clibot/config.yaml` - User-specific (recommended)
+- `/etc/clibot/config.yaml` - System-wide (requires root)
+- `./config.yaml` - Project directory
 
-If you use a custom location, update the path in:
+If you use a custom location, update the `--config` path in:
 - systemd service file (`ExecStart=` line)
 - supervisor config file (`command=` line)
-- All commands below that reference `--config`
 
 3. **Configure clibot**:
 ```bash
-# Create config directory (using /etc/clibot as example)
-sudo mkdir -p /etc/clibot
+# Create config directory (user-specific)
+mkdir -p ~/.config/clibot
 
 # Copy config template
-sudo cp configs/config.yaml /etc/clibot/config.yaml
+cp configs/config.yaml ~/.config/clibot/config.yaml
 
 # Edit configuration
+nano ~/.config/clibot/config.yaml
+```
+
+**Alternative (system-wide)**:
+```bash
+# Create config directory (system-wide)
+sudo mkdir -p /etc/clibot
+sudo cp configs/config.yaml /etc/clibot/config.yaml
 sudo nano /etc/clibot/config.yaml
 ```
 
 **Important**: Fill in your bot credentials and whitelist users in the config file.
-
-## Creating a Dedicated User
-
-For security, create a dedicated user to run clibot:
-
-```bash
-# Create clibot user (no login, no home directory)
-sudo useradd -r -s /bin/false clibot
-
-# Create necessary directories
-sudo mkdir -p /etc/clibot
-sudo mkdir -p /var/log/clibot
-
-# Set ownership
-sudo chown -R clibot:clibot /etc/clibot
-sudo chown -R clibot:clibot /var/log/clibot
-
-# Set permissions
-sudo chmod 750 /etc/clibot
-sudo chmod 750 /var/log/clibot
-```
 
 ## Deployment with systemd
 
@@ -94,61 +86,67 @@ systemd is the init system for modern Linux distributions (Ubuntu 16.04+, CentOS
 
 ### Installation
 
-1. **Copy the service file**:
+1. **Create systemd user directory and copy the service file**:
 ```bash
-sudo cp deploy/clibot.service /etc/systemd/system/clibot.service
+mkdir -p ~/.config/systemd/user
+cp deploy/clibot.service ~/.config/systemd/user/
 ```
 
 **Customize paths** (optional):
 If you're using a different config location or binary path, edit the service file:
 ```bash
-sudo nano /etc/systemd/system/clibot.service
+nano ~/.config/systemd/user/clibot.service
 ```
 
 Key lines to customize:
-- `ExecStart=/usr/local/bin/clibot serve --config /etc/clibot/config.yaml`
-  - Change binary path if installed elsewhere
-  - Change `--config` path to your config location
-- `User=clibot` and `Group=clibot`
-  - Change if using a different user
-- `WorkingDirectory=/opt/clibot`
-  - Change to your preferred working directory
+- `ExecStart=~/go/bin/clibot serve --config ~/.config/clibot/config.yaml`
+  - `~/go/bin/clibot`: Binary path (change if `$GOPATH/bin` is different)
+  - If `~/go/bin` is in your PATH, you can use `clibot` instead
+  - `--config ~/.config/clibot/config.yaml`: Config file path (required)
+- `WorkingDirectory=~/projects`
+  - By default this is commented out (uses user's home directory)
+  - Uncomment and change to set a specific working directory
 
 2. **Reload systemd**:
 ```bash
-sudo systemctl daemon-reload
+systemctl --user daemon-reload
 ```
 
-3. **Enable clibot** to start on boot:
+3. **Enable clibot** to start on login:
 ```bash
-sudo systemctl enable clibot
+systemctl --user enable clibot
 ```
 
 4. **Start clibot**:
 ```bash
-sudo systemctl start clibot
+systemctl --user start clibot
+```
+
+**Optional: Enable lingering** (start service on boot, not just login):
+```bash
+loginctl enable-linger $USER
 ```
 
 ### Management Commands
 
 ```bash
 # Check status
-sudo systemctl status clibot
+systemctl --user status clibot
 
 # Stop clibot
-sudo systemctl stop clibot
+systemctl --user stop clibot
 
 # Restart clibot
-sudo systemctl restart clibot
+systemctl --user restart clibot
 
 # View logs
-sudo journalctl -u clibot -f
+journalctl --user -u clibot -f
 
 # View logs since last boot
-sudo journalctl -u clibot -b
+journalctl --user -u clibot -b
 
 # View last 100 lines
-sudo journalctl -u clibot -n 100
+journalctl --user -u clibot -n 100
 ```
 
 ### Log Rotation
@@ -164,6 +162,8 @@ sudo systemctl restart systemd-journald
 ```
 
 ## Deployment with Supervisor
+
+**Note**: supervisor is a system-level service that requires root privileges to install and configure. For user-level service management, consider using [systemd user services](#deployment-with-systemd) instead.
 
 Supervisor is a process control system for Unix-like operating systems.
 
@@ -193,13 +193,16 @@ sudo nano /etc/supervisor/conf.d/clibot.conf
 ```
 
 Key lines to customize:
-- `command=/usr/local/bin/clibot serve --config /etc/clibot/config.yaml`
+- `command=/usr/local/bin/clibot serve`
+  - By default uses `~/.config/clibot/config.yaml`
+  - Add `--config /path/to/config.yaml` for custom location
   - Change binary path if installed elsewhere
-  - Change `--config` path to your config location
 - `user=clibot`
-  - Change if using a different user
-- `stdout_logfile=/var/log/clibot/clibot.log`
-  - Change to your preferred log location
+  - By default this is commented out (runs as current user)
+  - Uncomment to run as a dedicated user
+- `stdout_logfile=~/clibot.log`
+  - By default uses user's home directory
+  - Change to `/var/log/clibot/clibot.log` for system-wide logs
 
 3. **Reread and update supervisor**:
 ```bash
@@ -246,7 +249,10 @@ Supervisor handles log rotation automatically based on the settings in `clibot.c
 
 ```bash
 # Check if tmux sessions exist
-sudo -u clibot tmux list-sessions
+tmux list-sessions
+
+# If running as dedicated user:
+# sudo -u clibot tmux list-sessions
 
 # Check if clibot is listening on port 8080
 sudo netstat -tlnp | grep 8080
@@ -291,12 +297,25 @@ sudo tail -100 /var/log/clibot/clibot.log
    **Issue**: Permission denied
    **Solution**:
    ```bash
-   sudo chown -R clibot:clibot /etc/clibot
-   sudo chown -R clibot:clibot /var/log/clibot
+   # If running as current user:
+   mkdir -p ~/.config/clibot
+   chmod 700 ~/.config/clibot
+
+   # If running as dedicated user:
+   # sudo chown -R clibot:clibot /etc/clibot
+   # sudo chown -R clibot:clibot /var/log/clibot
    ```
 
    **Issue**: Config file not found
-   **Solution**: Ensure `/etc/clibot/config.yaml` exists and is readable
+   **Solution**:
+   ```bash
+   # If using user-specific config:
+   mkdir -p ~/.config/clibot
+   cp configs/config.yaml ~/.config/clibot/config.yaml
+
+   # If using system-wide config:
+   # Ensure /etc/clibot/config.yaml exists and is readable
+   ```
 
    **Issue**: Port already in use
    **Solution**:
@@ -318,11 +337,17 @@ sudo tail -100 /var/log/clibot/clibot.log
 Run clibot manually to debug issues:
 
 ```bash
-# Run as clibot user
-sudo -u clibot /usr/local/bin/clibot serve --config /etc/clibot/config.yaml
+# Run as current user (default)
+/usr/local/bin/clibot serve
+
+# Or with config specified
+/usr/local/bin/clibot serve --config ~/.config/clibot/config.yaml
 
 # Or run with debug logging
-sudo -u clibot /usr/local/bin/clibot serve --config /etc/clibot/config.yaml --log-level debug
+/usr/local/bin/clibot serve --config ~/.config/clibot/config.yaml --log-level debug
+
+# If running as dedicated user:
+# sudo -u clibot /usr/local/bin/clibot serve --config /etc/clibot/config.yaml
 ```
 
 ## Uninstallation
@@ -331,17 +356,15 @@ sudo -u clibot /usr/local/bin/clibot serve --config /etc/clibot/config.yaml --lo
 
 ```bash
 # Stop and disable
-sudo systemctl stop clibot
-sudo systemctl disable clibot
+systemctl --user stop clibot
+systemctl --user disable clibot
 
 # Remove service file
-sudo rm /etc/systemd/system/clibot.service
-sudo systemctl daemon-reload
+rm ~/.config/systemd/user/clibot.service
+systemctl --user daemon-reload
 
-# Remove user and directories (optional)
-sudo userdel clibot
-sudo rm -rf /etc/clibot
-sudo rm -rf /var/log/clibot
+# Remove user config (optional)
+rm -rf ~/.config/clibot
 ```
 
 ### Supervisor
@@ -357,18 +380,20 @@ sudo rm /etc/supervisor/conf.d/clibot.conf
 sudo supervisorctl reread
 sudo supervisorctl update
 
-# Remove user and directories (optional)
-sudo userdel clibot
-sudo rm -rf /etc/clibot
-sudo rm -rf /var/log/clibot
+# Remove user config (optional)
+rm -rf ~/.config/clibot
+
+# If running as dedicated user, remove user and directories:
+# sudo userdel clibot
+# sudo rm -rf /etc/clibot
+# sudo rm -rf /var/log/clibot
 ```
 
 ## Production Tips
 
 ### Security
 
-1. **Use a dedicated user** (as shown above)
-2. **Enable whitelist** in config.yaml:
+1. **Enable whitelist** in config.yaml:
 ```yaml
 security:
   whitelist_enabled: true
@@ -377,7 +402,7 @@ security:
       - "your-user-id"
 ```
 
-3. **Use environment variables for secrets**:
+2. **Use environment variables for secrets**:
 ```yaml
 bots:
   discord:
@@ -386,9 +411,9 @@ bots:
 
 Set via:
 ```bash
-# For systemd
-sudo nano /etc/systemd/system/clibot.service
-# Add: Environment=DISCORD_TOKEN=your_token
+# For systemd user service
+systemctl --user edit clibot
+# Add: [Service] Environment=DISCORD_TOKEN=your_token
 
 # For supervisor
 sudo nano /etc/supervisor/conf.d/clibot.conf
@@ -416,14 +441,14 @@ logging:
 ps aux | grep clibot
 
 # Check tmux sessions
-sudo -u clibot tmux list-sessions
+tmux list-sessions
 ```
 
 ### Backup
 
 Back up your configuration:
 ```bash
-sudo cp /etc/clibot/config.yaml /etc/clibot/config.yaml.backup
+cp ~/.config/clibot/config.yaml ~/.config/clibot/config.yaml.backup
 ```
 
 ## Additional Resources

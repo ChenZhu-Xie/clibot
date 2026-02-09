@@ -160,6 +160,12 @@ clibot serve --config ~/.config/clibot/config.yaml
 go install github.com/keepmind9/clibot@latest
 ```
 
+**注意**：二进制文件将安装到 `$GOPATH/bin/clibot`（通常是 `~/go/bin/clibot`）。
+确保 `~/go/bin` 在您的 PATH 中：
+```bash
+export PATH=$PATH:~/go/bin
+```
+
 ### 配置
 
 1. 复制配置模板：
@@ -209,14 +215,13 @@ clibot serve [flags]
 ```
 
 **参数:**
-- `-c, --config <file>`: 配置文件路径（默认: `~/.config/clibot/config.yaml`）
+- `-c, --config <file>`: 配置文件路径（默认: 当前目录的 `config.yaml`）
 - `--validate`: 验证配置后退出
 
 **示例:**
 ```bash
-clibot serve
-clibot serve --config /etc/clibot/config.yaml
 clibot serve --config ~/.config/clibot/config.yaml
+clibot serve --config /etc/clibot/config.yaml
 ```
 
 ### validate
@@ -228,7 +233,7 @@ clibot validate [flags]
 ```
 
 **参数:**
-- `-c, --config <file>`: 配置文件路径（自动检测默认位置）
+- `-c, --config <file>`: 配置文件路径（默认: 当前目录的 `config.yaml`）
 - `--show`: 显示完整配置详情
 - `--json`: 以 JSON 格式输出
 
@@ -467,14 +472,17 @@ ctrlt/ctrl-t    # 发送 Ctrl+T
 
 **快速设置（systemd）**：
 ```bash
-# 创建专用用户
-sudo useradd -r -s /bin/false clibot
+# 创建 systemd 用户目录
+mkdir -p ~/.config/systemd/user
 
 # 安装服务文件
-sudo cp deploy/clibot.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable clibot
-sudo systemctl start clibot
+cp deploy/clibot.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable clibot
+systemctl --user start clibot
+
+# 启用 lingering 以实现登录时自动启动（可选）
+loginctl enable-linger $USER
 ```
 
 **快速设置（supervisor）**：
@@ -499,7 +507,6 @@ chmod +x deploy/clibot.sh
 ```
 
 详细的部署说明，包括：
-- 创建专用用户
 - 配置管理
 - 日志轮转
 - 故障排查

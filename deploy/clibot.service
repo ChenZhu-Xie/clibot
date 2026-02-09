@@ -1,22 +1,21 @@
-# clibot systemd service file
-# Install to: /etc/systemd/system/clibot.service
-# Then run: sudo systemctl daemon-reload && sudo systemctl enable clibot && sudo systemctl start clibot
+# clibot systemd user service file
+# Install to: ~/.config/systemd/user/clibot.service
+# Then run: systemctl --user daemon-reload && systemctl --user enable clibot && systemctl --user start clibot
 #
 # === CUSTOMIZABLE PATHS ===
 # You can change these paths according to your setup:
-#   - User/Group:               User to run clibot (default: clibot)
-#   - WorkingDirectory:         Working directory (default: /opt/clibot)
 #   - ExecStart:                Binary path and config file location
+#   - WorkingDirectory:         Working directory (default: user's home directory)
 #   - StandardOutput/Error:     Logging configuration (using journal by default)
 #
-# Common config locations:
-#   - User-specific:  ~/.config/clibot/config.yaml
-#   - System-wide:     /etc/clibot/config.yaml
+# Binary location:
+#   - After `go install`:        ~/go/bin/clibot (if GOPATH=~/go)
+#   - Or if in PATH:             clibot
+#
+# Config location (MUST specify --config):
+#   - User-specific:  ~/.config/clibot/config.yaml (recommended)
 #   - Project dir:     ./config.yaml
 #   - Custom path:     /any/path/config.yaml
-#
-# Example: Use custom config location
-#   ExecStart=/usr/local/bin/clibot serve --config /custom/path/config.yaml
 
 [Unit]
 Description=Clibot - IM to AI CLI bridge
@@ -25,15 +24,14 @@ After=network.target
 Wants=network-online.target
 
 [Service]
-# User and group to run clibot (YOU CAN CUSTOMIZE)
-User=clibot
-Group=clibot
-
 # Working directory (YOU CAN CUSTOMIZE)
-WorkingDirectory=/opt/clibot
+# Comment out to use user's home directory, or specify a custom path
+# WorkingDirectory=~/projects
 
 # ExecStart - Binary path and config file (YOU CAN CUSTOMIZE BOTH)
-ExecStart=/usr/local/bin/clibot serve --config /etc/clibot/config.yaml
+# Default: Uses ~/go/bin/clibot (installed via 'go install')
+# If ~/go/bin is in PATH, you can use 'clibot' instead
+ExecStart=~/go/bin/clibot serve --config ~/.config/clibot/config.yaml
 
 # Auto-restart configuration
 Restart=always
@@ -43,7 +41,6 @@ StartLimitBurst=3
 
 # Security settings
 NoNewPrivileges=true
-PrivateTmp=true
 
 # Resource limits
 LimitNOFILE=65536
@@ -60,4 +57,4 @@ KillSignal=SIGTERM
 TimeoutStopSec=30
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

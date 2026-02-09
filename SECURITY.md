@@ -73,11 +73,13 @@ session:
 
 #### 5. Run as Non-Root User
 ```bash
-# Create dedicated user
-useradd -r -s /bin/false clibot
+# Run as your current user (default, recommended)
+clibot serve
 
-# Run as clibot user
-sudo -u clibot clibot serve
+# For systemd user service:
+cp deploy/clibot.service ~/.config/systemd/user/
+systemctl --user enable clibot
+systemctl --user start clibot
 ```
 
 #### 6. Use Firewall Rules

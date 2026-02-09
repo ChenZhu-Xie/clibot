@@ -17,7 +17,6 @@
 ## 目录
 
 - [前置要求](#前置要求)
-- [创建专用用户](#创建专用用户)
 - [使用 systemd 部署](#使用-systemd-部署)
 - [使用 Supervisor 部署](#使用-supervisor-部署)
 - [验证部署](#验证部署)
@@ -29,6 +28,13 @@
 1. **安装 clibot**：
 ```bash
 go install github.com/keepmind9/clibot@latest
+```
+
+**注意**：`go install` 会将二进制文件安装到 `$GOPATH/bin/clibot`（通常是 `~/go/bin/clibot`）。
+确保 `~/go/bin` 在您的 PATH 中：
+```bash
+# 添加到 PATH（添加到 ~/.bashrc 或 ~/.zshrc 以持久化）
+export PATH=$PATH:~/go/bin
 ```
 
 2. **安装 tmux**（必需）：
@@ -43,50 +49,28 @@ brew install tmux
 sudo dnf install tmux
 ```
 
-**注意**：您可以选择任意配置文件位置。常见选项：
-- `/etc/clibot/config.yaml` - 系统级配置（下文示例使用此路径）
-- `~/.config/clibot/config.yaml` - 用户级配置
-- `/opt/clibot/config.yaml` - 自定义位置
+**注意**：必须使用 `--config` 指定配置文件路径。常见选项：
+- `~/.config/clibot/config.yaml` - 用户级配置（推荐）
+- `/etc/clibot/config.yaml` - 系统级配置（需要 root）
+- `./config.yaml` - 项目目录
 
-如果使用自定义位置，需要更新以下路径：
+如果使用自定义位置，需要更新 `--config` 路径：
 - systemd 服务文件中的 `ExecStart=` 行
 - supervisor 配置文件中的 `command=` 行
-- 下文所有引用 `--config` 的命令
 
 3. **配置 clibot**：
 ```bash
-# 创建配置目录（以 /etc/clibot 为例）
-sudo mkdir -p /etc/clibot
+# 创建配置目录（用户级）
+mkdir -p ~/.config/clibot
 
 # 复制配置模板
-sudo cp configs/config.yaml /etc/clibot/config.yaml
+cp configs/config.yaml ~/.config/clibot/config.yaml
 
 # 编辑配置文件
-sudo nano /etc/clibot/config.yaml
+nano ~/.config/clibot/config.yaml
 ```
 
 **重要提示**：在配置文件中填写您的 Bot 凭据和白名单用户。
-
-## 创建专用用户
-
-为了安全起见，创建专用用户来运行 clibot：
-
-```bash
-# 创建 clibot 用户（无登录权限，无主目录）
-sudo useradd -r -s /bin/false clibot
-
-# 创建必要目录
-sudo mkdir -p /etc/clibot
-sudo mkdir -p /var/log/clibot
-
-# 设置所有权
-sudo chown -R clibot:clibot /etc/clibot
-sudo chown -R clibot:clibot /var/log/clibot
-
-# 设置权限
-sudo chmod 750 /etc/clibot
-sudo chmod 750 /var/log/clibot
-```
 
 ## 使用 systemd 部署
 
@@ -94,15 +78,16 @@ systemd 是现代 Linux 发行版的初始化系统（Ubuntu 16.04+、CentOS 7+ 
 
 ### 安装步骤
 
-1. **复制服务文件**：
+1. **创建 systemd 用户目录并复制服务文件**：
 ```bash
-sudo cp deploy/clibot.service /etc/systemd/system/clibot.service
+mkdir -p ~/.config/systemd/user
+cp deploy/clibot.service ~/.config/systemd/user/
 ```
 
 **自定义路径**（可选）：
 如果使用不同的配置位置或二进制路径，编辑服务文件：
 ```bash
-sudo nano /etc/systemd/system/clibot.service
+nano ~/.config/systemd/user/clibot.service
 ```
 
 需要自定义的关键行：
@@ -116,39 +101,44 @@ sudo nano /etc/systemd/system/clibot.service
 
 2. **重新加载 systemd**：
 ```bash
-sudo systemctl daemon-reload
+systemctl --user daemon-reload
 ```
 
-3. **启用 clibot** 开机自启：
+3. **启用 clibot** 登录时自启：
 ```bash
-sudo systemctl enable clibot
+systemctl --user enable clibot
 ```
 
 4. **启动 clibot**：
 ```bash
-sudo systemctl start clibot
+systemctl --user start clibot
+```
+
+**可选：启用 lingering**（在启动时自动启动服务，而不仅仅是登录时）：
+```bash
+loginctl enable-linger $USER
 ```
 
 ### 管理命令
 
 ```bash
 # 查看状态
-sudo systemctl status clibot
+systemctl --user status clibot
 
 # 停止 clibot
-sudo systemctl stop clibot
+systemctl --user stop clibot
 
 # 重启 clibot
-sudo systemctl restart clibot
+systemctl --user restart clibot
 
 # 查看日志
-sudo journalctl -u clibot -f
+journalctl --user -u clibot -f
 
 # 查看自上次启动以来的日志
-sudo journalctl -u clibot -b
+journalctl --user -u clibot -b
 
 # 查看最近 100 行
-sudo journalctl -u clibot -n 100
+journalctl --user -u clibot -n 100
 ```
 
 ### 日志轮转
@@ -164,6 +154,8 @@ sudo systemctl restart systemd-journald
 ```
 
 ## 使用 Supervisor 部署
+
+**注意**：supervisor 是系统级服务，需要 root 权限来安装和配置。对于用户级服务管理，建议使用 [systemd 用户服务](#使用-systemd-部署)。
 
 Supervisor 是一个类 Unix 操作系统的进程控制系统。
 
@@ -193,11 +185,13 @@ sudo nano /etc/supervisor/conf.d/clibot.conf
 ```
 
 需要自定义的关键行：
-- `command=/usr/local/bin/clibot serve --config /etc/clibot/config.yaml`
-  - 更改二进制路径（如果安装在其他位置）
-  - 更改 `--config` 路径到您的配置文件位置
+- `command=~/go/bin/clibot serve --config ~/.config/clibot/config.yaml`
+  - `~/go/bin/clibot`：二进制路径（如果 `$GOPATH/bin` 不同则修改）
+  - 如果 `~/go/bin` 在 PATH 中，可以用 `clibot` 代替
+  - `--config ~/.config/clibot/config.yaml`：配置文件路径（必需）
 - `user=clibot`
-  - 如果使用不同用户则更改
+  - 默认此行被注释（以当前用户运行）
+  - 取消注释以专用用户运行
 - `stdout_logfile=/var/log/clibot/clibot.log`
   - 更改到您首选的日志位置
 
@@ -246,7 +240,7 @@ Supervisor 根据 `clibot.conf` 中的设置自动处理日志轮转：
 
 ```bash
 # 检查 tmux 会话是否存在
-sudo -u clibot tmux list-sessions
+tmux list-sessions
 
 # 检查 clibot 是否监听 8080 端口
 sudo netstat -tlnp | grep 8080
@@ -318,11 +312,14 @@ sudo tail -100 /var/log/clibot/clibot.log
 手动运行 clibot 以调试问题：
 
 ```bash
-# 以 clibot 用户身份运行
-sudo -u clibot /usr/local/bin/clibot serve --config /etc/clibot/config.yaml
+# 以当前用户身份运行（默认）
+/usr/local/bin/clibot serve
+
+# 或指定配置文件
+/usr/local/bin/clibot serve --config ~/.config/clibot/config.yaml
 
 # 或使用 debug 日志级别运行
-sudo -u clibot /usr/local/bin/clibot serve --config /etc/clibot/config.yaml --log-level debug
+/usr/local/bin/clibot serve --config ~/.config/clibot/config.yaml --log-level debug
 ```
 
 ## 卸载
@@ -331,17 +328,15 @@ sudo -u clibot /usr/local/bin/clibot serve --config /etc/clibot/config.yaml --lo
 
 ```bash
 # 停止并禁用
-sudo systemctl stop clibot
-sudo systemctl disable clibot
+systemctl --user stop clibot
+systemctl --user disable clibot
 
 # 删除服务文件
-sudo rm /etc/systemd/system/clibot.service
-sudo systemctl daemon-reload
+rm ~/.config/systemd/user/clibot.service
+systemctl --user daemon-reload
 
-# 删除用户和目录（可选）
-sudo userdel clibot
-sudo rm -rf /etc/clibot
-sudo rm -rf /var/log/clibot
+# 删除用户配置（可选）
+rm -rf ~/.config/clibot
 ```
 
 ### Supervisor
@@ -357,18 +352,15 @@ sudo rm /etc/supervisor/conf.d/clibot.conf
 sudo supervisorctl reread
 sudo supervisorctl update
 
-# 删除用户和目录（可选）
-sudo userdel clibot
-sudo rm -rf /etc/clibot
-sudo rm -rf /var/log/clibot
+# 删除用户配置（可选）
+rm -rf ~/.config/clibot
 ```
 
 ## 生产环境建议
 
 ### 安全性
 
-1. **使用专用用户**（如上所示）
-2. **启用白名单** 在 config.yaml 中：
+1. **启用白名单** 在 config.yaml 中：
 ```yaml
 security:
   whitelist_enabled: true
@@ -377,7 +369,7 @@ security:
       - "your-user-id"
 ```
 
-3. **使用环境变量存储密钥**：
+2. **使用环境变量存储密钥**：
 ```yaml
 bots:
   discord:
@@ -386,9 +378,9 @@ bots:
 
 设置方式：
 ```bash
-# 对于 systemd
-sudo nano /etc/systemd/system/clibot.service
-# 添加: Environment=DISCORD_TOKEN=your_token
+# 对于 systemd 用户服务
+systemctl --user edit clibot
+# 添加: [Service] Environment=DISCORD_TOKEN=your_token
 
 # 对于 supervisor
 sudo nano /etc/supervisor/conf.d/clibot.conf
@@ -416,14 +408,14 @@ logging:
 ps aux | grep clibot
 
 # 检查 tmux 会话
-sudo -u clibot tmux list-sessions
+tmux list-sessions
 ```
 
 ### 备份
 
 备份您的配置：
 ```bash
-sudo cp /etc/clibot/config.yaml /etc/clibot/config.yaml.backup
+cp ~/.config/clibot/config.yaml ~/.config/clibot/config.yaml.backup
 ```
 
 ## 其他资源

@@ -73,11 +73,13 @@ session:
 
 #### 5. 以非 Root 用户运行
 ```bash
-# 创建专用用户
-useradd -r -s /bin/false clibot
+# 以当前用户运行（默认，推荐）
+clibot serve
 
-# 以 clibot 用户运行
-sudo -u clibot clibot serve
+# 对于 systemd 用户服务：
+cp deploy/clibot.service ~/.config/systemd/user/
+systemctl --user enable clibot
+systemctl --user start clibot
 ```
 
 #### 6. 使用防火墙规则

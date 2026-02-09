@@ -160,6 +160,12 @@ clibot serve --config ~/.config/clibot/config.yaml
 go install github.com/keepmind9/clibot@latest
 ```
 
+**Note**: The binary will be installed at `$GOPATH/bin/clibot` (usually `~/go/bin/clibot`).
+Make sure `~/go/bin` is in your PATH:
+```bash
+export PATH=$PATH:~/go/bin
+```
+
 ### Configuration
 
 1. Copy the configuration template:
@@ -209,7 +215,7 @@ clibot serve [flags]
 ```
 
 **Flags:**
-- `-c, --config <file>`: Configuration file path (default: `~/.config/clibot/config.yaml`)
+- `-c, --config <file>`: Configuration file path (default: `config.yaml` in current directory)
 - `--validate`: Validate configuration and exit
 
 **Examples:**
@@ -228,7 +234,7 @@ clibot validate [flags]
 ```
 
 **Flags:**
-- `-c, --config <file>`: Configuration file path (auto-detects default locations)
+- `-c, --config <file>`: Configuration file path (default: `config.yaml` in current directory)
 - `--show`: Show full configuration details
 - `--json`: Output in JSON format
 
@@ -495,14 +501,17 @@ For production deployment, clibot can be run as a system service using systemd o
 
 **Quick setup (systemd)**:
 ```bash
-# Create dedicated user
-sudo useradd -r -s /bin/false clibot
+# Create systemd user directory
+mkdir -p ~/.config/systemd/user
 
 # Install service file
-sudo cp deploy/clibot.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable clibot
-sudo systemctl start clibot
+cp deploy/clibot.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable clibot
+systemctl --user start clibot
+
+# Enable lingering for auto-start on login (optional)
+loginctl enable-linger $USER
 ```
 
 **Quick setup (supervisor)**:
@@ -527,7 +536,6 @@ chmod +x deploy/clibot.sh
 ```
 
 For detailed deployment instructions, including:
-- Creating dedicated user
 - Configuration management
 - Log rotation
 - Troubleshooting
