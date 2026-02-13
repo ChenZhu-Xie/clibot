@@ -335,7 +335,7 @@ func (a *ACPAdapter) Close() error {
 
 // startStdioServer starts ACP server as subprocess with stdio transport
 func (a *ACPAdapter) startStdioServer(sessionName, workDir, command string, clientImpl *acpClient, connReady chan struct{}) error {
-	cmd := exec.Command("sh", "-c", command)
+	cmd := buildShellCommand(command)
 
 	// Set working directory
 	if workDir != "" {
