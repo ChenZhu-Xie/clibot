@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -122,6 +123,30 @@ func (a *ACPAdapter) IsSessionAlive(sessionName string) bool {
 	return ok && sess.active
 }
 
+// ensureGeminiChatsDir ensures that the Gemini chats directory exists
+// Gemini stores history in: ~/.gemini/tmp/{project_hash}/chats
+func ensureGeminiChatsDir(workDir string) error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	projectHash := computeProjectHash(workDir)
+	chatsDir := filepath.Join(homeDir, ".gemini", "tmp", projectHash, "chats")
+
+	// Create directory with permissions 0755 (cross-platform)
+	if err := os.MkdirAll(chatsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create gemini chats directory: %w", err)
+	}
+
+	logger.WithFields(logrus.Fields{
+		"work_dir":  workDir,
+		"chats_dir": chatsDir,
+	}).Info("gemini-chats-directory-created")
+
+	return nil
+}
+
 // CreateSession creates a new ACP session and starts connection
 func (a *ACPAdapter) CreateSession(sessionName, workDir, startCmd, transportURL string) error {
 	a.mu.Lock()
@@ -129,6 +154,13 @@ func (a *ACPAdapter) CreateSession(sessionName, workDir, startCmd, transportURL 
 
 	if _, exists := a.sessions[sessionName]; exists {
 		return nil // Already exists
+	}
+
+	// Create Gemini chats directory if using gemini CLI
+	if strings.Contains(strings.ToLower(startCmd), "gemini") {
+		if err := ensureGeminiChatsDir(workDir); err != nil {
+			logger.WithField("error", err).Warn("failed-to-create-gemini-chats-directory")
+		}
 	}
 
 	// Parse transport URL
