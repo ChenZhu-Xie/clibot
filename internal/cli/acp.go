@@ -16,12 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Engine defines the interface for sending responses to users
-type Engine interface {
-	SendToBot(platform, channel, message string)
-	SendResponseToSession(sessionName, message string)
-}
-
 // parseTransportURL parses a transport URL into transport type and address
 // Formats:
 //   - "" or "stdio://" → stdio with no address

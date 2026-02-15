@@ -34,6 +34,13 @@ package cli
 
 import "time"
 
+// Engine defines the interface for sending responses to users.
+// It's implemented by the core Engine and passed to adapters.
+type Engine interface {
+	SendToBot(platform, channel, message string)
+	SendResponseToSession(sessionName, message string)
+}
+
 // CLIAdapter defines the interface for CLI adapters
 type CLIAdapter interface {
 	// SendInput sends input to the CLI (via tmux send-keys)
