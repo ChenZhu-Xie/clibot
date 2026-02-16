@@ -3,6 +3,9 @@
 package cli
 
 import (
+	"fmt"
+	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -78,7 +81,9 @@ func TestPTYSendInput(t *testing.T) {
 	require.NoError(t, err)
 
 	// Wait for cat to process and echo the input.
-	time.Sleep(500 * time.Millisecond)
+	// Note: PTY uses stability detection (100ms stable window),
+	// so we need to wait longer than the detection period.
+	time.Sleep(1 * time.Second)
 
 	response := mockEngine.getResponse()
 	assert.Contains(t, response, "hello cat", "Expected echoed response was not received")
@@ -92,10 +97,16 @@ func TestPTYSendInput(t *testing.T) {
 // mockPtyEngine is a mock implementation of the Engine interface for testing.
 type mockPtyEngine struct {
 	lastResponse string
+	mu           sync.Mutex
 }
 
 func (m *mockPtyEngine) SendResponseToSession(sessionName, message string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.lastResponse += message
+	if len(message) > 0 {
+		fmt.Fprintf(os.Stderr, "[MOCK ENGINE] Received %d bytes: %q\n", len(message), message)
+	}
 }
 
 // SendToBot is a mock implementation.

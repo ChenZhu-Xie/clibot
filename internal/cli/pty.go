@@ -285,36 +285,111 @@ func (a *PTYAdapter) createConPTYSession(sessionName, workDir, startCmd string) 
 }
 
 // readPTYOutput is a shared goroutine for reading PTY output
+// Implements line aggregation with moderate delay for better UX.
+//
+// Optimized for AI CLI tools (Claude, Gemini, OpenCode):
+// - Sends complete responses rather than fragments
+// - Small delay (100ms) is acceptable for IM-based usage
+// - Preserves real-time feel better than long polling delays
 func (a *PTYAdapter) readPTYOutput(sessionName string, sess *ptySession) {
+	const (
+		maxBufferSize = 8192                   // 8KB buffer
+		flushDelay    = 100 * time.Millisecond // 100ms max delay (shorter than polling's 1h)
+	)
+
 	buf := make([]byte, 4096)
+	buffer := new(strings.Builder)
+	lastFlush := time.Now()
+	lastContent := ""
+
+	ticker := time.NewTicker(flushDelay)
+	defer ticker.Stop()
+
 	for {
-		// Check if session still exists before reading
-		a.mu.Lock()
-		_, sessionExists := a.sessions[sessionName]
-		engine := a.engine
-		a.mu.Unlock()
+		select {
+		case <-ticker.C:
+			a.mu.Lock()
+			engine := a.engine
+			_, sessionExists := a.sessions[sessionName]
+			a.mu.Unlock()
 
-		if !sessionExists {
-			// Session was deleted, exit goroutine
-			break
-		}
+			if !sessionExists {
+				return
+			}
 
-		n, err := sess.ptmx.Read(buf)
-		if n > 0 {
-			// We have output, send it to the engine
-			if engine != nil {
-				// Send without holding lock to prevent deadlock
-				engine.SendResponseToSession(sessionName, string(buf[:n]))
+			// Read from PTY (non-blocking check)
+			n, err := sess.ptmx.Read(buf)
+			if n > 0 {
+				buffer.Write(buf[:n])
+				currentContent := buffer.String()
+
+				// Log first read for debugging
+				if lastContent == "" {
+					logger.WithFields(logrus.Fields{
+						"session":    sessionName,
+						"read_bytes": n,
+					}).Debug("pty-first-read")
+				}
+
+				// Flush conditions (satisfy any):
+				// 1. Contains newline → preserve some real-time feel
+				// 2. Buffer full → prevent memory issues
+				// 3. Timeout reached → prevent excessive lag
+				shouldFlush := strings.Contains(currentContent, "\n") ||
+					len(currentContent) >= maxBufferSize ||
+					(time.Since(lastFlush) >= flushDelay && currentContent != lastContent)
+
+				if shouldFlush && engine != nil {
+					engine.SendResponseToSession(sessionName, currentContent)
+					logger.WithFields(logrus.Fields{
+						"session":         sessionName,
+						"response_length": len(currentContent),
+						"reason":          getFlushReason(strings.Contains(currentContent, "\n"), len(currentContent) >= maxBufferSize, time.Since(lastFlush) >= flushDelay),
+					}).Debug("pty-flush-buffer")
+					buffer.Reset()
+					lastFlush = time.Now()
+				}
+
+				lastContent = currentContent
+			}
+
+			if err != nil {
+				// Send remaining content
+				if buffer.Len() > 0 {
+					finalContent := buffer.String()
+					if finalContent != "" && engine != nil {
+						engine.SendResponseToSession(sessionName, finalContent)
+						logger.WithFields(logrus.Fields{
+							"session":         sessionName,
+							"final_response":  true,
+							"response_length": len(finalContent),
+						}).Debug("pty-final-response-sent")
+					}
+				}
+
+				// Terminate session
+				a.mu.Lock()
+				a.terminateSession(sessionName)
+				a.mu.Unlock()
+
+				return
 			}
 		}
-		if err != nil {
-			// Error reading from PTY, session is likely dead
-			a.mu.Lock()
-			a.terminateSession(sessionName)
-			a.mu.Unlock()
-			break
-		}
 	}
+}
+
+// getFlushReason returns a string explaining why the buffer was flushed
+func getFlushReason(hasNewline, bufferFull, timeout bool) string {
+	if hasNewline {
+		return "newline"
+	}
+	if bufferFull {
+		return "buffer_full"
+	}
+	if timeout {
+		return "timeout"
+	}
+	return "unknown"
 }
 
 // SendInput sends the given input string to the PTY.
