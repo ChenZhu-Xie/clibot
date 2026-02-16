@@ -152,11 +152,11 @@ cli_adapters:
 	// Assert
 	assert.NoError(t, err)
 
-	// GetCLIAdapterConfig should succeed but history_dir is no longer expanded
+	// GetCLIAdapterConfig should succeed
 	adapterConfig, err := config.GetCLIAdapterConfig("claude")
 	assert.NoError(t, err)
-	// history_dir is kept as-is for backward compatibility, but no longer expanded
-	assert.Equal(t, "~/.claude/conversations", adapterConfig.HistoryDir)
+	// Check that timeout has default value
+	assert.Equal(t, "1h", adapterConfig.Timeout)
 }
 
 func TestLoadConfig_InvalidFile_ReturnsError(t *testing.T) {
@@ -219,8 +219,8 @@ func TestGetCLIAdapterConfig_ValidAdapter_ReturnsConfig(t *testing.T) {
 	config := &Config{
 		CLIAdapters: map[string]CLIAdapterConfig{
 			"claude": {
-				HistoryDir: "~/.claude/conversations",
-				UseHook:    true,
+				Timeout:  "5m",
+				UseHook:  true,
 			},
 		},
 	}
@@ -229,8 +229,7 @@ func TestGetCLIAdapterConfig_ValidAdapter_ReturnsConfig(t *testing.T) {
 
 	// Assert
 	assert.NoError(t, err)
-	// HistoryDir is kept for backward compatibility but no longer expanded
-	assert.Equal(t, "~/.claude/conversations", adapterConfig.HistoryDir)
+	assert.Equal(t, "5m", adapterConfig.Timeout)
 	assert.True(t, adapterConfig.UseHook)
 }
 
