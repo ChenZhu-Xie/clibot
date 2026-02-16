@@ -107,17 +107,24 @@ type BotConfig struct {
 
 // CLIAdapterConfig represents CLI adapter configuration
 type CLIAdapterConfig struct {
-	// Deprecated fields - kept for backward compatibility but not used
-	HistoryDir  string `yaml:"history_dir"`  // Deprecated: Not used anymore
-	HistoryDB   string `yaml:"history_db"`   // Deprecated: Not used anymore
-	HistoryFile string `yaml:"history_file"` // Deprecated: Not used anymore
-
-	PollTimeout string `yaml:"poll_timeout"` // Polling mode timeout (e.g., "60s")
+	// Timeout configuration
+	// - Polling mode: maximum time to wait for response
+	// - ACP mode: idle timeout (max time without activity before cancelling)
+	// Default: 5 minutes for ACP, 1 hour for polling mode
+	Timeout string `yaml:"timeout"`
 
 	// Polling mode configuration (alternative to hook mode)
 	UseHook      bool   `yaml:"use_hook"`      // Use hook mode (true) or polling mode (false). Default: true
 	PollInterval string `yaml:"poll_interval"` // Polling interval (e.g., "1s"). Default: "1s"
 	StableCount  int    `yaml:"stable_count"`  // Consecutive stable checks required. Default: 3
+
+	// PTY-specific configuration
+	PTY PTYConfig `yaml:"pty,omitempty"`
+}
+
+// PTYConfig holds configuration specific to the PTY adapter.
+type PTYConfig struct {
+	Env map[string]string `yaml:"env"`
 }
 
 // LoggingConfig represents logging configuration

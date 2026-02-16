@@ -196,7 +196,7 @@ cli_adapters:
     # Polling mode configuration (only used when use_hook: false)
     # poll_interval: "1s"   # How often to check tmux output
     # stable_count: 3       # How many stable outputs before considering complete
-    # poll_timeout: "1h"    # Maximum time to wait
+    # timeout: "1h"    # Maximum time to wait
 
   gemini:
     use_hook: true
@@ -214,9 +214,16 @@ cli_adapters:
 
   # ACP Adapter (Agent Client Protocol)
   acp:
-    # Request timeout for ACP communication
-    # Default is 5 minutes if not specified
-    request_timeout: "5m"
+    # Timeout - max time without any activity before cancelling request
+    # If the agent is actively working (sending updates), the request continues
+    # Only cancelled if there's no activity for this duration
+    # Default: 5 minutes. Set to "0" to use default.
+    timeout: "5m"
+
+    # Note: For ACP mode, timeout acts as idle timeout
+    # The system monitors activity from the agent and cancels requests only when
+    # there's no activity for the specified duration. This allows long-running
+    # tasks to complete as long as they're producing output.
 
 # ==============================================================================
 # Logging Configuration

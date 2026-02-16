@@ -247,7 +247,7 @@ func TestValidatePollingConfig(t *testing.T) {
 			cliType: "claude",
 			config: CLIAdapterConfig{
 				PollInterval: "1s",
-				PollTimeout:  "1h",
+				Timeout:      "1h",
 				StableCount:  3,
 			},
 			expectError: false,
@@ -257,7 +257,7 @@ func TestValidatePollingConfig(t *testing.T) {
 			cliType: "claude",
 			config: CLIAdapterConfig{
 				PollInterval: "100ms",
-				PollTimeout:  "1s",
+				Timeout:      "1s",
 				StableCount:  1,
 			},
 			expectError: false,
@@ -267,7 +267,7 @@ func TestValidatePollingConfig(t *testing.T) {
 			cliType: "claude",
 			config: CLIAdapterConfig{
 				PollInterval: "50ms",
-				PollTimeout:  "1h",
+				Timeout:      "1h",
 				StableCount:  3,
 			},
 			expectError: true,
@@ -278,7 +278,7 @@ func TestValidatePollingConfig(t *testing.T) {
 			cliType: "claude",
 			config: CLIAdapterConfig{
 				PollInterval: "70s",
-				PollTimeout:  "2h",
+				Timeout:      "2h",
 				StableCount:  3,
 			},
 			expectError: true,
@@ -289,7 +289,7 @@ func TestValidatePollingConfig(t *testing.T) {
 			cliType: "claude",
 			config: CLIAdapterConfig{
 				PollInterval: "10s",
-				PollTimeout:  "5s",
+				Timeout:      "5s",
 				StableCount:  3,
 			},
 			expectError: true,
@@ -300,7 +300,7 @@ func TestValidatePollingConfig(t *testing.T) {
 			cliType: "claude",
 			config: CLIAdapterConfig{
 				PollInterval: "1s",
-				PollTimeout:  "3h",
+				Timeout:      "3h",
 				StableCount:  3,
 			},
 			expectError: true,
@@ -311,7 +311,7 @@ func TestValidatePollingConfig(t *testing.T) {
 			cliType: "claude",
 			config: CLIAdapterConfig{
 				PollInterval: "1s",
-				PollTimeout:  "1h",
+				Timeout:      "1h",
 				StableCount:  0,
 			},
 			expectError: true,
@@ -322,7 +322,7 @@ func TestValidatePollingConfig(t *testing.T) {
 			cliType: "claude",
 			config: CLIAdapterConfig{
 				PollInterval: "1s",
-				PollTimeout:  "1h",
+				Timeout:      "1h",
 				StableCount:  25,
 			},
 			expectError: true,
@@ -333,7 +333,7 @@ func TestValidatePollingConfig(t *testing.T) {
 			cliType: "claude",
 			config: CLIAdapterConfig{
 				PollInterval: "10s",
-				PollTimeout:  "11s",
+				Timeout:      "11s",
 				StableCount:  10,
 			},
 			expectError: true,
@@ -344,7 +344,7 @@ func TestValidatePollingConfig(t *testing.T) {
 			cliType: "claude",
 			config: CLIAdapterConfig{
 				PollInterval: "invalid",
-				PollTimeout:  "1h",
+				Timeout:      "1h",
 				StableCount:  3,
 			},
 			expectError: true,
@@ -355,11 +355,11 @@ func TestValidatePollingConfig(t *testing.T) {
 			cliType: "claude",
 			config: CLIAdapterConfig{
 				PollInterval: "1s",
-				PollTimeout:  "invalid",
+				Timeout:      "invalid",
 				StableCount:  3,
 			},
 			expectError: true,
-			errorMsg:    "invalid poll_timeout",
+			errorMsg:    "invalid timeout",
 		},
 	}
 

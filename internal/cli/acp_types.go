@@ -13,8 +13,11 @@ const (
 
 // ACP adapter constants
 const (
-	// Default timeout for ACP requests (5 minutes)
-	defaultACPRequestTimeout = 5 * time.Minute
+	// Default idle timeout - max time without any activity before cancelling (5 minutes)
+	defaultACPIdleTimeout = 5 * time.Minute
+
+	// Default max total timeout - absolute maximum time for a request (1 hour)
+	defaultACPMaxTotalTimeout = 1 * time.Hour
 
 	// Connection ready timeout (30 seconds)
 	acpConnectionReadyTimeout = 30 * time.Second
@@ -32,12 +35,26 @@ const (
 
 	// Poll interval for polling mode (1 second)
 	acpPollInterval = 1 * time.Second
+
+	// Activity check interval - how often to check for idle timeout (30 seconds)
+	acpActivityCheckInterval = 30 * time.Second
 )
 
 // ACPAdapterConfig configuration for ACP adapter
 type ACPAdapterConfig struct {
-	// Request timeout duration
-	RequestTimeout time.Duration `yaml:"request_timeout"`
+	// Idle timeout - max time without any activity before cancelling request
+	// Default: 5 minutes. If the agent is actively working (sending updates),
+	// the request will continue. Only cancelled if there's no activity for this duration.
+	IdleTimeout time.Duration `yaml:"idle_timeout"`
+
+	// Max total timeout - absolute maximum time for a request regardless of activity
+	// Default: 1 hour. This is a hard limit to prevent truly hung requests.
+	MaxTotalTimeout time.Duration `yaml:"max_total_timeout"`
+
 	// Environment variables for ACP server process
 	Env map[string]string `yaml:"env"`
+
+	// Deprecated: Use IdleTimeout instead
+	// Kept for backward compatibility
+	RequestTimeout time.Duration `yaml:"request_timeout"`
 }

@@ -93,13 +93,13 @@ func TestCLIAdapterConfig_Struct(t *testing.T) {
 		UseHook:      true,
 		PollInterval: "1s",
 		StableCount:  3,
-		PollTimeout:  "120s",
+		Timeout:      "120s",
 	}
 
 	assert.True(t, config.UseHook)
 	assert.Equal(t, "1s", config.PollInterval)
 	assert.Equal(t, 3, config.StableCount)
-	assert.Equal(t, "120s", config.PollTimeout)
+	assert.Equal(t, "120s", config.Timeout)
 }
 
 // TestSecurityConfig_Struct tests SecurityConfig struct

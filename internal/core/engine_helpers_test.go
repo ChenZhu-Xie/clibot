@@ -101,13 +101,13 @@ func TestCLIAdapterConfig_PollingOnlyConfig(t *testing.T) {
 		UseHook:      false,
 		PollInterval: "2s",
 		StableCount:  5,
-		PollTimeout:  "180s",
+		Timeout:      "180s",
 	}
 
 	assert.False(t, config.UseHook)
 	assert.Equal(t, "2s", config.PollInterval)
 	assert.Equal(t, 5, config.StableCount)
-	assert.Equal(t, "180s", config.PollTimeout)
+	assert.Equal(t, "180s", config.Timeout)
 }
 
 // TestWatchdogConfig_EnabledOnly tests watchdog enabled configuration

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -63,18 +64,36 @@ type acpSession struct {
 
 // acpClient implements acp.Client interface for ACP callbacks
 type acpClient struct {
-	adapter     *ACPAdapter
-	sessionName string // Session name for this client instance
-	responseBuf strings.Builder
-	mu          sync.Mutex // Protects responseBuf
+	adapter          *ACPAdapter
+	sessionName      string // Session name for this client instance
+	responseBuf      strings.Builder
+	mu               sync.Mutex     // Protects responseBuf
+	activityChan     chan time.Time // Channel for activity notifications
+	lastActivityLock sync.RWMutex   // Protects lastActivityTime
+	lastActivityTime time.Time      // Last time we received activity from agent
 }
 
 // NewACPAdapter creates a new ACP adapter
 func NewACPAdapter(config ACPAdapterConfig) (*ACPAdapter, error) {
-	// Set default timeout if not specified
-	if config.RequestTimeout == 0 {
-		config.RequestTimeout = defaultACPRequestTimeout
+	// Handle backward compatibility: RequestTimeout -> IdleTimeout
+	if config.RequestTimeout > 0 && config.IdleTimeout == 0 {
+		config.IdleTimeout = config.RequestTimeout
 	}
+
+	// Set default idle timeout if not specified
+	if config.IdleTimeout == 0 {
+		config.IdleTimeout = defaultACPIdleTimeout
+	}
+
+	// Set default max total timeout if not specified
+	if config.MaxTotalTimeout == 0 {
+		config.MaxTotalTimeout = defaultACPMaxTotalTimeout
+	}
+
+	logger.WithFields(logrus.Fields{
+		"idle_timeout":      config.IdleTimeout,
+		"max_total_timeout": config.MaxTotalTimeout,
+	}).Info("acp-adapter-configured")
 
 	return &ACPAdapter{
 		config:   config,
@@ -104,9 +123,9 @@ func (a *ACPAdapter) GetStableCount() int {
 	return 1
 }
 
-// GetPollTimeout returns request timeout
+// GetPollTimeout returns request timeout (for compatibility with polling mode)
 func (a *ACPAdapter) GetPollTimeout() time.Duration {
-	return a.config.RequestTimeout
+	return a.config.IdleTimeout
 }
 
 // HandleHookData - not used in ACP mode
@@ -183,10 +202,18 @@ func (a *ACPAdapter) CreateSession(sessionName, workDir, startCmd, transportURL 
 	var clientImpl *acpClient
 	switch transportType {
 	case ACPTransportStdio:
-		clientImpl = &acpClient{adapter: a, sessionName: sessionName}
+		clientImpl = &acpClient{
+			adapter:      a,
+			sessionName:  sessionName,
+			activityChan: make(chan time.Time, 10), // Buffered channel to avoid blocking
+		}
 		err = a.startStdioServer(sessionName, workDir, startCmd, clientImpl, connReady)
 	case ACPTransportTCP, ACPTransportUnix:
-		clientImpl = &acpClient{adapter: a, sessionName: sessionName}
+		clientImpl = &acpClient{
+			adapter:      a,
+			sessionName:  sessionName,
+			activityChan: make(chan time.Time, 10), // Buffered channel to avoid blocking
+		}
 		err = a.connectRemoteServer(sessionName, workDir, transportType, address, clientImpl, connReady)
 	default:
 		err = fmt.Errorf("unsupported transport type: %s", transportType)
@@ -217,6 +244,7 @@ func (a *ACPAdapter) CreateSession(sessionName, workDir, startCmd, transportURL 
 func (a *ACPAdapter) SendInput(sessionName, input string) error {
 	a.mu.Lock()
 	sess, ok := a.sessions[sessionName]
+	clientImpl := a.currentClient
 	a.mu.Unlock()
 
 	if !ok || !sess.active {
@@ -248,8 +276,17 @@ func (a *ACPAdapter) SendInput(sessionName, input string) error {
 		"input":     input,
 	}).Debug("sending-input-to-acp-server")
 
-	ctx, cancel := context.WithTimeout(sess.ctx, a.config.RequestTimeout)
+	// Create cancellable context for this request
+	// We'll use activity monitoring to cancel if idle for too long
+	ctx, cancel := context.WithCancel(sess.ctx)
 	defer cancel()
+
+	// Start activity monitor goroutine
+	monitorDone := make(chan struct{})
+	if clientImpl != nil {
+		go a.monitorActivity(sessionName, ctx, cancel, clientImpl, monitorDone)
+		defer close(monitorDone)
+	}
 
 	// Send prompt using ACP Prompt method
 	// Use sessionId if set, otherwise empty string (server may auto-create session)
@@ -260,6 +297,9 @@ func (a *ACPAdapter) SendInput(sessionName, input string) error {
 		},
 	})
 	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return fmt.Errorf("request cancelled due to inactivity (idle timeout: %v)", a.config.IdleTimeout)
+		}
 		return fmt.Errorf("ACP prompt failed: %w", err)
 	}
 
@@ -270,9 +310,6 @@ func (a *ACPAdapter) SendInput(sessionName, input string) error {
 	// After Prompt completes, send buffered response to user
 	// Prompt is synchronous, so when it returns, all response chunks
 	// should have been received via SessionUpdate callback
-	a.mu.Lock()
-	clientImpl := a.currentClient
-	a.mu.Unlock()
 	if clientImpl != nil && clientImpl.responseBuf.Len() > 0 {
 		clientImpl.mu.Lock()
 		response := clientImpl.responseBuf.String()
@@ -295,6 +332,91 @@ func (a *ACPAdapter) SendInput(sessionName, input string) error {
 	}
 
 	return nil
+}
+
+// monitorActivity monitors activity from the agent and cancels the context if idle
+// This allows long-running requests to complete as long as they're actively working,
+// while cancelling truly hung requests that don't produce any output.
+func (a *ACPAdapter) monitorActivity(sessionName string, baseCtx context.Context, cancelFunc context.CancelFunc, client *acpClient, done <-chan struct{}) {
+	logger.WithFields(logrus.Fields{
+		"session":      sessionName,
+		"idle_timeout": a.config.IdleTimeout,
+		"max_timeout":  a.config.MaxTotalTimeout,
+	}).Debug("acp-activity-monitor-started")
+
+	// Initialize last activity time
+	client.lastActivityLock.Lock()
+	client.lastActivityTime = time.Now()
+	client.lastActivityLock.Unlock()
+
+	// Create ticker for periodic checks
+	ticker := time.NewTicker(acpActivityCheckInterval)
+	defer ticker.Stop()
+
+	// Track start time for max total timeout
+	startTime := time.Now()
+
+	for {
+		select {
+		case <-done:
+			// Monitor is being stopped normally
+			logger.WithField("session", sessionName).Debug("acp-activity-monitor-stopped")
+			return
+
+		case <-baseCtx.Done():
+			// Session context was cancelled
+			logger.WithField("session", sessionName).Debug("acp-activity-monitor-session-cancelled")
+			return
+
+		case activityTime := <-client.activityChan:
+			// Received activity notification
+			client.lastActivityLock.Lock()
+			client.lastActivityTime = activityTime
+			client.lastActivityLock.Unlock()
+
+			logger.WithField("session", sessionName).
+				Trace("acp-activity-received")
+
+		case <-ticker.C:
+			// Periodic check for timeout
+			client.lastActivityLock.RLock()
+			lastActivity := client.lastActivityTime
+			client.lastActivityLock.RUnlock()
+
+			idleTime := time.Since(lastActivity)
+			totalTime := time.Since(startTime)
+
+			// Check max total timeout (hard limit)
+			if totalTime >= a.config.MaxTotalTimeout {
+				logger.WithFields(logrus.Fields{
+					"session":     sessionName,
+					"total_time":  totalTime,
+					"max_timeout": a.config.MaxTotalTimeout,
+				}).Warn("acp-max-total-timeout-reached-cancelling")
+
+				cancelFunc()
+				return
+			}
+
+			// Check idle timeout
+			if idleTime >= a.config.IdleTimeout {
+				logger.WithFields(logrus.Fields{
+					"session":      sessionName,
+					"idle_time":    idleTime,
+					"idle_timeout": a.config.IdleTimeout,
+				}).Warn("acp-idle-timeout-reached-cancelling")
+
+				cancelFunc()
+				return
+			}
+
+			logger.WithFields(logrus.Fields{
+				"session":    sessionName,
+				"idle_time":  idleTime,
+				"total_time": totalTime,
+			}).Trace("acp-activity-check")
+		}
+	}
 }
 
 // DeleteSession terminates an ACP session
@@ -603,6 +725,14 @@ func (c *acpClient) RequestPermission(ctx context.Context, params acp.RequestPer
 
 // SessionUpdate receives session updates from agent
 func (c *acpClient) SessionUpdate(ctx context.Context, params acp.SessionNotification) error {
+	// Send activity notification to monitor (non-blocking)
+	select {
+	case c.activityChan <- time.Now():
+	default:
+		// Channel is full, monitor might be slow, but that's ok
+		// The notification will be sent next time
+	}
+
 	// Log session update (contains AI responses)
 	logger.WithFields(logrus.Fields{
 		"session_id":   params.SessionId,

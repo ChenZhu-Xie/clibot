@@ -16,14 +16,15 @@ func TestNewACPAdapter_DefaultConfig(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.NotNil(t, adapter)
-	assert.Equal(t, 5*time.Minute, adapter.config.RequestTimeout)
+	assert.Equal(t, 5*time.Minute, adapter.config.IdleTimeout)
+	assert.Equal(t, 1*time.Hour, adapter.config.MaxTotalTimeout)
 	assert.NotNil(t, adapter.sessions)
 }
 
 // TestNewACPAdapter_CustomConfig tests adapter creation with custom config
 func TestNewACPAdapter_CustomConfig(t *testing.T) {
 	config := ACPAdapterConfig{
-		RequestTimeout: 10 * time.Minute,
+		IdleTimeout: 10 * time.Minute,
 		Env: map[string]string{
 			"TEST_VAR": "test_value",
 		},
@@ -33,7 +34,7 @@ func TestNewACPAdapter_CustomConfig(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.NotNil(t, adapter)
-	assert.Equal(t, 10*time.Minute, adapter.config.RequestTimeout)
+	assert.Equal(t, 10*time.Minute, adapter.config.IdleTimeout)
 	assert.Equal(t, "test_value", adapter.config.Env["TEST_VAR"])
 }
 
@@ -60,7 +61,7 @@ func TestACPAdapter_GetStableCount(t *testing.T) {
 
 // TestACPAdapter_GetPollTimeout tests poll timeout
 func TestACPAdapter_GetPollTimeout(t *testing.T) {
-	config := ACPAdapterConfig{RequestTimeout: 3 * time.Minute}
+	config := ACPAdapterConfig{IdleTimeout: 3 * time.Minute}
 	adapter, _ := NewACPAdapter(config)
 
 	assert.Equal(t, 3*time.Minute, adapter.GetPollTimeout())

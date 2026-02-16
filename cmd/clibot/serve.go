@@ -126,10 +126,24 @@ func registerCLIAdapters(engine *core.Engine, config *core.Config) error {
 	// Check if any session uses ACP transport
 	for _, session := range config.Sessions {
 		if session.CLIType == "acp" && session.Transport != "" {
-			// ACP config is session-level (transport URL is in session config)
-			// Use default timeout since no global ACP config exists
+			// Get ACP configuration from global config
+			acpConfig, ok := config.CLIAdapters["acp"]
+			var idleTimeout time.Duration
+			var err error
+
+			if ok && acpConfig.Timeout != "" {
+				// Parse timeout if specified
+				idleTimeout, err = time.ParseDuration(acpConfig.Timeout)
+				if err != nil {
+					return fmt.Errorf("failed to parse acp timeout: %w", err)
+				}
+			}
+			// Use default max total timeout (1 hour)
+
+			// Create ACP adapter with parsed configuration
 			acpAdapter, err := cli.NewACPAdapter(cli.ACPAdapterConfig{
-				RequestTimeout: 0, // Will use default 5 minutes
+				IdleTimeout:     idleTimeout, // 0 = use default (5 min)
+				MaxTotalTimeout: 0,           // 0 = use default (1 hour)
 			})
 			if err != nil {
 				return fmt.Errorf("failed to create ACP adapter: %w", err)
@@ -148,15 +162,20 @@ func registerCLIAdapters(engine *core.Engine, config *core.Config) error {
 		var adapter cli.CLIAdapter
 		var err error
 
+		// Skip ACP adapter (already registered above)
+		if cliType == "acp" {
+			continue
+		}
+
 		// Parse polling configuration
 		pollInterval, err := time.ParseDuration(cliConfig.PollInterval)
 		if err != nil {
 			return fmt.Errorf("failed to parse poll_interval for %s: %w", cliType, err)
 		}
 
-		pollTimeout, err := time.ParseDuration(cliConfig.PollTimeout)
+		timeout, err := time.ParseDuration(cliConfig.Timeout)
 		if err != nil {
-			return fmt.Errorf("failed to parse poll_timeout for %s: %w", cliType, err)
+			return fmt.Errorf("failed to parse timeout for %s: %w", cliType, err)
 		}
 
 		switch cliType {
@@ -165,22 +184,31 @@ func registerCLIAdapters(engine *core.Engine, config *core.Config) error {
 				UseHook:      cliConfig.UseHook,
 				PollInterval: pollInterval,
 				StableCount:  cliConfig.StableCount,
-				PollTimeout:  pollTimeout,
+				PollTimeout:  timeout,
 			})
 		case "gemini":
 			adapter, err = cli.NewGeminiAdapter(cli.GeminiAdapterConfig{
 				UseHook:      cliConfig.UseHook,
 				PollInterval: pollInterval,
 				StableCount:  cliConfig.StableCount,
-				PollTimeout:  pollTimeout,
+				PollTimeout:  timeout,
 			})
 		case "opencode":
 			adapter, err = cli.NewOpenCodeAdapter(cli.OpenCodeAdapterConfig{
 				UseHook:      cliConfig.UseHook,
 				PollInterval: pollInterval,
 				StableCount:  cliConfig.StableCount,
-				PollTimeout:  pollTimeout,
+				PollTimeout:  timeout,
 			})
+		case "pty":
+			var ptyAdapter *cli.PTYAdapter
+			ptyAdapter, err = cli.NewPTYAdapter(cli.PTYAdapterConfig{
+				Env: cliConfig.PTY.Env,
+			})
+			if err == nil {
+				ptyAdapter.SetEngine(engine)
+				adapter = ptyAdapter
+			}
 		default:
 			log.Printf("Warning: CLI adapter type '%s' not implemented yet", cliType)
 			continue

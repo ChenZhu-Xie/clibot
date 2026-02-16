@@ -65,9 +65,10 @@ const (
 	DefaultWatchdogMaxRetries   = 10
 	DefaultWatchdogInitialDelay = "500ms"
 	DefaultWatchdogRetryDelay   = "800ms"
-	// DefaultPollTimeout is the default timeout for polling mode
-	// Set to 1 hour as a safety fallback - actual completion is determined by stable_count
-	DefaultPollTimeout = "1h"
+	// DefaultTimeout is the default timeout for CLI adapters
+	// - For polling mode: 1 hour (actual completion determined by stable_count)
+	// - For ACP mode: 5 minutes (idle timeout)
+	DefaultTimeout = "1h"
 
 	// Default polling mode values
 	DefaultPollInterval = "1s" // Poll every 1 second
@@ -196,8 +197,8 @@ func setSessionDefaults(config *Config) error {
 // setCLIAdapterDefaults sets default values for CLI adapter configuration
 func setCLIAdapterDefaults(config *Config) {
 	for cliType, adapter := range config.CLIAdapters {
-		if adapter.PollTimeout == "" {
-			adapter.PollTimeout = DefaultPollTimeout
+		if adapter.Timeout == "" {
+			adapter.Timeout = DefaultTimeout
 		}
 		if adapter.PollInterval == "" {
 			adapter.PollInterval = DefaultPollInterval
@@ -234,15 +235,15 @@ func validatePollingConfig(cliType string, adapter CLIAdapterConfig) error {
 		return fmt.Errorf("poll_interval for %s is too large (max 60s, got %v)", cliType, interval)
 	}
 
-	timeout, err := time.ParseDuration(adapter.PollTimeout)
+	timeout, err := time.ParseDuration(adapter.Timeout)
 	if err != nil {
-		return fmt.Errorf("invalid poll_timeout for %s: %w", cliType, err)
+		return fmt.Errorf("invalid timeout for %s: %w", cliType, err)
 	}
 	if timeout < interval {
-		return fmt.Errorf("poll_timeout for %s must be greater than poll_interval", cliType)
+		return fmt.Errorf("timeout for %s must be greater than poll_interval", cliType)
 	}
 	if timeout > 2*time.Hour {
-		return fmt.Errorf("poll_timeout for %s is too large (max 2h, got %v)", cliType, timeout)
+		return fmt.Errorf("timeout for %s is too large (max 2h, got %v)", cliType, timeout)
 	}
 
 	if adapter.StableCount < 1 || adapter.StableCount > 20 {
