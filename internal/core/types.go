@@ -28,12 +28,13 @@ type Session struct {
 }
 
 // NeedsWatchdog returns true if session requires watchdog monitoring
-// ACP sessions handle responses asynchronously via SessionUpdate callbacks,
+// ACP and PTY sessions handle responses asynchronously via callbacks/goroutines,
 // so they don't need watchdog (tmux polling or hook waiting)
 func (s *Session) NeedsWatchdog() bool {
 	// ACP adapter sends responses directly via SendResponseToSession
+	// PTY adapter sends responses via readPTYOutput goroutine
 	// No need for tmux polling or hook watchdog
-	return s.CLIType != "acp"
+	return s.CLIType != "acp" && s.CLIType != "pty"
 }
 
 // ResponseEvent represents a CLI response event
