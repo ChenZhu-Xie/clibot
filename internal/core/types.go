@@ -79,7 +79,6 @@ type WatchdogConfig struct {
 
 // SessionGlobalConfig represents global session configuration
 type SessionGlobalConfig struct {
-	InputHistorySize   int `yaml:"input_history_size"`   // Maximum number of input history entries to keep (default: 10)
 	MaxDynamicSessions int `yaml:"max_dynamic_sessions"` // Maximum number of dynamic sessions allowed (default: 50)
 }
 
@@ -107,15 +106,10 @@ type BotConfig struct {
 // CLIAdapterConfig represents CLI adapter configuration
 type CLIAdapterConfig struct {
 	// Timeout configuration
-	// - Polling mode: maximum time to wait for response
+	// - Hook mode: maximum time to wait for response after hook triggers
 	// - ACP mode: idle timeout (max time without activity before cancelling)
-	// Default: 5 minutes for ACP, 1 hour for polling mode
+	// Default: 5 minutes for ACP, 1 hour for hook mode
 	Timeout string `yaml:"timeout"`
-
-	// Polling mode configuration (alternative to hook mode)
-	UseHook      bool   `yaml:"use_hook"`      // Use hook mode (true) or polling mode (false). Default: true
-	PollInterval string `yaml:"poll_interval"` // Polling interval (e.g., "1s"). Default: "1s"
-	StableCount  int    `yaml:"stable_count"`  // Consecutive stable checks required. Default: 3
 
 	// Environment variables to set for the CLI process
 	Env map[string]string `yaml:"env"`

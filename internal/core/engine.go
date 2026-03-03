@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -23,29 +22,20 @@ import (
 )
 
 const (
-	capturePaneLine     = constants.SnapshotCaptureLines
-	tmuxCapturePaneLine = constants.DefaultManualCaptureLines
-
 	// maxSpecialCommandInputLength is the maximum allowed input length for special commands.
 	// This prevents DoS attacks from extremely long inputs.
 	maxSpecialCommandInputLength = 10000 // 10KB
-
-	// maxViewLines is the maximum allowed line count for the view command.
-	// This prevents integer overflow and excessive resource usage.
-	maxViewLines = 10000
 )
 
 // specialCommands defines commands that can be used without a prefix.
 // These are matched exactly (case-sensitive) for optimal performance.
 //
 // Performance: O(1) map lookup for exact match commands.
-// Only "view" command supports arguments (special case).
 var specialCommands = map[string]struct{}{
 	"help":   {},
 	"status": {},
 	"slist":  {},
 	"whoami": {},
-	"view":   {},
 	"echo":   {},
 	"snew":   {},
 	"sdel":   {},
@@ -55,8 +45,8 @@ var specialCommands = map[string]struct{}{
 // isSpecialCommand checks if input is a special command.
 //
 // Matching strategy (exact match for maximum performance):
-//   - Exact match: "help", "status", "sessions", "whoami", "view"
-//   - View with args: "view 100", "view 50" (only "view" supports args)
+//   - Exact match: "help", "status", "sessions", "whoami", "echo"
+//   - With args: "suse", "snew", "sdel" (with string arguments)
 //
 // Returns: (commandName, isCommand, remainingArgs)
 //
@@ -74,28 +64,6 @@ func isSpecialCommand(input string) (string, bool, []string) {
 	// This covers 95% of cases with a single O(1) map lookup.
 	if _, exists := specialCommands[input]; exists {
 		return input, true, nil
-	}
-
-	// Special case: view command with numeric arguments (e.g., "view 100", "view 50")
-	// Arguments must be numeric to avoid false positives (e.g., "view help" → normal input)
-	if len(input) >= 5 && input[:4] == "view" {
-		// Check if 5th character is whitespace (space or tab)
-		if input[4] == ' ' || input[4] == '\t' {
-			// Split into fields and use only the first argument
-			fields := strings.Fields(input[5:])
-			if len(fields) > 0 {
-				arg := fields[0]
-				// Validate argument is numeric and within safe range
-				num, err := strconv.Atoi(arg)
-				if err == nil {
-					// Security: Validate range to prevent integer overflow
-					if num >= -maxViewLines && num <= maxViewLines {
-						return "view", true, []string{arg}
-					}
-				}
-				// Not a valid number or out of range → treat as normal input (e.g., "view help", "view abc")
-			}
-		}
 	}
 
 	// Handle commands with string arguments (suse, snew, sdel)
@@ -125,7 +93,6 @@ type Engine struct {
 	hookServer      *http.Server              // HTTP server for hooks
 	sessionChannels map[string]BotChannel     // Session name -> active bot channel (for routing responses)
 	userSessions    map[string]string         // User key (platform:userID) -> current session name
-	inputTracker    *InputTracker             // Tracks user input for response extraction
 	ctx             context.Context           // Context for cancellation
 	cancel          context.CancelFunc        // Cancel function for graceful shutdown
 }
@@ -140,22 +107,9 @@ type BotChannel struct {
 func NewEngine(config *Config) *Engine {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Initialize input tracker for response extraction
-	// Get history size from config, default to 10
-	historySize := config.Session.InputHistorySize
-	if historySize == 0 {
-		historySize = DefaultInputHistorySize
-	}
-
 	// Set default for max dynamic sessions if not configured
 	if config.Session.MaxDynamicSessions == 0 {
 		config.Session.MaxDynamicSessions = 50
-	}
-
-	tracker, err := NewInputTrackerWithSize(filepath.Join(os.Getenv("HOME"), ".clibot", "sessions"), historySize)
-	if err != nil {
-		logger.WithField("error", err).Warn("failed-to-create-input-tracker-response-extraction-may-be-affected")
-		tracker = nil // Continue without tracker
 	}
 
 	return &Engine{
@@ -166,7 +120,6 @@ func NewEngine(config *Config) *Engine {
 		messageChan:     make(chan bot.BotMessage, constants.MessageChannelBufferSize),
 		sessionChannels: make(map[string]BotChannel),
 		userSessions:    make(map[string]string), // user key -> current session name
-		inputTracker:    tracker,
 		ctx:             ctx,
 		cancel:          cancel,
 	}
@@ -439,49 +392,8 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 		}).Debug("keyword-converted-to-key-sequence")
 	}
 
-	// Step 3.5: Capture before snapshot for incremental extraction (polling mode only)
+	// NOTE: Before snapshot capture removed - only hook mode is supported
 	adapter := e.cliAdapters[session.CLIType]
-	var beforeCapture string
-	if e.inputTracker != nil && !adapter.UseHook() && session.NeedsWatchdog() {
-		var err error
-		beforeCapture, err = watchdog.CapturePane(session.Name, capturePaneLine)
-		if err != nil {
-			logger.WithFields(logrus.Fields{
-				"session": session.Name,
-				"cliType": session.CLIType,
-				"error":   err,
-			}).Warn("failed-to-capture-before-snapshot-will-use-prompt-matching-fallback")
-		} else {
-			// IMPORTANT: Strip ANSI codes to match after snapshot format
-			beforeCapture = watchdog.StripANSI(beforeCapture)
-
-			if err := e.inputTracker.RecordBeforeSnapshot(session.Name, session.CLIType, beforeCapture); err != nil {
-				logger.WithFields(logrus.Fields{
-					"session": session.Name,
-					"cliType": session.CLIType,
-					"error":   err,
-				}).Warn("failed-to-save-before-snapshot-will-use-prompt-matching-fallback")
-			} else {
-				logger.WithFields(logrus.Fields{
-					"session":     session.Name,
-					"cliType":     session.CLIType,
-					"capture_len": len(beforeCapture),
-				}).Debug("before-snapshot-captured")
-			}
-		}
-	}
-	// NOTE: If beforeCapture is empty due to capture failure, the system will use
-	// prompt matching as fallback (userPrompt is always passed to watchdog)
-
-	// Step 3.6: Record user input for response extraction (polling mode)
-	if e.inputTracker != nil {
-		if err := e.inputTracker.RecordInput(session.Name, msg.Content); err != nil {
-			logger.WithFields(logrus.Fields{
-				"session": session.Name,
-				"error":   err,
-			}).Warn("failed-to-record-input-response-extraction-may-be-affected")
-		}
-	}
 
 	// Step 4: Send to CLI
 	if err := adapter.SendInput(session.Name, processedContent); err != nil {
@@ -496,40 +408,37 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 	// Step 5: Update session state to processing
 	e.updateSessionState(session.Name, StateProcessing)
 
-	// Step 6: Hook mode check
-	if adapter.UseHook() {
-		return
-	}
+	// Hook mode: No polling needed, responses will be received via hooks
+	// Start watchdog for session monitoring
+	if session.NeedsWatchdog() {
+		ctx, cleanup := e.startNewWatchdogForSession(session.Name)
+		go func(sessionName string, watchdogCtx context.Context) {
+			defer func() {
+				if r := recover(); r != nil {
+					logger.WithFields(logrus.Fields{
+						"session": sessionName,
+						"panic":   r,
+					}).Error("watchdog-panic-recovered")
+				}
+				cleanup()
+			}()
 
-	// Step 7: Polling mode - start watchdog monitoring
-	ctx, cleanup := e.startNewWatchdogForSession(session.Name)
+			e.sessionMu.RLock()
+			session, exists := e.sessions[sessionName]
+			e.sessionMu.RUnlock()
 
-	go func(sessionName string, watchdogCtx context.Context, pContent string, bCapture string) {
-		defer func() {
-			if r := recover(); r != nil {
+			if !exists {
+				return
+			}
+
+			if err := e.startWatchdogWithContext(watchdogCtx, session, "", ""); err != nil {
 				logger.WithFields(logrus.Fields{
 					"session": sessionName,
-					"panic":   r,
-				}).Error("watchdog-panic-recovered")
+					"error":   err,
+				}).Error("watchdog-failed")
 			}
-			cleanup()
-		}()
-
-		e.sessionMu.RLock()
-		session, exists := e.sessions[sessionName]
-		e.sessionMu.RUnlock()
-
-		if !exists {
-			return
-		}
-
-		if err := e.startWatchdogWithContext(watchdogCtx, session, pContent, bCapture); err != nil {
-			logger.WithFields(logrus.Fields{
-				"session": sessionName,
-				"error":   err,
-			}).Error("watchdog-failed")
-		}
-	}(session.Name, ctx, msg.Content, beforeCapture)
+		}(session.Name, ctx)
+	}
 }
 
 // HandleSpecialCommand handles special clibot commands
@@ -559,10 +468,6 @@ func (e *Engine) HandleSpecialCommandWithArgs(command string, args []string, msg
 		e.showStatus(msg)
 	case "whoami":
 		e.showWhoami(msg)
-	case "view":
-		// Reconstruct parts for captureView (expects full parts array)
-		parts := append([]string{command}, args...)
-		e.captureView(msg, parts)
 	case "echo":
 		e.handleEcho(msg)
 	case "snew":
@@ -719,7 +624,6 @@ func (e *Engine) showHelp(msg bot.BotMessage) {
   suse <name>  - Switch current session
   status       - Show status of all sessions
   whoami       - Show your current session info
-  view [n]     - View CLI output (default: 20 lines)
   echo         - Echo your IM user info (for whitelist config)
   snew <name> <cli_type> <work_dir> [cmd] - Create new session (admin only)
   sdel <name>  - Delete dynamic session (admin only)
@@ -740,7 +644,6 @@ func (e *Engine) showHelp(msg bot.BotMessage) {
   tab               → Send Tab key to CLI
   ctrl-c            → Interrupt current process
   ctrl-t            → Trigger Ctrl+T action
-  view 100          → View last 100 lines of output
   snew myproject claude ~/work  → Create new session
 
 **Tips:**
@@ -1058,70 +961,6 @@ func (e *Engine) handleDeleteSession(args []string, msg bot.BotMessage) {
 	e.SendToBot(msg.Platform, msg.Channel, response)
 }
 
-// captureView captures and displays CLI tool output
-// Usage: view [lines]
-// If lines is not provided, defaults to 20 (DefaultManualCaptureLines)
-func (e *Engine) captureView(msg bot.BotMessage, parts []string) {
-	// Parse line count parameter (default: 20)
-	lines := tmuxCapturePaneLine
-	if len(parts) >= 2 {
-		if _, err := fmt.Sscanf(parts[1], "%d", &lines); err != nil {
-			e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Invalid line count: %s\nUsage: view [lines]", parts[1]))
-			return
-		}
-		// Limit to reasonable range
-		if lines < 1 {
-			lines = 1
-		}
-		if lines > constants.MaxTmuxCaptureLines {
-			lines = constants.MaxTmuxCaptureLines
-		}
-	}
-
-	// Get current active session
-	session := e.GetActiveSession(msg.Channel)
-	if session == nil {
-		e.SendToBot(msg.Platform, msg.Channel, "❌ No active session")
-		return
-	}
-
-	// Check if session is alive
-	adapter, exists := e.cliAdapters[session.CLIType]
-	if !exists {
-		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ CLI adapter not found: %s", session.CLIType))
-		return
-	}
-
-	if !adapter.IsSessionAlive(session.Name) {
-		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Session is not running: %s", session.Name))
-		return
-	}
-
-	// Capture CLI output from tmux pane
-	output, err := watchdog.CapturePane(session.Name, lines)
-	if err != nil {
-		logger.WithFields(logrus.Fields{
-			"session": session.Name,
-			"lines":   lines,
-			"error":   err,
-		}).Error("failed-to-capture-cli-output")
-		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Failed to capture CLI output: %v", err))
-		return
-	}
-
-	// Strip ANSI codes for cleaner output
-	cleanOutput := watchdog.StripANSI(output)
-	// Send response with header
-	response := fmt.Sprintf("📺 CLI Output (%s, last %d lines):\n```\n%s\n```", session.Name, lines, cleanOutput)
-	e.SendToBot(msg.Platform, msg.Channel, response)
-
-	logger.WithFields(logrus.Fields{
-		"session":         session.Name,
-		"lines_requested": lines,
-		"output_length":   len(cleanOutput),
-	}).Info("tmux-capture-command-executed")
-}
-
 // GetActiveSession gets the active session for a channel
 // Currently returns the default session. Per-channel session mapping is not yet implemented.
 //
@@ -1271,6 +1110,7 @@ func (e *Engine) SendToAllBots(message string) {
 
 // startWatchdogWithContext starts monitoring with a cancellable context
 // This prevents goroutine leaks when multiple messages are sent rapidly
+// Only hook mode is supported now
 func (e *Engine) startWatchdogWithContext(ctx context.Context, session *Session, userPrompt string, beforeCapture string) error {
 	// Check if session needs watchdog monitoring
 	if !session.NeedsWatchdog() {
@@ -1281,127 +1121,15 @@ func (e *Engine) startWatchdogWithContext(ctx context.Context, session *Session,
 		return nil
 	}
 
-	adapter := e.cliAdapters[session.CLIType]
-
-	// Check which mode to use
-	if adapter.UseHook() {
-		logger.WithField("session", session.Name).Debug("using-hook-mode")
-		return e.runWatchdogWithHook(session)
-	} else {
-		logger.WithField("session", session.Name).Debug("using-polling-mode")
-		return e.runWatchdogPollingWithContext(ctx, session, userPrompt, beforeCapture)
-	}
-}
-
-// runWatchdogWithHook implements hook-based monitoring (real-time, requires CLI configuration)
-func (e *Engine) runWatchdogWithHook(session *Session) error {
 	logger.WithField("session", session.Name).Debug("hook-mode-watchdog-started")
 
 	// Hook mode is event-driven
 	// The engine waits for hook notifications via HTTP
-	// This is a placeholder - actual hook handling is done in handleHookRequest
+	// Actual hook handling is done in handleHookRequest
 	logger.WithField("session", session.Name).Debug("hook-mode-watchdog-waiting")
 
 	// In hook mode, we just wait for the hook to trigger
 	// The actual processing happens when the hook is received
-	return nil
-}
-
-// runWatchdogPollingWithContext implements polling-based monitoring with cancellable context
-// This prevents goroutine leaks when multiple messages are sent rapidly
-func (e *Engine) runWatchdogPollingWithContext(ctx context.Context, session *Session, userPrompt string, beforeCapture string) error {
-	adapter := e.cliAdapters[session.CLIType]
-
-	// Get polling configuration
-	pollingConfig := watchdog.PollingConfig{
-		Interval:    adapter.GetPollInterval(),
-		StableCount: adapter.GetStableCount(),
-		Timeout:     adapter.GetPollTimeout(),
-	}
-
-	logger.WithFields(logrus.Fields{
-		"session":     session.Name,
-		"interval":    pollingConfig.Interval,
-		"stableCount": pollingConfig.StableCount,
-		"timeout":     pollingConfig.Timeout,
-	}).Info("polling-mode-watchdog-started")
-
-	// Get input history for anchor matching
-	var inputs []watchdog.InputRecord
-	if e.inputTracker != nil {
-		history, err := e.inputTracker.GetAllInputs(session.Name)
-		if err == nil && len(history) > 0 {
-			inputs = make([]watchdog.InputRecord, len(history))
-			for i, h := range history {
-				inputs[i] = watchdog.InputRecord{
-					Timestamp: h.Timestamp,
-					Content:   h.Content,
-				}
-			}
-		}
-	}
-
-	// If no history found, at least use the current prompt
-	if len(inputs) == 0 && userPrompt != "" {
-		inputs = []watchdog.InputRecord{{Content: userPrompt}}
-	}
-
-	// Wait for completion (output stability)
-	// WaitForCompletion now returns both the cleaned response and the full raw content for snapshots
-	response, rawContent, err := watchdog.WaitForCompletion(session.Name, inputs, beforeCapture, pollingConfig, ctx)
-	if err != nil {
-		logger.WithFields(logrus.Fields{
-			"session": session.Name,
-			"error":   err,
-		}).Error("polling-failed")
-
-		// Update session state
-		e.updateSessionState(session.Name, StateIdle)
-
-		return err
-	}
-
-	// Step 8: Persistence - Record the after snapshot for the next turn's alignment
-	if e.inputTracker != nil && rawContent != "" {
-		if err := e.inputTracker.RecordAfterSnapshot(session.Name, session.CLIType, rawContent); err != nil {
-			logger.WithFields(logrus.Fields{
-				"session": session.Name,
-				"cliType": session.CLIType,
-				"error":   err,
-			}).Warn("failed-to-save-after-snapshot")
-		} else {
-			logger.WithFields(logrus.Fields{
-				"session":     session.Name,
-				"capture_len": len(rawContent),
-			}).Debug("after-snapshot-persisted")
-		}
-	}
-
-	// Send response to user
-	if response != "" {
-		logger.WithFields(logrus.Fields{
-			"session":         session.Name,
-			"response_length": len(response),
-			"mode":            "polling",
-			"event":           "parser_response_completed",
-		}).Info("parser_response_completed_sending_to_user")
-
-		e.sendResponseToUser(session.Name, response)
-	} else {
-		// response is empty but rawContent has content - this might indicate:
-		// 1. Extraction logic correctly determined no new content
-		// 2. Extraction bug - need to investigate
-		logger.WithFields(logrus.Fields{
-			"session":            session.Name,
-			"raw_content_length": len(rawContent),
-			"mode":               "polling",
-			"event":              "parser_no_response_extracted",
-		}).Warn("response-extraction-returned-empty-check-if-this-is-expected")
-	}
-
-	// Update session state
-	e.updateSessionState(session.Name, StateIdle)
-
 	return nil
 }
 

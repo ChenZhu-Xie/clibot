@@ -90,15 +90,9 @@ func TestBotConfig_Struct(t *testing.T) {
 // TestCLIAdapterConfig_Struct tests CLIAdapterConfig struct
 func TestCLIAdapterConfig_Struct(t *testing.T) {
 	config := CLIAdapterConfig{
-		UseHook:      true,
-		PollInterval: "1s",
-		StableCount:  3,
-		Timeout:      "120s",
+		Timeout: "120s",
 	}
 
-	assert.True(t, config.UseHook)
-	assert.Equal(t, "1s", config.PollInterval)
-	assert.Equal(t, 3, config.StableCount)
 	assert.Equal(t, "120s", config.Timeout)
 }
 
@@ -152,11 +146,9 @@ func TestWatchdogConfig_Struct(t *testing.T) {
 // TestSessionGlobalConfig_Struct tests SessionGlobalConfig struct
 func TestSessionGlobalConfig_Struct(t *testing.T) {
 	config := SessionGlobalConfig{
-		InputHistorySize:   10,
 		MaxDynamicSessions: 50,
 	}
 
-	assert.Equal(t, 10, config.InputHistorySize)
 	assert.Equal(t, 50, config.MaxDynamicSessions)
 }
 

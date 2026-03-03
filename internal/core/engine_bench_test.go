@@ -12,26 +12,9 @@ func BenchmarkIsSpecialCommand_ExactMatch(b *testing.B) {
 		"status",
 		"slist",
 		"whoami",
-		"view",
 		"snew",
 		"sdel",
 		"suse",
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		for _, test := range tests {
-			isSpecialCommand(test)
-		}
-	}
-}
-
-// BenchmarkIsSpecialCommand_ViewWithArgs benchmarks view command with arguments
-func BenchmarkIsSpecialCommand_ViewWithArgs(b *testing.B) {
-	tests := []string{
-		"view 100",
-		"view 50",
-		"view 200",
 	}
 
 	b.ResetTimer()
@@ -99,9 +82,8 @@ func BenchmarkIsSpecialCommand_Mixed(b *testing.B) {
 	tests := []string{
 		"help",               // 20% - exact match
 		"status",             // 20% - exact match
-		"view 100",           // 15% - view with args
-		"help me write code", // 20% - normal input
-		"帮我优化这段代码",           // 15% - Unicode input
+		"help me write code", // 25% - normal input
+		"帮我优化这段代码",           // 25% - Unicode input
 		"slist",              // 10% - exact match
 	}
 
@@ -120,35 +102,14 @@ func BenchmarkMapLookup(b *testing.B) {
 		"status": {},
 		"slist":  {},
 		"whoami": {},
-		"view":   {},
 	}
 
-	keys := []string{"help", "status", "slist", "whoami", "view"}
+	keys := []string{"help", "status", "slist", "whoami"}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, key := range keys {
 			_, _ = m[key]
-		}
-	}
-}
-
-// BenchmarkHasPrefix benchmarks HasPrefix performance
-func BenchmarkHasPrefix(b *testing.B) {
-	inputs := []string{
-		"view 100",
-		"view 50",
-		"viewhelp",
-		"view! 100",
-		"view command",
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		for _, input := range inputs {
-			if len(input) > 4 && input[:4] == "view" && input[4] == ' ' {
-				_ = strings.Fields(input[5:])
-			}
 		}
 	}
 }
@@ -160,12 +121,10 @@ func BenchmarkOldApproach(b *testing.B) {
 		"status": {},
 		"slist":  {},
 		"whoami": {},
-		"view":   {},
 	}
 
 	tests := []string{
 		"help",
-		"view 100",
 		"help me write code",
 	}
 
@@ -190,12 +149,10 @@ func BenchmarkNewApproach(b *testing.B) {
 		"status":   {},
 		"sessions": {},
 		"whoami":   {},
-		"view":     {},
 	}
 
 	tests := []string{
 		"help",
-		"view 100",
 		"help me write code",
 	}
 
@@ -206,11 +163,6 @@ func BenchmarkNewApproach(b *testing.B) {
 			if _, exists := specialCommands[input]; exists {
 				// Fast path hit
 				continue
-			}
-
-			// Slow path: view with args
-			if len(input) > 5 && input[:4] == "view" && input[4] == ' ' {
-				_ = strings.Fields(input[5:])
 			}
 		}
 	}

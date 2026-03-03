@@ -12,12 +12,7 @@ import (
 )
 
 func TestClaudeAdapter_NewClaudeAdapter(t *testing.T) {
-	adapter, err := NewClaudeAdapter(ClaudeAdapterConfig{
-		UseHook:      true,
-		PollInterval: 1 * time.Second,
-		StableCount:  3,
-		PollTimeout:  120 * time.Second,
-	})
+	adapter, err := NewClaudeAdapter(ClaudeAdapterConfig{})
 
 	if err != nil {
 		t.Fatalf("NewClaudeAdapter returned error: %v", err)
@@ -26,54 +21,10 @@ func TestClaudeAdapter_NewClaudeAdapter(t *testing.T) {
 	if adapter == nil {
 		t.Fatal("NewClaudeAdapter returned nil")
 	}
-
-	// Verify polling config is set correctly
-	if adapter.useHook != true {
-		t.Errorf("expected useHook true, got %v", adapter.useHook)
-	}
-
-	if adapter.pollInterval != 1*time.Second {
-		t.Errorf("expected pollInterval 1s, got %v", adapter.pollInterval)
-	}
-
-	if adapter.stableCount != 3 {
-		t.Errorf("expected stableCount 3, got %d", adapter.stableCount)
-	}
-
-	if adapter.pollTimeout != 120*time.Second {
-		t.Errorf("expected pollTimeout 120s, got %v", adapter.pollTimeout)
-	}
-}
-
-func TestClaudeAdapter_NewClaudeAdapter_Defaults(t *testing.T) {
-	// Test with zero values - should use defaults
-	adapter, err := NewClaudeAdapter(ClaudeAdapterConfig{})
-
-	if err != nil {
-		t.Fatalf("NewClaudeAdapter returned error: %v", err)
-	}
-
-	// Verify defaults are applied
-	if adapter.pollInterval != 1*time.Second {
-		t.Errorf("expected default pollInterval 1s, got %v", adapter.pollInterval)
-	}
-
-	if adapter.stableCount != 3 {
-		t.Errorf("expected default stableCount 3, got %d", adapter.stableCount)
-	}
-
-	if adapter.pollTimeout != 1*time.Hour {
-		t.Errorf("expected default pollTimeout 1h, got %v", adapter.pollTimeout)
-	}
 }
 
 func TestClaudeAdapter_SendInput(t *testing.T) {
-	adapter, err := NewClaudeAdapter(ClaudeAdapterConfig{
-		UseHook:      true,
-		PollInterval: 1 * time.Second,
-		StableCount:  3,
-		PollTimeout:  120 * time.Second,
-	})
+	adapter, err := NewClaudeAdapter(ClaudeAdapterConfig{})
 	if err != nil {
 		t.Fatalf("NewClaudeAdapter failed: %v", err)
 	}
@@ -87,79 +38,8 @@ func TestClaudeAdapter_SendInput(t *testing.T) {
 	}
 }
 
-func TestClaudeAdapter_UseHook(t *testing.T) {
-	tests := []struct {
-		name     string
-		config   ClaudeAdapterConfig
-		expected bool
-	}{
-		{
-			name: "hook mode enabled",
-			config: ClaudeAdapterConfig{
-				UseHook: true,
-			},
-			expected: true,
-		},
-		{
-			name: "polling mode (explicitly configured)",
-			config: ClaudeAdapterConfig{
-				UseHook:      false,
-				PollInterval: 1 * time.Second,
-			},
-			expected: false,
-		},
-		{
-			name:     "default (hook mode)",
-			config:   ClaudeAdapterConfig{},
-			expected: true, // Default is true when not configured
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			adapter, err := NewClaudeAdapter(tt.config)
-			if err != nil {
-				t.Fatalf("NewClaudeAdapter failed: %v", err)
-			}
-
-			if adapter.UseHook() != tt.expected {
-				t.Errorf("expected UseHook=%v, got %v", tt.expected, adapter.UseHook())
-			}
-		})
-	}
-}
-
-func TestClaudeAdapter_PollingConfig(t *testing.T) {
-	adapter, err := NewClaudeAdapter(ClaudeAdapterConfig{
-		UseHook:      false,
-		PollInterval: 2 * time.Second,
-		StableCount:  5,
-		PollTimeout:  60 * time.Second,
-	})
-	if err != nil {
-		t.Fatalf("NewClaudeAdapter failed: %v", err)
-	}
-
-	if adapter.GetPollInterval() != 2*time.Second {
-		t.Errorf("expected pollInterval 2s, got %v", adapter.GetPollInterval())
-	}
-
-	if adapter.GetStableCount() != 5 {
-		t.Errorf("expected stableCount 5, got %d", adapter.GetStableCount())
-	}
-
-	if adapter.GetPollTimeout() != 60*time.Second {
-		t.Errorf("expected pollTimeout 60s, got %v", adapter.GetPollTimeout())
-	}
-}
-
 func TestClaudeAdapter_IsSessionAlive(t *testing.T) {
-	adapter, err := NewClaudeAdapter(ClaudeAdapterConfig{
-		UseHook:      true,
-		PollInterval: 1 * time.Second,
-		StableCount:  3,
-		PollTimeout:  120 * time.Second,
-	})
+	adapter, err := NewClaudeAdapter(ClaudeAdapterConfig{})
 	if err != nil {
 		t.Fatalf("NewClaudeAdapter failed: %v", err)
 	}
@@ -175,12 +55,7 @@ func TestClaudeAdapter_IsSessionAlive(t *testing.T) {
 }
 
 func TestClaudeAdapter_CreateSession(t *testing.T) {
-	adapter, err := NewClaudeAdapter(ClaudeAdapterConfig{
-		UseHook:      true,
-		PollInterval: 1 * time.Second,
-		StableCount:  3,
-		PollTimeout:  120 * time.Second,
-	})
+	adapter, err := NewClaudeAdapter(ClaudeAdapterConfig{})
 	if err != nil {
 		t.Fatalf("NewClaudeAdapter failed: %v", err)
 	}
@@ -201,12 +76,7 @@ func TestClaudeAdapter_CreateSession(t *testing.T) {
 }
 
 func TestClaudeAdapter_CreateSession_Idempotent(t *testing.T) {
-	adapter, err := NewClaudeAdapter(ClaudeAdapterConfig{
-		UseHook:      true,
-		PollInterval: 1 * time.Second,
-		StableCount:  3,
-		PollTimeout:  120 * time.Second,
-	})
+	adapter, err := NewClaudeAdapter(ClaudeAdapterConfig{})
 	if err != nil {
 		t.Fatalf("NewClaudeAdapter failed: %v", err)
 	}
@@ -272,13 +142,7 @@ func TestExtractLastAssistantResponse(t *testing.T) {
 
 // TestClaudeAdapter_HandleHookData tests HandleHookData method
 func TestClaudeAdapter_HandleHookData(t *testing.T) {
-	config := ClaudeAdapterConfig{
-		UseHook:      true,
-		PollInterval: 1 * time.Second,
-		StableCount:  3,
-		PollTimeout:  120 * time.Second,
-	}
-	adapter, err := NewClaudeAdapter(config)
+	adapter, err := NewClaudeAdapter(ClaudeAdapterConfig{})
 	require.NoError(t, err)
 
 	t.Run("valid hook data with cwd", func(t *testing.T) {

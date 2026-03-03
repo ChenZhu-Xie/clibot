@@ -40,18 +40,13 @@ func TestGetBotConfig_BotNotFound(t *testing.T) {
 func TestGetCLIAdapterConfig_ReturnsConfig(t *testing.T) {
 	config := &Config{
 		CLIAdapters: map[string]CLIAdapterConfig{
-			"claude": {
-				UseHook:      true,
-				PollInterval: "1s",
-				StableCount:  3,
-			},
+			"claude": {},
 		},
 	}
 
 	adapterConfig, err := config.GetCLIAdapterConfig("claude")
 	assert.NoError(t, err)
 	assert.NotNil(t, adapterConfig)
-	assert.True(t, adapterConfig.UseHook)
 }
 
 // TestGetCLIAdapterConfig_AdapterNotFound tests GetCLIAdapterConfig with non-existent adapter
@@ -279,11 +274,9 @@ func TestLoggingConfig_AllFieldsCoverage(t *testing.T) {
 // TestSessionGlobalConfig_DefaultValues tests SessionGlobalConfig defaults
 func TestSessionGlobalConfig_DefaultValues(t *testing.T) {
 	config := SessionGlobalConfig{
-		InputHistorySize:   10,
 		MaxDynamicSessions: 50,
 	}
 
-	assert.Equal(t, 10, config.InputHistorySize)
 	assert.Equal(t, 50, config.MaxDynamicSessions)
 }
 

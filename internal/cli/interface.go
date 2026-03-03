@@ -32,8 +32,6 @@
 // The engine ensures serialized access to each adapter.
 package cli
 
-import "time"
-
 // Engine defines the interface for sending responses to users.
 // It's implemented by the core Engine and passed to adapters.
 type Engine interface {
@@ -72,49 +70,4 @@ type CLIAdapter interface {
 	// The transportURL parameter is for ACP adapter (e.g., "stdio://", "tcp://host:port", "unix:///path")
 	// Other adapters should ignore this parameter
 	CreateSession(sessionName, workDir, startCmd, transportURL string) error
-
-	// UseHook returns whether this adapter uses hook mode (true) or polling mode (false)
-	// Hook mode: Real-time notifications via CLI hooks (requires CLI configuration)
-	// Polling mode: Periodic tmux capture when output becomes stable (no configuration needed)
-	UseHook() bool
-
-	// GetPollInterval returns the polling interval for polling mode
-	// Only used when UseHook() returns false
-	GetPollInterval() time.Duration
-
-	// GetStableCount returns the number of consecutive stable checks required
-	// Only used when UseHook() returns false
-	// Default: 3 (output must be stable for 3 consecutive checks)
-	GetStableCount() int
-
-	// GetPollTimeout returns the maximum time to wait for completion
-	// Only used when UseHook() returns false
-	// Default: 120 seconds
-	GetPollTimeout() time.Duration
-}
-
-// normalizePollingConfig applies default values for polling configuration.
-// This helper function reduces code duplication across CLI adapters.
-//
-// Parameters:
-//   - interval: polling interval (0 → 1 second)
-//   - stableCount: consecutive stable checks required (0 → 3)
-//   - timeout: maximum wait time (0 → 1 hour)
-//
-// Note: timeout acts as a safety fallback; actual completion is determined
-// by the stable_count mechanism (output stability detection).
-//
-// Returns:
-//   - Normalized interval, stableCount, timeout
-func normalizePollingConfig(interval time.Duration, stableCount int, timeout time.Duration) (time.Duration, int, time.Duration) {
-	if interval == 0 {
-		interval = 1 * time.Second
-	}
-	if stableCount == 0 {
-		stableCount = 3
-	}
-	if timeout == 0 {
-		timeout = 1 * time.Hour // Safety fallback - actual completion determined by stable_count
-	}
-	return interval, stableCount, timeout
 }

@@ -81,29 +81,9 @@ security:
       - "YOUR_FEISHU_OPEN_ID"       # Replace with admin open_id
 
 # ==============================================================================
-# Watchdog Configuration
-# ==============================================================================
-# Monitors CLI tools to detect when they finish processing
-watchdog:
-  enabled: true
-
-  # Polling intervals (staged checks for optimal performance)
-  check_intervals:
-    - "1s"    # 1st second: Check for quick responses
-    - "2s"    # 3rd second: Check for normal responses
-    - "5s"    # 8th second: Check for slow responses
-
-  # Maximum time to wait for CLI response
-  timeout: "5m"
-
-# ==============================================================================
 # Session Configuration
 # ==============================================================================
 session:
-  # Input history size for response extraction (1-100, default: 10)
-  # Keeps track of user inputs to extract the correct response from tmux output
-  input_history_size: 10
-
   # Maximum dynamically created sessions (default: 50)
   # Limits sessions created via 'snew' command
   # Configured sessions below don't count against this limit
@@ -114,10 +94,9 @@ session:
 # ==============================================================================
 # Configure which CLI sessions clibot should manage
 #
-# Mode Priority: ACP > Hook > Polling
+# Mode Priority: ACP > Hook
 #   - ACP: Best experience, streaming, no tmux needed
 #   - Hook: Real-time, requires CLI hook configuration
-#   - Polling: Zero config, slight delay
 # ==============================================================================
 sessions:
   # ============================================================================
@@ -155,25 +134,24 @@ sessions:
   #   transport: "unix:///tmp/acp.sock"
 
   # ============================================================================
-  # Hook/Polling Mode Sessions
+  # Hook Mode Sessions
   # ============================================================================
 
-  # Example 5: Claude Code with Hook/Polling mode
-  # Requires: claude CLI installed
-  # Configure mode in cli_adapters section below
+  # Example 5: Claude Code with Hook mode
+  # Requires: claude CLI installed with hook configuration
   # - name: "claude-project"
   #   cli_type: "claude"
   #   work_dir: "/home/user/projects/my-project"   # ABSOLUTE path required
   #   auto_start: true
   #   # start_cmd: "claude"                        # Optional: Custom startup command
 
-  # Example 6: Gemini CLI with Hook/Polling mode
+  # Example 6: Gemini CLI with Hook mode
   # - name: "gemini-tests"
   #   cli_type: "gemini"
   #   work_dir: "/home/user/backend-tests"
   #   auto_start: false                           # Don't auto-start
 
-  # Example 7: OpenCode with Hook/Polling mode
+  # Example 7: OpenCode with Hook mode
   # - name: "opencode-work"
   #   cli_type: "opencode"
   #   work_dir: "/path/to/workdir"
@@ -222,36 +200,22 @@ bots:
 # ==============================================================================
 # Configure how clibot interacts with AI CLI tools
 #
-# Mode Priority: ACP > Hook > Polling
+# Mode Priority: ACP > Hook
 #   - ACP: Best experience, configure in sessions section
 #   - Hook: Real-time, requires CLI hook configuration
-#   - Polling: Zero config, slight delay (1-3s)
 # ==============================================================================
 cli_adapters:
   claude:
-    # Response Mode:
-    #   - true (hook): Real-time notification via HTTP hook
-    #   - false (polling): Checks tmux output periodically (no CLI config needed)
-    use_hook: true  # Default: true
-
-    # Polling mode configuration (only used when use_hook: false)
-    # poll_interval: "1s"   # How often to check tmux output
-    # stable_count: 3       # How many stable outputs before considering complete
-    # timeout: "1h"         # Maximum time to wait
+    # Hook mode configuration (currently the only supported mode)
+    # Requires: Claude Code CLI with hook configuration
 
   gemini:
-    use_hook: true
-    # Polling mode (if needed):
-    # poll_interval: "2s"
-    # stable_count: 4
-    # poll_timeout: "1h"
+    # Hook mode configuration
+    # Requires: Gemini CLI with hook configuration
 
   opencode:
-    use_hook: true
-    # Polling mode (if needed):
-    # poll_interval: "1s"
-    # stable_count: 3
-    # poll_timeout: "1h"
+    # Hook mode configuration
+    # Requires: OpenCode CLI with hook configuration
 
   # ACP Adapter (Agent Client Protocol) - Recommended
   acp:

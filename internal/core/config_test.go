@@ -220,7 +220,6 @@ func TestGetCLIAdapterConfig_ValidAdapter_ReturnsConfig(t *testing.T) {
 		CLIAdapters: map[string]CLIAdapterConfig{
 			"claude": {
 				Timeout: "5m",
-				UseHook: true,
 			},
 		},
 	}
@@ -230,7 +229,6 @@ func TestGetCLIAdapterConfig_ValidAdapter_ReturnsConfig(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	assert.Equal(t, "5m", adapterConfig.Timeout)
-	assert.True(t, adapterConfig.UseHook)
 }
 
 func TestGetCLIAdapterConfig_NonExistentAdapter_ReturnsError(t *testing.T) {

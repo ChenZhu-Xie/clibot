@@ -18,9 +18,7 @@ func TestConfig_StructFields(t *testing.T) {
 		Watchdog: WatchdogConfig{
 			Enabled: true,
 		},
-		Session: SessionGlobalConfig{
-			InputHistorySize: 10,
-		},
+		Session: SessionGlobalConfig{},
 		Sessions: []SessionConfig{
 			{
 				Name:    "test-session",
@@ -33,9 +31,7 @@ func TestConfig_StructFields(t *testing.T) {
 			},
 		},
 		CLIAdapters: map[string]CLIAdapterConfig{
-			"claude": {
-				UseHook: true,
-			},
+			"claude": {},
 		},
 		Logging: LoggingConfig{
 			Level: "info",
@@ -45,7 +41,6 @@ func TestConfig_StructFields(t *testing.T) {
 	assert.Equal(t, 8080, config.HookServer.Port)
 	assert.True(t, config.Security.WhitelistEnabled)
 	assert.True(t, config.Watchdog.Enabled)
-	assert.Equal(t, 10, config.Session.InputHistorySize)
 	assert.Len(t, config.Sessions, 1)
 	assert.Len(t, config.Bots, 1)
 	assert.Len(t, config.CLIAdapters, 1)

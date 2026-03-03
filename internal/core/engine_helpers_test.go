@@ -50,7 +50,6 @@ func TestConfig_EmptyConfig(t *testing.T) {
 
 	assert.Equal(t, 0, config.HookServer.Port)
 	assert.False(t, config.Security.WhitelistEnabled)
-	assert.Equal(t, 0, config.Session.InputHistorySize)
 	assert.Empty(t, config.Logging.Level)
 }
 
@@ -96,17 +95,11 @@ func TestBotConfig_MinimalConfig(t *testing.T) {
 }
 
 // TestCLIAdapterConfig_PollingOnlyConfig tests polling-only configuration
-func TestCLIAdapterConfig_PollingOnlyConfig(t *testing.T) {
+func TestCLIAdapterConfig_Config(t *testing.T) {
 	config := CLIAdapterConfig{
-		UseHook:      false,
-		PollInterval: "2s",
-		StableCount:  5,
-		Timeout:      "180s",
+		Timeout: "180s",
 	}
 
-	assert.False(t, config.UseHook)
-	assert.Equal(t, "2s", config.PollInterval)
-	assert.Equal(t, 5, config.StableCount)
 	assert.Equal(t, "180s", config.Timeout)
 }
 
@@ -145,7 +138,6 @@ func TestHookServerConfig_DefaultPort(t *testing.T) {
 func TestSessionGlobalConfig_ZeroValues(t *testing.T) {
 	config := SessionGlobalConfig{}
 
-	assert.Equal(t, 0, config.InputHistorySize)
 	assert.Equal(t, 0, config.MaxDynamicSessions)
 }
 
@@ -189,21 +181,12 @@ func TestMultipleBots_MapAccess(t *testing.T) {
 // TestMultipleAdapters_MapAccess tests accessing multiple adapter configs
 func TestMultipleAdapters_MapAccess(t *testing.T) {
 	adapters := map[string]CLIAdapterConfig{
-		"claude": {
-			UseHook: true,
-		},
-		"gemini": {
-			UseHook: true,
-		},
-		"opencode": {
-			UseHook: false,
-		},
+		"claude":   {},
+		"gemini":   {},
+		"opencode": {},
 	}
 
 	assert.Len(t, adapters, 3)
-	assert.True(t, adapters["claude"].UseHook)
-	assert.True(t, adapters["gemini"].UseHook)
-	assert.False(t, adapters["opencode"].UseHook)
 }
 
 // TestConfig_FieldInitialization tests config field initialization order

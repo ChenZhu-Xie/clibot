@@ -47,7 +47,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -66,13 +65,9 @@ const (
 	DefaultWatchdogInitialDelay = "500ms"
 	DefaultWatchdogRetryDelay   = "800ms"
 	// DefaultTimeout is the default timeout for CLI adapters
-	// - For polling mode: 1 hour (actual completion determined by stable_count)
+	// - For hook mode: 1 hour (maximum time to wait for response after hook triggers)
 	// - For ACP mode: 5 minutes (idle timeout)
 	DefaultTimeout = "1h"
-
-	// Default polling mode values
-	DefaultPollInterval = "1s" // Poll every 1 second
-	DefaultStableCount  = 3    // Require 3 consecutive stable checks
 )
 
 // LoadConfig loads configuration from file and expands environment variables
@@ -185,12 +180,7 @@ func setWatchdogDefaults(config *Config) {
 
 // setSessionDefaults sets and validates session configuration
 func setSessionDefaults(config *Config) error {
-	if config.Session.InputHistorySize == 0 {
-		config.Session.InputHistorySize = DefaultInputHistorySize
-	}
-	if config.Session.InputHistorySize < 1 || config.Session.InputHistorySize > 100 {
-		return fmt.Errorf("session.input_history_size must be between 1 and 100, got %d", config.Session.InputHistorySize)
-	}
+	// No defaults to set currently
 	return nil
 }
 
@@ -200,61 +190,14 @@ func setCLIAdapterDefaults(config *Config) {
 		if adapter.Timeout == "" {
 			adapter.Timeout = DefaultTimeout
 		}
-		if adapter.PollInterval == "" {
-			adapter.PollInterval = DefaultPollInterval
-		}
-		if adapter.StableCount == 0 {
-			adapter.StableCount = DefaultStableCount
-		}
 		config.CLIAdapters[cliType] = adapter
 	}
 }
 
 // validateCLIAdapters validates CLI adapter configurations
 func validateCLIAdapters(config *Config) error {
-	for cliType, adapter := range config.CLIAdapters {
-		if !adapter.UseHook {
-			if err := validatePollingConfig(cliType, adapter); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-// validatePollingConfig validates polling mode configuration
-func validatePollingConfig(cliType string, adapter CLIAdapterConfig) error {
-	interval, err := time.ParseDuration(adapter.PollInterval)
-	if err != nil {
-		return fmt.Errorf("invalid poll_interval for %s: %w", cliType, err)
-	}
-	if interval < 100*time.Millisecond {
-		return fmt.Errorf("poll_interval for %s must be at least 100ms (got %v)", cliType, interval)
-	}
-	if interval > 60*time.Second {
-		return fmt.Errorf("poll_interval for %s is too large (max 60s, got %v)", cliType, interval)
-	}
-
-	timeout, err := time.ParseDuration(adapter.Timeout)
-	if err != nil {
-		return fmt.Errorf("invalid timeout for %s: %w", cliType, err)
-	}
-	if timeout < interval {
-		return fmt.Errorf("timeout for %s must be greater than poll_interval", cliType)
-	}
-	if timeout > 2*time.Hour {
-		return fmt.Errorf("timeout for %s is too large (max 2h, got %v)", cliType, timeout)
-	}
-
-	if adapter.StableCount < 1 || adapter.StableCount > 20 {
-		return fmt.Errorf("stable_count for %s must be between 1 and 20 (got %d)", cliType, adapter.StableCount)
-	}
-
-	minimumTimeout := time.Duration(adapter.StableCount+2) * interval
-	if timeout < minimumTimeout {
-		return fmt.Errorf("poll_timeout for %s must be at least %v (interval * (stable_count + 2)), got %v",
-			cliType, minimumTimeout, timeout)
-	}
+	// Hook mode is the only supported mode
+	// All CLI adapters must be configured to use hooks
 	return nil
 }
 

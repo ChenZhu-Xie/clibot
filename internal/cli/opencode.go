@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/keepmind9/clibot/internal/logger"
 	"github.com/sirupsen/logrus"
@@ -16,11 +15,7 @@ import (
 
 // OpenCodeAdapterConfig configuration for OpenCode adapter
 type OpenCodeAdapterConfig struct {
-	// Polling mode configuration (when UseHook = false)
-	UseHook      bool          // Use hook mode (true) or polling mode (false). Default: true
-	PollInterval time.Duration // Polling interval. Default: 1s
-	StableCount  int           // Consecutive stable checks required. Default: 3
-	PollTimeout  time.Duration // Maximum time to wait. Default: 120s
+	Env map[string]string // Environment variables to set for the CLI process
 }
 
 // OpenCodeAdapter implements CLIAdapter for OpenCode
@@ -31,7 +26,7 @@ type OpenCodeAdapter struct {
 // NewOpenCodeAdapter creates a new OpenCode adapter
 func NewOpenCodeAdapter(config OpenCodeAdapterConfig) (*OpenCodeAdapter, error) {
 	return &OpenCodeAdapter{
-		BaseAdapter: NewBaseAdapter("opencode", "opencode", 0, config.UseHook, config.PollInterval, config.StableCount, config.PollTimeout),
+		BaseAdapter: NewBaseAdapter("opencode", "opencode", 0),
 	}, nil
 }
 

@@ -15,7 +15,6 @@ clibot is a lightweight middleware that connects various IM platforms (Feishu, D
 - **Unified Entry Point**: Manage multiple AI CLI tools through a single IM bot with easy switching
 - **Flexible Extension**: Abstract interface design - add new CLI or Bot by simply implementing interfaces
 - **Transparent Proxy**: Most inputs are directly passed through to CLI, maintaining native user experience
-- **Zero Configuration**: Optional polling mode requires no CLI configuration (see modes below)
 - **ACP Support**: Agent Client Protocol mode enables streaming responses, full-duplex communication, and works without tmux for compatible AI CLIs
 
 ## Quick Start
@@ -202,18 +201,6 @@ sessions:
 - Real-time notifications
 - See [CLI Hook Configuration Guide](./docs/en/setup/cli-hooks.md) for detailed setup.
 
-**Option C: Polling Mode (Zero Config)**
-- No CLI configuration required
-- Automatic tmux polling
-- Perfect for quick start
-
-```yaml
-cli_adapters:
-  claude:
-    use_hook: false  # Enable polling mode
-    poll_interval: "1s"
-```
-
 ### Usage
 
 ```bash
@@ -344,7 +331,7 @@ See [CLI Hook Configuration Guide](./docs/en/setup/cli-hooks.md) for detailed se
 
 ## Operation Modes
 
-clibot supports three modes for connecting AI CLI tools:
+clibot supports two modes for connecting AI CLI tools:
 
 ### ACP Mode (Agent Client Protocol) - **Recommended**
 
@@ -380,9 +367,9 @@ sessions:
 
 **Configuration:**
 ```yaml
-cli_adapters:
-  claude:
-    use_hook: true
+# Hook mode is the default for non-ACP adapters
+# No additional configuration needed
+# CLI just needs to be configured to send hooks to clibot
 ```
 
 **How it works:**
@@ -401,40 +388,9 @@ cli_adapters:
 
 **Best for:** Production environments, performance-critical applications
 
-### Polling Mode
-
-**Configuration:**
-```yaml
-cli_adapters:
-  claude:
-    use_hook: false
-    poll_interval: "1s"  # Check every second
-    stable_count: 3      # Require 3 identical outputs
-```
-
-**How it works:**
-1. clibot polls tmux output at regular intervals
-2. Checks if output remains unchanged for N consecutive checks
-3. When stable, considers CLI complete and sends response
-
-**Pros:**
-- ✅ Zero configuration (no CLI setup needed)
-- ✅ Works with any CLI tool
-- ✅ Simple to get started
-
-**Cons:**
-- ⚠️ Slight delay (1-3 seconds typically)
-- ⚠️ Periodic CPU usage (minimal)
-
-**Best for:** Quick testing, CLIs without hook support, low-frequency usage
-
-**Configuration Tips:**
-- `poll_interval`: 1-2 seconds is usually optimal
-- `stable_count`: 2-3 balances speed and reliability
-
 ### Mode Selection Recommendation
 
-**Priority: ACP > Hook > Polling**
+**Priority: ACP > Hook**
 
 **Recommended Configuration:**
 
@@ -456,19 +412,7 @@ sessions:
 
 cli_adapters:
   claude:
-    use_hook: true
-
-# Option 3: Polling Mode (Zero Config, Good for Quick Testing)
-sessions:
-  - name: "claude"
-    cli_type: "claude"
-    work_dir: "/path/to/workspace"
-    start_cmd: "claude"
-
-cli_adapters:
-  claude:
-    use_hook: false
-    poll_interval: "1s"
+    # Hook mode is the only supported mode for non-ACP adapters
 ```
 
 ## Project Structure

@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,43 +41,19 @@ func TestComputeProjectHash(t *testing.T) {
 // TestNewGeminiAdapter tests the NewGeminiAdapter function
 func TestNewGeminiAdapter(t *testing.T) {
 	t.Run("creates adapter with default config", func(t *testing.T) {
-		config := GeminiAdapterConfig{
-			UseHook:      true,
-			PollInterval: time.Second,
-			StableCount:  3,
-			PollTimeout:  120 * time.Second,
-		}
+		config := GeminiAdapterConfig{}
 
 		adapter, err := NewGeminiAdapter(config)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, adapter)
-		assert.True(t, adapter.UseHook())
-	})
-
-	t.Run("creates adapter with polling mode", func(t *testing.T) {
-		config := GeminiAdapterConfig{
-			UseHook:      false,
-			PollInterval: 2 * time.Second,
-			StableCount:  5,
-			PollTimeout:  60 * time.Second,
-		}
-
-		adapter, err := NewGeminiAdapter(config)
-
-		assert.NoError(t, err)
-		assert.NotNil(t, adapter)
-		assert.False(t, adapter.UseHook())
-		assert.Equal(t, 2*time.Second, adapter.GetPollInterval())
-		assert.Equal(t, 5, adapter.GetStableCount())
-		assert.Equal(t, 60*time.Second, adapter.GetPollTimeout())
 	})
 }
 
 // TestGeminiAdapter_HandleHookData tests the HandleHookData function
 func TestGeminiAdapter_HandleHookData(t *testing.T) {
 	t.Run("valid hook data with cwd", func(t *testing.T) {
-		config := GeminiAdapterConfig{UseHook: true}
+		config := GeminiAdapterConfig{}
 		adapter, err := NewGeminiAdapter(config)
 		require.NoError(t, err)
 
@@ -97,7 +72,7 @@ func TestGeminiAdapter_HandleHookData(t *testing.T) {
 	})
 
 	t.Run("hook data with notification event", func(t *testing.T) {
-		config := GeminiAdapterConfig{UseHook: true}
+		config := GeminiAdapterConfig{}
 		adapter, err := NewGeminiAdapter(config)
 		require.NoError(t, err)
 
@@ -117,7 +92,7 @@ func TestGeminiAdapter_HandleHookData(t *testing.T) {
 	})
 
 	t.Run("invalid JSON", func(t *testing.T) {
-		config := GeminiAdapterConfig{UseHook: true}
+		config := GeminiAdapterConfig{}
 		adapter, err := NewGeminiAdapter(config)
 		require.NoError(t, err)
 
@@ -133,7 +108,7 @@ func TestGeminiAdapter_HandleHookData(t *testing.T) {
 	})
 
 	t.Run("missing cwd in hook data", func(t *testing.T) {
-		config := GeminiAdapterConfig{UseHook: true}
+		config := GeminiAdapterConfig{}
 		adapter, err := NewGeminiAdapter(config)
 		require.NoError(t, err)
 
@@ -152,7 +127,7 @@ func TestGeminiAdapter_HandleHookData(t *testing.T) {
 	})
 
 	t.Run("empty hook data", func(t *testing.T) {
-		config := GeminiAdapterConfig{UseHook: true}
+		config := GeminiAdapterConfig{}
 		adapter, err := NewGeminiAdapter(config)
 		require.NoError(t, err)
 
@@ -169,7 +144,7 @@ func TestGeminiAdapter_HandleHookData(t *testing.T) {
 // TestGeminiAdapter_LastSessionFile tests the lastSessionFile function
 func TestGeminiAdapter_LastSessionFile(t *testing.T) {
 	t.Run("directory does not exist", func(t *testing.T) {
-		config := GeminiAdapterConfig{UseHook: true}
+		config := GeminiAdapterConfig{}
 		adapter, err := NewGeminiAdapter(config)
 		require.NoError(t, err)
 
@@ -183,7 +158,7 @@ func TestGeminiAdapter_LastSessionFile(t *testing.T) {
 	})
 
 	t.Run("directory exists but no session files", func(t *testing.T) {
-		config := GeminiAdapterConfig{UseHook: true}
+		config := GeminiAdapterConfig{}
 		adapter, err := NewGeminiAdapter(config)
 		require.NoError(t, err)
 
@@ -211,7 +186,7 @@ func TestGeminiAdapter_LastSessionFile(t *testing.T) {
 // TestGeminiAdapter_ExtractLatestInteraction tests the ExtractLatestInteraction method
 func TestGeminiAdapter_ExtractLatestInteraction(t *testing.T) {
 	t.Run("transcript path provided", func(t *testing.T) {
-		config := GeminiAdapterConfig{UseHook: true}
+		config := GeminiAdapterConfig{}
 		adapter, err := NewGeminiAdapter(config)
 		require.NoError(t, err)
 
@@ -246,7 +221,7 @@ func TestGeminiAdapter_ExtractLatestInteraction(t *testing.T) {
 	})
 
 	t.Run("no messages in session", func(t *testing.T) {
-		config := GeminiAdapterConfig{UseHook: true}
+		config := GeminiAdapterConfig{}
 		adapter, err := NewGeminiAdapter(config)
 		require.NoError(t, err)
 
@@ -279,7 +254,7 @@ func TestGeminiAdapter_ExtractLatestInteraction(t *testing.T) {
 	})
 
 	t.Run("no user message in session", func(t *testing.T) {
-		config := GeminiAdapterConfig{UseHook: true}
+		config := GeminiAdapterConfig{}
 		adapter, err := NewGeminiAdapter(config)
 		require.NoError(t, err)
 
@@ -314,7 +289,7 @@ func TestGeminiAdapter_ExtractLatestInteraction(t *testing.T) {
 	})
 
 	t.Run("multiple gemini responses", func(t *testing.T) {
-		config := GeminiAdapterConfig{UseHook: true}
+		config := GeminiAdapterConfig{}
 		adapter, err := NewGeminiAdapter(config)
 		require.NoError(t, err)
 
@@ -350,7 +325,7 @@ func TestGeminiAdapter_ExtractLatestInteraction(t *testing.T) {
 	})
 
 	t.Run("file does not exist", func(t *testing.T) {
-		config := GeminiAdapterConfig{UseHook: true}
+		config := GeminiAdapterConfig{}
 		adapter, err := NewGeminiAdapter(config)
 		require.NoError(t, err)
 
@@ -361,72 +336,4 @@ func TestGeminiAdapter_ExtractLatestInteraction(t *testing.T) {
 		assert.Equal(t, "", prompt)
 		assert.Equal(t, "", response)
 	})
-}
-
-// TestGeminiAdapter_UseHook tests the UseHook method
-func TestGeminiAdapter_UseHook(t *testing.T) {
-	t.Run("hook mode enabled", func(t *testing.T) {
-		config := GeminiAdapterConfig{UseHook: true}
-		adapter, err := NewGeminiAdapter(config)
-		require.NoError(t, err)
-
-		assert.True(t, adapter.UseHook())
-	})
-
-	t.Run("polling mode with interval configured", func(t *testing.T) {
-		// Must configure interval to disable hook mode
-		config := GeminiAdapterConfig{
-			UseHook:      false,
-			PollInterval: time.Second,
-		}
-		adapter, err := NewGeminiAdapter(config)
-		require.NoError(t, err)
-
-		assert.False(t, adapter.UseHook())
-	})
-
-	t.Run("defaults to hook mode when polling not configured", func(t *testing.T) {
-		// When UseHook=false but no polling config, it defaults to hook mode
-		config := GeminiAdapterConfig{UseHook: false}
-		adapter, err := NewGeminiAdapter(config)
-		require.NoError(t, err)
-
-		assert.True(t, adapter.UseHook())
-	})
-}
-
-// TestGeminiAdapter_GetPollInterval tests the GetPollInterval method
-func TestGeminiAdapter_GetPollInterval(t *testing.T) {
-	config := GeminiAdapterConfig{
-		UseHook:      false,
-		PollInterval: 5 * time.Second,
-	}
-	adapter, err := NewGeminiAdapter(config)
-	require.NoError(t, err)
-
-	assert.Equal(t, 5*time.Second, adapter.GetPollInterval())
-}
-
-// TestGeminiAdapter_GetStableCount tests the GetStableCount method
-func TestGeminiAdapter_GetStableCount(t *testing.T) {
-	config := GeminiAdapterConfig{
-		UseHook:     false,
-		StableCount: 7,
-	}
-	adapter, err := NewGeminiAdapter(config)
-	require.NoError(t, err)
-
-	assert.Equal(t, 7, adapter.GetStableCount())
-}
-
-// TestGeminiAdapter_GetPollTimeout tests the GetPollTimeout method
-func TestGeminiAdapter_GetPollTimeout(t *testing.T) {
-	config := GeminiAdapterConfig{
-		UseHook:     false,
-		PollTimeout: 180 * time.Second,
-	}
-	adapter, err := NewGeminiAdapter(config)
-	require.NoError(t, err)
-
-	assert.Equal(t, 180*time.Second, adapter.GetPollTimeout())
 }

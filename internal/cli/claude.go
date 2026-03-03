@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/keepmind9/clibot/internal/logger"
 	"github.com/sirupsen/logrus"
@@ -16,11 +15,7 @@ import (
 
 // ClaudeAdapterConfig configuration for Claude Code adapter
 type ClaudeAdapterConfig struct {
-	// Polling mode configuration (when UseHook = false)
-	UseHook      bool          // Use hook mode (true) or polling mode (false). Default: true
-	PollInterval time.Duration // Polling interval. Default: 1s
-	StableCount  int           // Consecutive stable checks required. Default: 3
-	PollTimeout  time.Duration // Maximum time to wait. Default: 120s
+	Env map[string]string // Environment variables to set for the CLI process
 }
 
 // ClaudeAdapter implements CLIAdapter for Claude Code
@@ -31,7 +26,7 @@ type ClaudeAdapter struct {
 // NewClaudeAdapter creates a new Claude Code adapter
 func NewClaudeAdapter(config ClaudeAdapterConfig) (*ClaudeAdapter, error) {
 	return &ClaudeAdapter{
-		BaseAdapter: NewBaseAdapter("claude", "claude", 0, config.UseHook, config.PollInterval, config.StableCount, config.PollTimeout),
+		BaseAdapter: NewBaseAdapter("claude", "claude", 0),
 	}, nil
 }
 
