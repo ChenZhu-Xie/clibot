@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -32,15 +33,16 @@ const (
 //
 // Performance: O(1) map lookup for exact match commands.
 var specialCommands = map[string]struct{}{
-	"help":   {},
-	"status": {},
-	"slist":  {},
-	"whoami": {},
-	"echo":   {},
-	"snew":   {},
-	"sdel":   {},
-	"suse":   {},
-	"sclose": {},
+	"help":    {},
+	"status":  {},
+	"slist":   {},
+	"sstatus": {},
+	"whoami":  {},
+	"echo":    {},
+	"snew":    {},
+	"sdel":    {},
+	"suse":    {},
+	"sclose":  {},
 }
 
 // isSpecialCommand checks if input is a special command.
@@ -67,13 +69,13 @@ func isSpecialCommand(input string) (string, bool, []string) {
 		return input, true, nil
 	}
 
-	// Handle commands with string arguments (suse, snew, sdel, sclose)
+	// Handle commands with string arguments (suse, snew, sdel, sclose, sstatus)
 	// These commands accept arbitrary string arguments (session names, paths, etc.)
 	fields := strings.Fields(input)
 	if len(fields) > 1 {
 		cmd := fields[0]
 		// Only check known commands that accept string arguments
-		if cmd == "suse" || cmd == "snew" || cmd == "sdel" || cmd == "sclose" {
+		if cmd == "suse" || cmd == "snew" || cmd == "sdel" || cmd == "sclose" || cmd == "sstatus" {
 			if _, exists := specialCommands[cmd]; exists {
 				return cmd, true, fields[1:]
 			}
@@ -506,6 +508,8 @@ func (e *Engine) HandleSpecialCommandWithArgs(command string, args []string, msg
 		e.handleDeleteSession(args, msg)
 	case "sclose":
 		e.handleCloseSession(args, msg)
+	case "sstatus":
+		e.handleSessionStatus(args, msg)
 	default:
 		e.SendToBot(msg.Platform, msg.Channel,
 			fmt.Sprintf("❌ Unknown command: %s\nUse 'help' to see available commands", command))
@@ -655,6 +659,7 @@ func (e *Engine) showHelp(msg bot.BotMessage) {
   slist        - List all available sessions
   suse <name>  - Switch current session
   sclose [name] - Close running session (default: current session)
+  sstatus [name] - Show session status (default: all sessions)
   status       - Show status of all sessions
   whoami       - Show your current session info
   echo         - Echo your IM user info (for whitelist config)
@@ -675,6 +680,8 @@ func (e *Engine) showHelp(msg bot.BotMessage) {
   suse myproject    → Switch to session 'myproject'
   sclose            → Close current session
   sclose backend    → Close session 'backend' (if you're the creator or admin)
+  sstatus           → Show status of all sessions
+  sstatus backend  → Show detailed status of 'backend' session
   status            → Show status
   tab               → Send Tab key to CLI
   ctrl-c            → Interrupt current process
@@ -687,6 +694,7 @@ func (e *Engine) showHelp(msg bot.BotMessage) {
   - Any other input will be sent to the CLI
   - Use "suse" to switch between sessions
   - Use "sclose" to free up resources when not using a session
+  - Use "sstatus" to monitor session health and resource usage
   - Use "help" anytime to see this message`
 
 	e.SendToBot(msg.Platform, msg.Channel, help)
@@ -1151,6 +1159,327 @@ func (e *Engine) stopSession(session *Session) error {
 	}
 
 	return nil
+}
+
+// SessionStatus represents detailed status information about a session
+type SessionStatus struct {
+	Name         string
+	State        SessionState
+	CLIType      string
+	WorkDir      string
+	IsDynamic    bool
+	CreatedBy    string
+	IsAlive      bool
+	ProcessInfo  *ProcessInfo
+	LastActivity string
+}
+
+// ProcessInfo contains process-related information
+type ProcessInfo struct {
+	PID     int
+	Memory  string // Human-readable memory usage
+	Uptime  string // Human-readable uptime
+	Command string // Process command
+}
+
+// handleSessionStatus handles the sstatus command
+// Usage: sstatus [session_name]
+func (e *Engine) handleSessionStatus(args []string, msg bot.BotMessage) {
+	logger.WithFields(logrus.Fields{
+		"platform": msg.Platform,
+		"user_id":  msg.UserID,
+		"args":     args,
+	}).Info("handle-session-status-command")
+
+	e.sessionMu.RLock()
+	defer e.sessionMu.RUnlock()
+
+	// No argument: show all sessions
+	if len(args) == 0 {
+		e.showAllSessionsStatus(msg)
+		return
+	}
+
+	// With argument: show specific session
+	sessionName := args[0]
+	session, exists := e.sessions[sessionName]
+	if !exists {
+		e.SendToBot(msg.Platform, msg.Channel,
+			fmt.Sprintf("❌ Session '%s' does not exist\nUse 'slist' to see available sessions", sessionName))
+		return
+	}
+
+	status := e.getSessionStatus(session)
+	e.sendSessionStatus(msg, status)
+}
+
+// showAllSessionsStatus shows status of all sessions
+func (e *Engine) showAllSessionsStatus(msg bot.BotMessage) {
+	if len(e.sessions) == 0 {
+		e.SendToBot(msg.Platform, msg.Channel, "⚠️  No sessions configured")
+		return
+	}
+
+	var statuses []*SessionStatus
+	for _, session := range e.sessions {
+		status := e.getSessionStatus(session)
+		statuses = append(statuses, status)
+	}
+
+	// Build response
+	response := "📊 **All Sessions Status**\n\n"
+
+	for _, status := range statuses {
+		// Status icon
+		var icon string
+		switch status.State {
+		case StateProcessing:
+			icon = "🟢"
+		case StateIdle:
+			icon = "⏸️"
+		case StateWaitingInput:
+			icon = "⏳"
+		case StateError:
+			icon = "❌"
+		default:
+			icon = "⚪"
+		}
+
+		if !status.IsAlive {
+			icon = "⚫"
+		}
+
+		response += fmt.Sprintf("%s **%s** - %s\n", icon, status.Name, status.State)
+		response += fmt.Sprintf("  CLI: %s", status.CLIType)
+
+		if status.IsAlive && status.ProcessInfo != nil {
+			response += fmt.Sprintf(" | PID: %d | Mem: %s", status.ProcessInfo.PID, status.ProcessInfo.Memory)
+		}
+
+		response += "\n"
+	}
+
+	e.SendToBot(msg.Platform, msg.Channel, response)
+}
+
+// getSessionStatus gathers detailed status information for a session
+func (e *Engine) getSessionStatus(session *Session) *SessionStatus {
+	status := &SessionStatus{
+		Name:         session.Name,
+		State:        session.State,
+		CLIType:      session.CLIType,
+		WorkDir:      session.WorkDir,
+		IsDynamic:    session.IsDynamic,
+		CreatedBy:    session.CreatedBy,
+		IsAlive:      false,
+		LastActivity: "Unknown",
+	}
+
+	// Check if session is alive
+	adapter, exists := e.cliAdapters[session.CLIType]
+	if exists {
+		status.IsAlive = adapter.IsSessionAlive(session.Name)
+	}
+
+	// Get process info if alive
+	if status.IsAlive {
+		if procInfo := e.getProcessInfo(session); procInfo != nil {
+			status.ProcessInfo = procInfo
+		}
+	}
+
+	return status
+}
+
+// getProcessInfo retrieves process information for a session
+func (e *Engine) getProcessInfo(session *Session) *ProcessInfo {
+	// Try to get PID from tmux session
+	var pid int
+	var cmd string
+
+	// Get tmux session PID
+	if session.CLIType != "acp" {
+		// For tmux-based sessions, get the pane PID
+		out, err := exec.Command("tmux", "list-panes", "-t", session.Name, "-F", "#{pane_pid}").Output()
+		if err == nil && len(out) > 0 {
+			fmt.Sscanf(string(out), "%d", &pid)
+		}
+
+		// Get command name
+		cmdOut, err := exec.Command("tmux", "list-panes", "-t", session.Name, "-F", "#{pane_current_command}").Output()
+		if err == nil && len(cmdOut) > 0 {
+			cmd = strings.TrimSpace(string(cmdOut))
+		}
+	} else {
+		// For ACP sessions, try to find the process by work directory
+		// This is more complex and may not always work
+		// Skip for now
+	}
+
+	if pid == 0 {
+		return nil
+	}
+
+	// Get memory usage and uptime from /proc
+	memory := e.getProcessMemory(pid)
+	uptime := e.getProcessUptime(pid)
+
+	return &ProcessInfo{
+		PID:     pid,
+		Memory:  memory,
+		Uptime:  uptime,
+		Command: cmd,
+	}
+}
+
+// getProcessMemory gets human-readable memory usage for a process
+func (e *Engine) getProcessMemory(pid int) string {
+	// Try Linux /proc first (most common for this project)
+	if data, err := os.ReadFile(fmt.Sprintf("/proc/%d/status", pid)); err == nil {
+		lines := strings.Split(string(data), "\n")
+		for _, line := range lines {
+			if strings.HasPrefix(line, "VmRSS:") {
+				parts := strings.Fields(line)
+				if len(parts) >= 2 {
+					kb := strings.TrimSuffix(parts[1], "kB")
+					if memKB, err := strconv.Atoi(kb); err == nil {
+						if memKB > 1024 {
+							return fmt.Sprintf("%.1f MB", float64(memKB)/1024)
+						}
+						return fmt.Sprintf("%d KB", memKB)
+					}
+				}
+			}
+		}
+	}
+
+	// Fallback to ps command (works on macOS and Linux)
+	// ps -o rss= -p <pid>  -> RSS in KB
+	out, err := exec.Command("ps", "-o", "rss=", "-p", fmt.Sprintf("%d", pid)).Output()
+	if err != nil {
+		return "Unknown"
+	}
+
+	rssStr := strings.TrimSpace(string(out))
+	if rssKB, err := strconv.Atoi(rssStr); err == nil && rssKB > 0 {
+		if rssKB > 1024 {
+			return fmt.Sprintf("%.1f MB", float64(rssKB)/1024)
+		}
+		return fmt.Sprintf("%d KB", rssKB)
+	}
+
+	return "Unknown"
+}
+
+// getProcessUptime gets human-readable uptime for a process
+func (e *Engine) getProcessUptime(pid int) string {
+	// Try Linux /proc first (most common for this project)
+	if data, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid)); err == nil {
+		fields := strings.Fields(string(data))
+		if len(fields) >= 22 {
+			startJiffies, err := strconv.ParseInt(fields[21], 10, 64)
+			if err == nil {
+				if uptimeData, err := os.ReadFile("/proc/uptime"); err == nil {
+					uptimeFields := strings.Fields(string(uptimeData))
+					if len(uptimeFields) >= 1 {
+						systemUptime, err := strconv.ParseFloat(uptimeFields[0], 64)
+						if err == nil {
+							clockTicks := float64(100)
+							processUptimeSeconds := systemUptime - (float64(startJiffies) / clockTicks)
+							return formatUptime(processUptimeSeconds)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Fallback to ps command (works on macOS and Linux)
+	// ps -o etime= -p <pid>  -> Elapsed time in [[DD-]HH:]MM:SS format
+	out, err := exec.Command("ps", "-o", "etime=", "-p", fmt.Sprintf("%d", pid)).Output()
+	if err != nil {
+		return "Unknown"
+	}
+
+	elapsedTime := strings.TrimSpace(string(out))
+	// Parse [[DD-]HH:]MM:SS or MM:SS or HH:MM:SS
+	if elapsedTime != "" {
+		// Remove brackets if present
+		elapsedTime = strings.Trim(elapsedTime, "[]")
+		// ps etime format: [[DD-]HH:]MM:SS or just HH:MM:SS or MM:SS
+		// Simplify: just return as-is since it's already human-readable
+		if elapsedTime != "" {
+			return elapsedTime
+		}
+	}
+
+	return "Unknown"
+}
+
+// formatUptime converts seconds to human-readable uptime
+func formatUptime(seconds float64) string {
+	if seconds < 60 {
+		return fmt.Sprintf("%.0fs", seconds)
+	}
+
+	hours := int(seconds) / 3600
+	minutes := int(seconds) % 3600 / 60
+
+	if hours > 0 {
+		return fmt.Sprintf("%dh%dm", hours, minutes)
+	}
+	return fmt.Sprintf("%dm", minutes)
+}
+
+// sendSessionStatus sends detailed session status to user
+func (e *Engine) sendSessionStatus(msg bot.BotMessage, status *SessionStatus) {
+	response := fmt.Sprintf("📊 **Session Status: %s**\n\n", status.Name)
+
+	// State
+	var stateIcon string
+	switch status.State {
+	case StateProcessing:
+		stateIcon = "🟢"
+	case StateIdle:
+		stateIcon = "⏸️"
+	case StateWaitingInput:
+		stateIcon = "⏳"
+	case StateError:
+		stateIcon = "❌"
+	default:
+		stateIcon = "⚪"
+	}
+
+	if !status.IsAlive {
+		stateIcon = "⚫"
+		response += "⚠️  **Status**: Not running\n\n"
+	} else {
+		response += fmt.Sprintf("**State**: %s %s\n\n", stateIcon, status.State)
+	}
+
+	// Basic info
+	response += "📋 **Basic Info**\n"
+	response += fmt.Sprintf("  • CLI: %s\n", status.CLIType)
+	response += fmt.Sprintf("  • WorkDir: %s\n", status.WorkDir)
+
+	if status.IsDynamic {
+		response += fmt.Sprintf("  • Type: Dynamic (created by %s)\n", status.CreatedBy)
+	} else {
+		response += "  • Type: Static (configured)\n"
+	}
+
+	// Process info
+	if status.IsAlive && status.ProcessInfo != nil {
+		response += "\n💻 **Process Info**\n"
+		response += fmt.Sprintf("  • PID: %d\n", status.ProcessInfo.PID)
+		if status.ProcessInfo.Command != "" {
+			response += fmt.Sprintf("  • Command: %s\n", status.ProcessInfo.Command)
+		}
+		response += fmt.Sprintf("  • Memory: %s\n", status.ProcessInfo.Memory)
+		response += fmt.Sprintf("  • Uptime: %s\n", status.ProcessInfo.Uptime)
+	}
+
+	e.SendToBot(msg.Platform, msg.Channel, response)
 }
 
 // GetActiveSession gets the active session for a channel

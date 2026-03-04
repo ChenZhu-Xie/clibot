@@ -456,6 +456,7 @@ suse <session>                     # Switch current session
 snew <name> <cli_type> <work_dir> [cmd]  # Create new dynamic session (admin only)
 sdel <name>                        # Delete dynamic session (admin only)
 sclose [name]                      # Close running session (free resources)
+sstatus [name]                     # Show session status (default: all sessions)
 whoami                             # Display your current session info
 status                             # Display all session status
 echo                               # Echo your IM info (Platform, UserID, Channel)

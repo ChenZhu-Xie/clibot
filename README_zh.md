@@ -454,6 +454,7 @@ suse <session>                     # 切换当前会话
 snew <name> <cli_type> <work_dir> [cmd]  # 创建新的动态会话（仅管理员）
 sdel <name>                        # 删除动态会话（仅管理员）
 sclose [name]                      # 关闭正在运行的会话（释放资源）
+sstatus [name]                     # 显示会话状态（默认：所有会话）
 whoami                             # 显示您当前会话信息
 status                             # 显示所有会话状态
 echo                               # 回显您的 IM 信息（平台, 用户ID, 频道ID）
