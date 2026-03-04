@@ -226,3 +226,73 @@ func TestIntegration_TmuxWorkflow(t *testing.T) {
 	// Test overall: we successfully created and managed a tmux session
 	t.Log("Successfully tested tmux workflow")
 }
+
+// TestIsTmuxKeyName tests the isTmuxKeyName function
+func TestIsTmuxKeyName(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		// Control keys
+		{"control-a", "C-a", true},
+		{"control-c", "C-c", true},
+		{"control-m", "C-m", true},
+		{"control-[", "C-[", true},
+		{"control-i", "C-i", true},
+
+		// Meta/Alt keys
+		{"meta-a", "M-a", true},
+		{"meta-x", "M-x", true},
+
+		// Control+Shift combinations
+		{"control-shift-a", "C-S-a", true},
+
+		// Regular text (not key names)
+		{"regular text", "hello world", false},
+		{"single char", "a", false},
+		{"empty string", "", false},
+
+		// Edge cases
+		{"lowercase c-", "c-", false},
+		{"partial match", "XC-a", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isTmuxKeyName(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// TestIsLiteralKeySequence tests the isLiteralKeySequence function
+func TestIsLiteralKeySequence(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		// ANSI escape sequences
+		{"shift-tab", "\x1b[Z", true},
+		{"escape sequence", "\x1b[1;3C", true},
+		{"escape alone", "\x1b", true},
+
+		// Regular text (not escape sequences)
+		{"regular text", "hello world", false},
+		{"empty string", "", false},
+		{"single char", "a", false},
+		{"numbers", "12345", false},
+
+		// Mixed content
+		{"text with escape", "normal\x1b[Z", true},
+		{"escape with text", "\x1b[Znormal", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isLiteralKeySequence(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

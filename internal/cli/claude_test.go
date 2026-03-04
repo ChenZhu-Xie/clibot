@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"testing"
 	"time"
@@ -191,5 +192,83 @@ func TestClaudeAdapter_HandleHookData(t *testing.T) {
 		cwd, _, _, err := adapter.HandleHookData(data)
 		assert.Error(t, err) // Should error because cwd is missing
 		assert.Empty(t, cwd)
+	})
+}
+
+// TestExtractLatestSubagentFile_FileOperations tests the extractLatestSubagentFile function
+func TestExtractLatestSubagentFile_FileOperations(t *testing.T) {
+	t.Run("returns error for non-existent subagents directory", func(t *testing.T) {
+		_, err := extractLatestSubagentFile("/nonexistent/path/transcript.json")
+		assert.Error(t, err)
+	})
+
+	t.Run("returns error when subagents directory exists but has no jsonl files", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		// Create base directory (transcript file without extension)
+		baseDir := tmpDir + "/transcript"
+		subagentsDir := baseDir + "/subagents"
+
+		err := os.MkdirAll(subagentsDir, 0755)
+		require.NoError(t, err)
+
+		// Create a dummy transcript file
+		transcriptPath := baseDir + ".json"
+		_, err = extractLatestSubagentFile(transcriptPath)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no jsonl files found")
+	})
+
+	t.Run("finds the latest jsonl file by modification time", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		baseDir := tmpDir + "/transcript"
+		subagentsDir := baseDir + "/subagents"
+
+		err := os.MkdirAll(subagentsDir, 0755)
+		require.NoError(t, err)
+
+		file1 := subagentsDir + "/agent1.jsonl"
+		file2 := subagentsDir + "/agent2.jsonl"
+		file3 := subagentsDir + "/agent3.jsonl"
+
+		err = os.WriteFile(file1, []byte("content1"), 0644)
+		require.NoError(t, err)
+
+		time.Sleep(10 * time.Millisecond)
+
+		err = os.WriteFile(file2, []byte("content2"), 0644)
+		require.NoError(t, err)
+
+		time.Sleep(10 * time.Millisecond)
+
+		err = os.WriteFile(file3, []byte("content3"), 0644)
+		require.NoError(t, err)
+
+		transcriptPath := baseDir + ".json"
+		latestFile, err := extractLatestSubagentFile(transcriptPath)
+		assert.NoError(t, err)
+		assert.Equal(t, file3, latestFile)
+	})
+
+	t.Run("ignores non-jsonl files in subagents directory", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		baseDir := tmpDir + "/transcript"
+		subagentsDir := baseDir + "/subagents"
+
+		err := os.MkdirAll(subagentsDir, 0755)
+		require.NoError(t, err)
+
+		jsonlFile := subagentsDir + "/agent.jsonl"
+		txtFile := subagentsDir + "/readme.txt"
+
+		err = os.WriteFile(jsonlFile, []byte("jsonl content"), 0644)
+		require.NoError(t, err)
+
+		err = os.WriteFile(txtFile, []byte("txt content"), 0644)
+		require.NoError(t, err)
+
+		transcriptPath := baseDir + ".json"
+		latestFile, err := extractLatestSubagentFile(transcriptPath)
+		assert.NoError(t, err)
+		assert.Equal(t, jsonlFile, latestFile)
 	})
 }

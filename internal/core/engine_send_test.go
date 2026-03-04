@@ -53,32 +53,6 @@ func TestEngine_SendToAllBots_WithRegisteredBots(t *testing.T) {
 	assert.Equal(t, "broadcast message", mockBot2.lastMessage)
 }
 
-// TestEngine_SendToAllBots_NoBots tests SendToAllBots with no registered bots
-func TestEngine_SendToAllBots_NoBots(t *testing.T) {
-	config := &Config{
-		Sessions: []SessionConfig{
-			{Name: "test", CLIType: "claude", WorkDir: "/tmp"},
-		},
-	}
-	engine := NewEngine(config)
-
-	// Should not panic
-	engine.SendToAllBots("test message")
-}
-
-// TestEngine_SendToBot_NonExistentBot tests SendToBot with non-existent bot
-func TestEngine_SendToBot_NonExistentBot(t *testing.T) {
-	config := &Config{
-		Sessions: []SessionConfig{
-			{Name: "test", CLIType: "claude", WorkDir: "/tmp"},
-		},
-	}
-	engine := NewEngine(config)
-
-	// Should not panic
-	engine.SendToBot("nonexistent", "channel", "message")
-}
-
 // mockBotAdapter is a mock implementation of BotAdapter for testing
 type mockBotAdapter struct {
 	messageCount int

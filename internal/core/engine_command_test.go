@@ -129,3 +129,148 @@ func TestIsSpecialCommand_PerformanceFastPath(t *testing.T) {
 		t.Errorf("Expected args=nil for large input, got %v", args)
 	}
 }
+
+// TestIsSpecialCommand_WithArgs tests commands that accept arguments
+func TestIsSpecialCommand_WithArgs(t *testing.T) {
+	tests := []struct {
+		name          string
+		input         string
+		expectedCmd   string
+		expectedIsCmd bool
+		expectedArgs  []string
+	}{
+		{
+			name:          "sstatus without args",
+			input:         "sstatus",
+			expectedCmd:   "sstatus",
+			expectedIsCmd: true,
+			expectedArgs:  nil,
+		},
+		{
+			name:          "sstatus with session name",
+			input:         "sstatus backend",
+			expectedCmd:   "sstatus",
+			expectedIsCmd: true,
+			expectedArgs:  []string{"backend"},
+		},
+		{
+			name:          "sstatus with multiple words",
+			input:         "sstatus backend api",
+			expectedCmd:   "sstatus",
+			expectedIsCmd: true,
+			expectedArgs:  []string{"backend", "api"},
+		},
+		{
+			name:          "sclose without args",
+			input:         "sclose",
+			expectedCmd:   "sclose",
+			expectedIsCmd: true,
+			expectedArgs:  nil,
+		},
+		{
+			name:          "sclose with session name",
+			input:         "sclose my-session",
+			expectedCmd:   "sclose",
+			expectedIsCmd: true,
+			expectedArgs:  []string{"my-session"},
+		},
+		{
+			name:          "sdel without args",
+			input:         "sdel",
+			expectedCmd:   "sdel",
+			expectedIsCmd: true,
+			expectedArgs:  nil,
+		},
+		{
+			name:          "sdel with session name",
+			input:         "sdel temp-session",
+			expectedCmd:   "sdel",
+			expectedIsCmd: true,
+			expectedArgs:  []string{"temp-session"},
+		},
+		{
+			name:          "suse without args",
+			input:         "suse",
+			expectedCmd:   "suse",
+			expectedIsCmd: true,
+			expectedArgs:  nil,
+		},
+		{
+			name:          "suse with session name",
+			input:         "suse default",
+			expectedCmd:   "suse",
+			expectedIsCmd: true,
+			expectedArgs:  []string{"default"},
+		},
+		{
+			name:          "echo exact match",
+			input:         "echo",
+			expectedCmd:   "echo",
+			expectedIsCmd: true,
+			expectedArgs:  nil,
+		},
+		{
+			name:          "echo with args is not a command",
+			input:         "echo hello world",
+			expectedCmd:   "",
+			expectedIsCmd: false,
+			expectedArgs:  nil,
+		},
+		{
+			name:          "non-command text",
+			input:         "hello this is a normal message",
+			expectedCmd:   "",
+			expectedIsCmd: false,
+			expectedArgs:  nil,
+		},
+		{
+			name:          "empty string",
+			input:         "",
+			expectedCmd:   "",
+			expectedIsCmd: false,
+			expectedArgs:  nil,
+		},
+		{
+			name:          "command-like but not exact",
+			input:         "helpme",
+			expectedCmd:   "",
+			expectedIsCmd: false,
+			expectedArgs:  nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd, isCmd, args := isSpecialCommand(tt.input)
+
+			if isCmd != tt.expectedIsCmd {
+				t.Errorf("isSpecialCommand(%q) isCmd = %v, want %v", tt.input, isCmd, tt.expectedIsCmd)
+			}
+
+			if cmd != tt.expectedCmd {
+				t.Errorf("isSpecialCommand(%q) cmd = %q, want %q", tt.input, cmd, tt.expectedCmd)
+			}
+
+			if tt.expectedArgs == nil {
+				if args != nil {
+					t.Errorf("isSpecialCommand(%q) args = %v, want nil", tt.input, args)
+				}
+			} else {
+				if args == nil {
+					t.Errorf("isSpecialCommand(%q) args = nil, want %v", tt.input, tt.expectedArgs)
+				} else {
+					// Compare args slices
+					if len(args) != len(tt.expectedArgs) {
+						t.Errorf("isSpecialCommand(%q) args length = %d, want %d", tt.input, len(args), len(tt.expectedArgs))
+					} else {
+						for i := range args {
+							if args[i] != tt.expectedArgs[i] {
+								t.Errorf("isSpecialCommand(%q) args[%d] = %q, want %q", tt.input, i, args[i], tt.expectedArgs[i])
+							}
+						}
+					}
+				}
+			}
+		})
+	}
+}

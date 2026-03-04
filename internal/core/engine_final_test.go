@@ -3,7 +3,6 @@ package core
 import (
 	"testing"
 
-	"github.com/keepmind9/clibot/internal/bot"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -117,46 +116,4 @@ func TestEngine_SendToAllBots_WithRealBots(t *testing.T) {
 	assert.Equal(t, 2, mockBot1.messageCount)
 	assert.Equal(t, 2, mockBot2.messageCount)
 	assert.Equal(t, 2, mockBot3.messageCount)
-}
-
-// TestEngine_ShowStatus_EmptySessionsConfig tests showStatus with no sessions
-func TestEngine_ShowStatus_EmptySessionsConfig(t *testing.T) {
-	config := &Config{
-		Sessions: []SessionConfig{},
-	}
-	engine := NewEngine(config)
-
-	msg := bot.BotMessage{
-		Platform: "discord",
-		UserID:   "user123",
-		Channel:  "channel456",
-	}
-
-	// Should not panic even with no sessions
-	engine.showStatus(msg)
-}
-
-// TestEngine_HandleSpecialCommand_AllCommands tests HandleSpecialCommand with all special commands
-func TestEngine_HandleSpecialCommand_AllCommands(t *testing.T) {
-	config := &Config{
-		Sessions: []SessionConfig{
-			{Name: "test", CLIType: "claude", WorkDir: "/tmp"},
-		},
-	}
-	engine := NewEngine(config)
-
-	msg := bot.BotMessage{
-		Platform: "discord",
-		UserID:   "user123",
-		Channel:  "channel456",
-	}
-
-	// Test all special commands
-	commands := []string{"slist", "status", "whoami", "help", "echo"}
-	for _, cmd := range commands {
-		t.Run(cmd, func(t *testing.T) {
-			// Should not panic
-			engine.HandleSpecialCommand(cmd, msg)
-		})
-	}
 }

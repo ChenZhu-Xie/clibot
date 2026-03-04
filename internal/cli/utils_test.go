@@ -66,3 +66,40 @@ func TestExpandHome_WindowsPaths(t *testing.T) {
 	// On Unix systems, this should use forward slashes
 	assert.Contains(t, result, "/")
 }
+
+func TestBuildShellCommand_Unix(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping Unix-specific test")
+	}
+
+	cmd := buildShellCommand("echo hello")
+	assert.NotNil(t, cmd)
+	// Check Args contains the correct command and arguments
+	assert.Contains(t, cmd.Args[0], "sh")
+	assert.Equal(t, []string{cmd.Args[0], "-c", "echo hello"}, cmd.Args)
+}
+
+func TestBuildShellCommand_Windows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Skipping Windows-specific test")
+	}
+
+	cmd := buildShellCommand("echo hello")
+	assert.NotNil(t, cmd)
+	// On Windows, exec.Command may use absolute path for cmd.exe
+	assert.Contains(t, cmd.Args[0], "cmd")
+	assert.Equal(t, []string{cmd.Args[0], "/c", "echo hello"}, cmd.Args)
+}
+
+func TestBuildShellCommand_EmptyCommand(t *testing.T) {
+	cmd := buildShellCommand("")
+	assert.NotNil(t, cmd)
+
+	if runtime.GOOS == "windows" {
+		assert.Contains(t, cmd.Args[0], "cmd")
+		assert.Equal(t, []string{cmd.Args[0], "/c", ""}, cmd.Args)
+	} else {
+		assert.Contains(t, cmd.Args[0], "sh")
+		assert.Equal(t, []string{cmd.Args[0], "-c", ""}, cmd.Args)
+	}
+}
