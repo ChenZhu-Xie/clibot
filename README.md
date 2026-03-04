@@ -455,9 +455,9 @@ slist                              # List all sessions (static and dynamic)
 suse <session>                     # Switch current session
 snew <name> <cli_type> <work_dir> [cmd]  # Create new dynamic session (admin only)
 sdel <name>                        # Delete dynamic session (admin only)
+sclose [name]                      # Close running session (free resources)
 whoami                             # Display your current session info
 status                             # Display all session status
-view [lines]                       # View CLI output (default: 20 lines)
 echo                               # Echo your IM info (Platform, UserID, Channel)
 help                               # Show help information
 ```

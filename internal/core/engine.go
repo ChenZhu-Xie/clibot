@@ -40,6 +40,7 @@ var specialCommands = map[string]struct{}{
 	"snew":   {},
 	"sdel":   {},
 	"suse":   {},
+	"sclose": {},
 }
 
 // isSpecialCommand checks if input is a special command.
@@ -66,13 +67,13 @@ func isSpecialCommand(input string) (string, bool, []string) {
 		return input, true, nil
 	}
 
-	// Handle commands with string arguments (suse, snew, sdel)
+	// Handle commands with string arguments (suse, snew, sdel, sclose)
 	// These commands accept arbitrary string arguments (session names, paths, etc.)
 	fields := strings.Fields(input)
 	if len(fields) > 1 {
 		cmd := fields[0]
 		// Only check known commands that accept string arguments
-		if cmd == "suse" || cmd == "snew" || cmd == "sdel" {
+		if cmd == "suse" || cmd == "snew" || cmd == "sdel" || cmd == "sclose" {
 			if _, exists := specialCommands[cmd]; exists {
 				return cmd, true, fields[1:]
 			}
@@ -474,6 +475,8 @@ func (e *Engine) HandleSpecialCommandWithArgs(command string, args []string, msg
 		e.handleNewSession(args, msg)
 	case "sdel":
 		e.handleDeleteSession(args, msg)
+	case "sclose":
+		e.handleCloseSession(args, msg)
 	default:
 		e.SendToBot(msg.Platform, msg.Channel,
 			fmt.Sprintf("❌ Unknown command: %s\nUse 'help' to see available commands", command))
@@ -622,6 +625,7 @@ func (e *Engine) showHelp(msg bot.BotMessage) {
   help         - Show this help message
   slist        - List all available sessions
   suse <name>  - Switch current session
+  sclose [name] - Close running session (default: current session)
   status       - Show status of all sessions
   whoami       - Show your current session info
   echo         - Echo your IM user info (for whitelist config)
@@ -640,6 +644,8 @@ func (e *Engine) showHelp(msg bot.BotMessage) {
   help              → Show help
   slist             → List all sessions
   suse myproject    → Switch to session 'myproject'
+  sclose            → Close current session
+  sclose backend    → Close session 'backend' (if you're the creator or admin)
   status            → Show status
   tab               → Send Tab key to CLI
   ctrl-c            → Interrupt current process
@@ -651,6 +657,7 @@ func (e *Engine) showHelp(msg bot.BotMessage) {
   - Special keywords are case-insensitive
   - Any other input will be sent to the CLI
   - Use "suse" to switch between sessions
+  - Use "sclose" to free up resources when not using a session
   - Use "help" anytime to see this message`
 
 	e.SendToBot(msg.Platform, msg.Channel, help)
@@ -918,13 +925,13 @@ func (e *Engine) handleDeleteSession(args []string, msg bot.BotMessage) {
 		return
 	}
 
-	// 5. Kill tmux session
-	cmd := exec.Command("tmux", "kill-session", "-t", name)
-	if err := cmd.Run(); err != nil {
+	// 5. Stop the session (close + release resources)
+	if err := e.stopSession(session); err != nil {
 		logger.WithFields(logrus.Fields{
 			"session": name,
 			"error":   err,
-		}).Warn("failed-to-kill-tmux-session")
+		}).Warn("failed-to-stop-session-before-deletion")
+		// Continue with deletion even if stop failed
 	}
 
 	// 6. Remove from sessions map
@@ -959,6 +966,136 @@ func (e *Engine) handleDeleteSession(args []string, msg bot.BotMessage) {
 		response += fmt.Sprintf("\n🔄 %d user(s) switched to default session", cleanedUsers)
 	}
 	e.SendToBot(msg.Platform, msg.Channel, response)
+}
+
+// handleCloseSession handles the sclose command
+// Stops the CLI process for a session without deleting the session configuration
+func (e *Engine) handleCloseSession(args []string, msg bot.BotMessage) {
+	logger.WithFields(logrus.Fields{
+		"platform": msg.Platform,
+		"user_id":  msg.UserID,
+		"args":     args,
+	}).Info("handle-close-session-command")
+
+	e.sessionMu.Lock()
+	defer e.sessionMu.Unlock()
+
+	var sessionName string
+	var session *Session
+
+	// Determine target session
+	if len(args) == 0 {
+		// No argument: close current user's current session
+		userKey := getUserKey(msg.Platform, msg.UserID)
+		var exists bool
+		sessionName, exists = e.userSessions[userKey]
+		if !exists {
+			e.SendToBot(msg.Platform, msg.Channel,
+				"❌ You don't have an active session\nUsage: sclose <name>")
+			return
+		}
+		session, exists = e.sessions[sessionName]
+		if !exists {
+			e.SendToBot(msg.Platform, msg.Channel,
+				fmt.Sprintf("❌ Session '%s' not found", sessionName))
+			return
+		}
+	} else {
+		// With argument: close specified session
+		sessionName = args[0]
+		var exists bool
+		session, exists = e.sessions[sessionName]
+		if !exists {
+			e.SendToBot(msg.Platform, msg.Channel,
+				fmt.Sprintf("❌ Session '%s' not found", sessionName))
+			return
+		}
+
+		// Permission check: admin or session creator
+		isAdmin := e.config.IsAdmin(msg.Platform, msg.UserID)
+		isCreator := session.CreatedBy == getUserKey(msg.Platform, msg.UserID)
+
+		if !isAdmin && !isCreator {
+			e.SendToBot(msg.Platform, msg.Channel,
+				"❌ Permission denied: admin or session creator only")
+			return
+		}
+	}
+
+	// Check if session is alive
+	if session.State != StateProcessing && session.State != StateIdle {
+		e.SendToBot(msg.Platform, msg.Channel,
+			fmt.Sprintf("⚠️  Session '%s' is not running (state: %s)", sessionName, session.State))
+		return
+	}
+
+	// Stop the session using shared stopSession method
+	if err := e.stopSession(session); err != nil {
+		logger.WithFields(logrus.Fields{
+			"session":  sessionName,
+			"error":    err,
+			"platform": msg.Platform,
+			"user_id":  msg.UserID,
+		}).Error("failed-to-stop-session")
+		e.SendToBot(msg.Platform, msg.Channel,
+			fmt.Sprintf("❌ Failed to stop session '%s': %v", sessionName, err))
+		return
+	}
+
+	logger.WithFields(logrus.Fields{
+		"action":   "close_session",
+		"session":  sessionName,
+		"platform": msg.Platform,
+		"user_id":  msg.UserID,
+	}).Info("session-closed-successfully")
+
+	e.SendToBot(msg.Platform, msg.Channel,
+		fmt.Sprintf("✅ Session '%s' closed successfully", sessionName))
+}
+
+// stopSession stops a running session and releases resources
+// This is a helper method used by both sclose and sdel commands
+func (e *Engine) stopSession(session *Session) error {
+	logger.WithFields(logrus.Fields{
+		"session": session.Name,
+		"cliType": session.CLIType,
+	}).Info("stopping-session")
+
+	// Get CLI adapter
+	adapter, exists := e.cliAdapters[session.CLIType]
+	if !exists {
+		return fmt.Errorf("CLI adapter '%s' not found", session.CLIType)
+	}
+
+	// Different cleanup strategies based on CLI type
+	var err error
+	if session.CLIType == "acp" {
+		// ACP adapter: call DeleteSession to cleanup connection and process
+		if acpAdapter, ok := adapter.(*cli.ACPAdapter); ok {
+			err = acpAdapter.DeleteSession(session.Name)
+		} else {
+			err = fmt.Errorf("adapter is not ACPAdapter")
+		}
+	} else {
+		// Tmux-based adapters: kill tmux session
+		cmd := exec.Command("tmux", "kill-session", "-t", session.Name)
+		err = cmd.Run()
+	}
+
+	if err != nil {
+		return err
+	}
+
+	// Update session state
+	session.State = StateIdle
+
+	// Cancel any running watchdog goroutine
+	if session.cancelCtx != nil {
+		session.cancelCtx()
+		session.cancelCtx = nil
+	}
+
+	return nil
 }
 
 // GetActiveSession gets the active session for a channel
