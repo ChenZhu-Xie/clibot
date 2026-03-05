@@ -9,10 +9,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/coder/acp-go-sdk"
@@ -480,26 +478,9 @@ func (a *ACPAdapter) DeleteSession(sessionName string) error {
 	// When deleting a session in stdio mode, we need to kill the process
 	// and close the connection since there's only one process for all sessions
 	if !a.isRemote && a.cmd != nil && a.cmd.Process != nil {
-		logger.WithField("session", sessionName).Info("killing-acp-process")
-
-		var killErr error
-		if runtime.GOOS == "windows" {
-			// Windows: Process.Kill() terminates the process tree
-			killErr = a.cmd.Process.Kill()
-		} else {
-			// Unix/Linux/macOS: Kill entire process group using negative PID
-			// The Setpgid: true in buildShellCommand ensures the process
-			// is the process group leader, so -pid kills the entire group
-			killErr = syscall.Kill(-a.cmd.Process.Pid, syscall.SIGKILL)
+		if err := a.killProcess(sessionName); err != nil {
+			return err
 		}
-
-		if killErr != nil {
-			logger.WithField("error", killErr).Warn("failed-to-kill-acp-process")
-		}
-
-		// Wait for process to exit
-		a.cmd.Wait()
-		a.cmd = nil
 	}
 
 	// Close ACP connection
