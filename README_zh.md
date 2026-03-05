@@ -237,6 +237,8 @@ help                               # 显示帮助
 
 ### 特殊关键词
 
+**⚠️ 仅 Hook 模式：** 这些关键词仅在 Hook 模式下有效。
+
 ```
 tab           # 发送 Tab 键（自动完成）
 esc           # 发送 Escape 键
@@ -244,6 +246,8 @@ s-tab         # 发送 Shift+Tab
 enter         # 发送 Enter 键
 ctrl-c        # 发送 Ctrl+C（中断）
 ```
+
+**注意：** 这些关键词通过 `tmux send-keys` 模拟按键。仅在使用 Hook 模式时有效。ACP 模式使用直接协议通信，不支持这些关键词。
 
 ### 使用示例
 

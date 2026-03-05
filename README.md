@@ -237,6 +237,8 @@ help                               # Show help
 
 ### Special Keywords
 
+**⚠️ Hook Mode Only:** These keywords only work in Hook mode with tmux.
+
 ```
 tab           # Send Tab key (autocomplete)
 esc           # Send Escape key
@@ -244,6 +246,8 @@ s-tab         # Send Shift+Tab
 enter         # Send Enter key
 ctrl-c        # Send Ctrl+C (interrupt)
 ```
+
+**Note:** These keywords simulate key presses via `tmux send-keys`. They only work in Hook mode. ACP mode uses direct protocol communication and does not support these keywords.
 
 ### Example Workflow
 
