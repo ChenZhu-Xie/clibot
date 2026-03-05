@@ -37,11 +37,21 @@ func buildShellCommand(command string) *exec.Cmd {
 	}
 	// Linux/macOS (including WSL2): use sh -c with process group
 	cmd := exec.Command("sh", "-c", command)
+
 	// Set process group ID to allow killing entire process tree
 	// This ensures that when we kill the shell process, all its
 	// child processes (like claude-agent-acp) are also killed.
-	cmd.SysProcAttr = &syscall.SysProcAttr{
+	attrs := &syscall.SysProcAttr{
 		Setpgid: true,
 	}
+
+	// Linux only: Set parent death signal
+	// When clibot dies (crash/kill/normal exit), the kernel sends SIGTERM
+	// to all child processes, preventing orphaned processes
+	if runtime.GOOS == "linux" {
+		attrs.Pdeathsig = syscall.SIGTERM
+	}
+
+	cmd.SysProcAttr = attrs
 	return cmd
 }

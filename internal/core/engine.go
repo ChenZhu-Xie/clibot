@@ -1778,6 +1778,44 @@ func (e *Engine) sendResponseToUser(sessionName string, content string) {
 func (e *Engine) Stop() error {
 	logger.Info("stopping-clibot-engine")
 
+	// Stop all active sessions first to prevent orphaned processes
+	// This handles graceful shutdown; on Linux, Pdeathsig handles crash scenarios
+	e.sessionMu.Lock()
+	sessionNames := make([]string, 0, len(e.sessions))
+	for name := range e.sessions {
+		sessionNames = append(sessionNames, name)
+	}
+	e.sessionMu.Unlock()
+
+	for _, sessionName := range sessionNames {
+		e.sessionMu.RLock()
+		session := e.sessions[sessionName]
+		e.sessionMu.RUnlock()
+
+		if session != nil {
+			logger.WithField("session", sessionName).Info("stopping-session-on-engine-shutdown")
+			if err := e.stopSession(session); err != nil {
+				logger.WithFields(logrus.Fields{
+					"session": sessionName,
+					"error":   err,
+				}).Error("failed-to-stop-session-during-shutdown")
+			}
+		}
+	}
+
+	// Close CLI adapters
+	for cliType, adapter := range e.cliAdapters {
+		if closer, ok := adapter.(interface{ Close() error }); ok {
+			logger.WithField("adapter", cliType).Info("closing-cli-adapter")
+			if err := closer.Close(); err != nil {
+				logger.WithFields(logrus.Fields{
+					"adapter": cliType,
+					"error":   err,
+				}).Error("failed-to-close-cli-adapter")
+			}
+		}
+	}
+
 	// Cancel context to stop event loop
 	if e.cancel != nil {
 		e.cancel()
