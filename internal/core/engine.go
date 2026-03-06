@@ -104,8 +104,9 @@ type Engine struct {
 
 // BotChannel represents a bot channel for sending responses
 type BotChannel struct {
-	Platform string // "discord", "telegram", "feishu", etc.
-	Channel  string // Channel ID (platform-specific)
+	Platform  string // "discord", "telegram", "feishu", etc.
+	Channel   string // Channel ID (platform-specific)
+	MessageID string // Message ID (for typing indicator removal)
 }
 
 // NewEngine creates a new Engine instance
@@ -117,7 +118,7 @@ func NewEngine(config *Config) *Engine {
 		config.Session.MaxDynamicSessions = 50
 	}
 
-	return &Engine{
+	engine := &Engine{
 		config:          config,
 		cliAdapters:     make(map[string]cli.CLIAdapter),
 		activeBots:      make(map[string]bot.BotAdapter),
@@ -129,6 +130,7 @@ func NewEngine(config *Config) *Engine {
 		ctx:             ctx,
 		cancel:          cancel,
 	}
+	return engine
 }
 
 // RegisterCLIAdapter registers a CLI adapter
@@ -496,12 +498,48 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 	// Record the session → channel mapping for routing responses
 	e.sessionMu.Lock()
 	e.sessionChannels[session.Name] = BotChannel{
-		Platform: msg.Platform,
-		Channel:  msg.Channel,
+		Platform:  msg.Platform,
+		Channel:   msg.Channel,
+		MessageID: msg.MessageID, // Save message ID for typing indicator removal
 	}
 	e.sessionMu.Unlock()
 
-	// Step 3: Process key words (tab, esc, stab, enter, ctrlc, etc.)
+	// Step 3.5: Add typing indicator reaction IMMEDIATELY for supported platforms
+	// This should be done ASAP to give user immediate visual feedback
+	if msg.MessageID != "" {
+		e.sessionMu.RLock()
+		botAdapter, exists := e.activeBots[msg.Platform]
+		e.sessionMu.RUnlock()
+
+		if exists && botAdapter.SupportsTypingIndicator() {
+			// Add typing indicator immediately (in goroutine to avoid blocking)
+			// Capture local variables to avoid closure issues
+			messageID := msg.MessageID
+			platform := msg.Platform
+			adapter := botAdapter
+
+			go func() {
+				defer func() {
+					if r := recover(); r != nil {
+						logger.WithFields(logrus.Fields{
+							"platform":   platform,
+							"message_id": messageID,
+							"panic":      r,
+						}).Error("panic-in-add-typing-indicator")
+					}
+				}()
+
+				if adapter.AddTypingIndicator(messageID) {
+					logger.WithFields(logrus.Fields{
+						"platform":   platform,
+						"message_id": messageID,
+					}).Info("typing-indicator-added")
+				}
+			}()
+		}
+	}
+
+	// Step 4: Process key words (tab, esc, stab, enter, ctrlc, etc.)
 	// Converts entire input matching keywords to actual key sequences
 	processedContent := watchdog.ProcessKeyWords(msg.Content)
 	if processedContent != msg.Content {
@@ -514,7 +552,7 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 	// NOTE: Before snapshot capture removed - only hook mode is supported
 	adapter := e.cliAdapters[session.CLIType]
 
-	// Step 4: Send to CLI
+	// Step 5: Send to CLI
 	if err := adapter.SendInput(session.Name, processedContent); err != nil {
 		logger.WithFields(logrus.Fields{
 			"session": session.Name,
@@ -524,7 +562,7 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 		return
 	}
 
-	// Step 5: Update session state to processing
+	// Step 6: Update session state to processing
 	e.updateSessionState(session.Name, StateProcessing)
 
 	// Hook mode: No polling needed, responses will be received via hooks
@@ -1676,6 +1714,31 @@ func (e *Engine) SendToBot(platform, channel, message string) {
 	}
 }
 
+// removeTypingIndicatorAsync removes typing indicator after a delay
+// This is a shared helper to avoid code duplication
+func (e *Engine) removeTypingIndicatorAsync(platform, messageID string) {
+	// Get the bot adapter for this platform
+	e.sessionMu.RLock()
+	botAdapter, exists := e.activeBots[platform]
+	e.sessionMu.RUnlock()
+
+	if !exists || !botAdapter.SupportsTypingIndicator() {
+		return
+	}
+
+	// Remove typing indicator after a short delay in a goroutine
+	go func() {
+		select {
+		case <-e.ctx.Done():
+			// Context cancelled, don't remove typing indicator
+			return
+		case <-time.After(constants.TypingIndicatorRemoveDelay):
+			// Remove typing indicator after response is sent
+			botAdapter.RemoveTypingIndicator(messageID)
+		}
+	}()
+}
+
 // SendResponseToSession sends a message to the bot channel associated with a session
 // This is used by CLI adapters to send responses back to users
 func (e *Engine) SendResponseToSession(sessionName, message string) {
@@ -1704,7 +1767,13 @@ func (e *Engine) SendResponseToSession(sessionName, message string) {
 		"response_length": len(message),
 	}).Info("sending-response-to-user")
 
+	// Send the message
 	e.SendToBot(botChannel.Platform, botChannel.Channel, message)
+
+	// Remove typing indicator after a short delay if supported
+	if botChannel.MessageID != "" {
+		e.removeTypingIndicatorAsync(botChannel.Platform, botChannel.MessageID)
+	}
 }
 
 // SendToAllBots sends a message to all active bots

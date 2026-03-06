@@ -30,14 +30,16 @@ type FeishuBot struct {
 	messageHandler    func(BotMessage)
 	ctx               context.Context
 	cancel            context.CancelFunc
+	typingReactions   map[string]string // messageID -> reactionID
 }
 
 // NewFeishuBot creates a new Feishu bot instance
 func NewFeishuBot(appID, appSecret string) *FeishuBot {
 	return &FeishuBot{
-		appID:      appID,
-		appSecret:  appSecret,
-		larkClient: lark.NewClient(appID, appSecret),
+		appID:           appID,
+		appSecret:       appSecret,
+		larkClient:      lark.NewClient(appID, appSecret),
+		typingReactions: make(map[string]string),
 	}
 }
 
@@ -163,6 +165,7 @@ func (f *FeishuBot) handleMessageReceive(ctx context.Context, event *larkim.P2Me
 			Platform:  "feishu",
 			UserID:    senderID,
 			Channel:   chatID,
+			MessageID: messageID, // Save message ID for reply
 			Content:   content,
 			Timestamp: time.Now(),
 		})
@@ -278,6 +281,135 @@ func (f *FeishuBot) SetVerificationToken(token string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.verificationToken = token
+}
+
+// SupportsTypingIndicator returns true as Feishu supports message reactions
+func (f *FeishuBot) SupportsTypingIndicator() bool {
+	return true
+}
+
+// AddTypingIndicator adds a typing reaction to a message
+func (f *FeishuBot) AddTypingIndicator(messageID string) bool {
+	// Check if already exists (with minimal lock)
+	f.mu.RLock()
+	_, exists := f.typingReactions[messageID]
+	f.mu.RUnlock()
+
+	if exists {
+		return true
+	}
+
+	f.mu.RLock()
+	larkClient := f.larkClient
+	botCtx := f.ctx
+	f.mu.RUnlock()
+
+	if larkClient == nil {
+		logger.WithField("error", "lark client not initialized").Error("failed-to-add-typing-indicator")
+		return false
+	}
+
+	// Use context with timeout for the API call
+	// Use bot's context as parent to ensure cancellation when bot stops
+	ctx, cancel := context.WithTimeout(botCtx, constants.TypingIndicatorTimeout)
+	defer cancel()
+
+	// Create reaction request using lark SDK
+	reactionType := larkim.NewEmojiBuilder().
+		EmojiType("Typing").
+		Build()
+
+	body := larkim.NewCreateMessageReactionReqBodyBuilder().
+		ReactionType(reactionType).
+		Build()
+
+	req := larkim.NewCreateMessageReactionReqBuilder().
+		MessageId(messageID).
+		Body(body).
+		Build()
+
+	resp, err := larkClient.Im.MessageReaction.Create(ctx, req)
+	if err != nil {
+		logger.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("failed-to-add-typing-indicator")
+		return false
+	}
+
+	if !resp.Success() {
+		logger.WithFields(logrus.Fields{
+			"code":       resp.Code,
+			"msg":        resp.Msg,
+			"message_id": messageID,
+		}).Error("feishu-add-typing-api-error")
+		return false
+	}
+
+	if resp.Data == nil || resp.Data.ReactionId == nil {
+		logger.WithFields(logrus.Fields{
+			"message_id": messageID,
+		}).Error("feishu-add-typing-no-reaction-id")
+		return false
+	}
+
+	// Store reaction ID (with write lock)
+	f.mu.Lock()
+	f.typingReactions[messageID] = *resp.Data.ReactionId
+	f.mu.Unlock()
+
+	logger.WithFields(logrus.Fields{
+		"message_id":  messageID,
+		"reaction_id": *resp.Data.ReactionId,
+	}).Info("feishu-typing-indicator-added")
+
+	return true
+}
+
+// RemoveTypingIndicator removes the typing reaction from a message
+func (f *FeishuBot) RemoveTypingIndicator(messageID string) error {
+	f.mu.Lock()
+	reactionID, exists := f.typingReactions[messageID]
+	if !exists {
+		f.mu.Unlock()
+		return nil // No reaction to remove
+	}
+	delete(f.typingReactions, messageID)
+	f.mu.Unlock()
+
+	f.mu.RLock()
+	larkClient := f.larkClient
+	botCtx := f.ctx
+	f.mu.RUnlock()
+
+	if larkClient == nil {
+		return fmt.Errorf("lark client not initialized")
+	}
+
+	// Use context with timeout for the API call
+	// Use bot's context as parent to ensure cancellation when bot stops
+	ctx, cancel := context.WithTimeout(botCtx, constants.TypingIndicatorTimeout)
+	defer cancel()
+
+	req := larkim.NewDeleteMessageReactionReqBuilder().
+		MessageId(messageID).
+		ReactionId(reactionID).
+		Build()
+
+	resp, err := larkClient.Im.MessageReaction.Delete(ctx, req)
+	if err != nil {
+		return fmt.Errorf("failed to delete typing indicator: %w", err)
+	}
+
+	if !resp.Success() {
+		return fmt.Errorf("failed to delete typing indicator: code=%d, msg=%s", resp.Code, resp.Msg)
+	}
+
+	logger.WithFields(logrus.Fields{
+		"message_id":  messageID,
+		"reaction_id": reactionID,
+	}).Info("feishu-typing-indicator-removed")
+
+	return nil
 }
 
 // TextContent represents the JSON structure of Feishu text message content

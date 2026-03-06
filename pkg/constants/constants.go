@@ -24,6 +24,10 @@ const (
 	HookNotificationDelay = 300 * time.Millisecond
 	// HookHTTPTimeout is the timeout for hook HTTP requests
 	HookHTTPTimeout = 5 * time.Second
+	// TypingIndicatorTimeout is the timeout for typing indicator HTTP requests
+	TypingIndicatorTimeout = 5 * time.Second
+	// TypingIndicatorRemoveDelay is the delay before removing typing indicator after sending response
+	TypingIndicatorRemoveDelay = 500 * time.Millisecond
 )
 
 // Message buffer sizes
@@ -42,12 +46,8 @@ const (
 	SecretMaskSuffixLength = 4
 )
 
-// Logging defaults
+// HTTP status codes
 const (
-	// DefaultLogMaxSize is the default maximum log file size in MB
-	DefaultLogMaxSize = 100
-	// DefaultLogMaxAge is the default maximum number of days to retain old logs
-	DefaultLogMaxAge = 30
 	// HTTPSuccessStatusCode is the standard HTTP success status code
 	HTTPSuccessStatusCode = 200
 )

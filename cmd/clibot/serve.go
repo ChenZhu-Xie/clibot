@@ -98,12 +98,12 @@ var (
 				}
 			}
 
-			// Wait for signal or engine error
+			// Wait for engine to actually stop (with timeout via second Ctrl+C)
 			select {
 			case sig := <-sigChan:
-				log.Printf("\nReceived signal: %v, shutting down gracefully...", sig)
+				log.Printf("\nReceived second signal: %v, forcing shutdown...", sig)
 				if err := engine.Stop(); err != nil {
-					log.Printf("Error during shutdown: %v", err)
+					log.Printf("Error during forced shutdown: %v", err)
 				}
 			case err := <-engineErrChan:
 				if err != nil {
@@ -111,7 +111,7 @@ var (
 				}
 			}
 
-			log.Println("Clbot stopped")
+			log.Println("Clibot stopped")
 		},
 	}
 )

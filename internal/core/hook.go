@@ -179,7 +179,14 @@ func (e *Engine) handleHookRequest(w http.ResponseWriter, r *http.Request) {
 		"channel":  botChannel.Channel,
 		"session":  session.Name,
 	}).Info("sending-hook-response-to-bot")
+
+	// Send the message
 	e.SendToBot(botChannel.Platform, botChannel.Channel, response)
+
+	// Remove typing indicator after a short delay if supported
+	if botChannel.MessageID != "" {
+		e.removeTypingIndicatorAsync(botChannel.Platform, botChannel.MessageID)
+	}
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Hook received")

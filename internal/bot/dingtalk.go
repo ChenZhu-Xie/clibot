@@ -15,6 +15,7 @@ import (
 
 // DingTalkBot implements BotAdapter interface for DingTalk using WebSocket long connection
 type DingTalkBot struct {
+	DefaultTypingIndicator
 	mu             sync.RWMutex
 	clientID       string
 	clientSecret   string

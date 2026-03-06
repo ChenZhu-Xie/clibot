@@ -14,6 +14,7 @@ import (
 
 // TelegramBot implements BotAdapter interface for Telegram using long polling
 type TelegramBot struct {
+	DefaultTypingIndicator
 	mu             sync.RWMutex
 	token          string
 	bot            *tgbotapi.BotAPI

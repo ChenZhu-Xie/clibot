@@ -27,6 +27,7 @@ type DiscordSessionInterface interface {
 
 // DiscordBot implements BotAdapter interface for Discord
 type DiscordBot struct {
+	DefaultTypingIndicator
 	mu             sync.RWMutex
 	token          string
 	channelID      string

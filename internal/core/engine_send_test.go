@@ -55,6 +55,7 @@ func TestEngine_SendToAllBots_WithRegisteredBots(t *testing.T) {
 
 // mockBotAdapter is a mock implementation of BotAdapter for testing
 type mockBotAdapter struct {
+	bot.DefaultTypingIndicator
 	messageCount int
 	lastMessage  string
 	lastChannel  string

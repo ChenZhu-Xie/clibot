@@ -41,6 +41,25 @@ package bot
 
 import "time"
 
+// DefaultTypingIndicator provides default empty implementations for typing indicator methods
+// This can be embedded in bot adapters that don't support typing indicators
+type DefaultTypingIndicator struct{}
+
+// SupportsTypingIndicator returns false (not supported by default)
+func (d *DefaultTypingIndicator) SupportsTypingIndicator() bool {
+	return false
+}
+
+// AddTypingIndicator does nothing (not supported by default)
+func (d *DefaultTypingIndicator) AddTypingIndicator(messageID string) bool {
+	return false
+}
+
+// RemoveTypingIndicator does nothing (not supported by default)
+func (d *DefaultTypingIndicator) RemoveTypingIndicator(messageID string) error {
+	return nil
+}
+
 // BotAdapter defines the interface for bot adapters
 type BotAdapter interface {
 	// Start starts the bot, establishes connection and begins listening for messages
@@ -53,6 +72,17 @@ type BotAdapter interface {
 	//   - Platform-specific formatting
 	SendMessage(channel, message string) error
 
+	// SupportsTypingIndicator returns true if the platform supports typing indicators
+	SupportsTypingIndicator() bool
+
+	// AddTypingIndicator adds a typing indicator to a message (if supported)
+	// messageID is the ID of the user's message to react to
+	// Returns true if successfully added
+	AddTypingIndicator(messageID string) bool
+
+	// RemoveTypingIndicator removes the typing indicator from a message
+	RemoveTypingIndicator(messageID string) error
+
 	// Stop stops the bot and cleans up resources
 	Stop() error
 }
@@ -62,6 +92,7 @@ type BotMessage struct {
 	Platform  string // feishu/discord/telegram
 	UserID    string // Unique user identifier (for permission control)
 	Channel   string // Channel/session ID
+	MessageID string // Message ID (for typing indicator)
 	Content   string // Message content
 	Timestamp time.Time
 }
