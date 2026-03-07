@@ -167,3 +167,27 @@ export ALL_PROXY="socks5://127.0.0.1:1080"
 
 clibot serve --config config.yaml
 ```
+
+## 平台支持
+
+| 平台 | 配置文件代理 | 环境变量 | 备注 |
+|------|------------|---------|------|
+| Telegram | ✅ 完全支持 | ✅ 支持 | 支持自定义 HTTP Client |
+| Discord | ✅ 完全支持 | ✅ 支持 | 支持自定义 HTTP Client |
+| 飞书 | ⚠️ 有限支持 | ✅ 推荐 | SDK 不支持自定义 Client，建议使用环境变量 |
+| 钉钉 | ⚠️ 有限支持 | ✅ 推荐 | SDK 不支持自定义 Client，建议使用环境变量 |
+
+**飞书和钉钉：**
+
+由于它们的 SDK 不支持传入自定义 HTTP Client，配置文件的代理配置效果有限。为了可靠地使用代理，**建议使用环境变量**：
+
+```bash
+export HTTP_PROXY="http://127.0.0.1:7890"
+export HTTPS_PROXY="http://127.0.0.1:7890"
+clibot serve --config config.yaml
+```
+
+或者一行命令：
+```bash
+HTTP_PROXY="http://127.0.0.1:7890" HTTPS_PROXY="http://127.0.0.1:7890" clibot serve
+```

@@ -167,3 +167,27 @@ export ALL_PROXY="socks5://127.0.0.1:1080"
 
 clibot serve --config config.yaml
 ```
+
+## Platform Support
+
+| Platform | Config File Proxy | Environment Variable | Notes |
+|----------|------------------|---------------------|-------|
+| Telegram | ✅ Full Support | ✅ Supported | Supports custom HTTP client |
+| Discord | ✅ Full Support | ✅ Supported | Supports custom HTTP client |
+| Feishu | ⚠️ Limited | ✅ Recommended | SDK doesn't support custom client, use env vars |
+| DingTalk | ⚠️ Limited | ✅ Recommended | SDK doesn't support custom client, use env vars |
+
+**For Feishu and DingTalk:**
+
+Since their SDKs don't accept custom HTTP clients, proxy configuration via config file has limited effect. For reliable proxy support with Feishu/DingTalk, **use environment variables**:
+
+```bash
+export HTTP_PROXY="http://127.0.0.1:7890"
+export HTTPS_PROXY="http://127.0.0.1:7890"
+clibot serve --config config.yaml
+```
+
+Or in one command:
+```bash
+HTTP_PROXY="http://127.0.0.1:7890" HTTPS_PROXY="http://127.0.0.1:7890" clibot serve
+```
