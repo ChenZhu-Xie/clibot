@@ -37,6 +37,38 @@ hook_server:
   port: 8080
 
 # ==============================================================================
+# Network Proxy Configuration (OPTIONAL)
+# ==============================================================================
+# Configure proxy for accessing IM platforms in restricted networks
+#
+# Priority:
+#   1. Bot-level proxy (highest) - bots.<name>.proxy
+#   2. Global proxy - this section
+#   3. Environment variables - HTTP_PROXY, HTTPS_PROXY, ALL_PROXY (default)
+#
+# Supported proxy types:
+#   - http: HTTP/HTTPS proxy (e.g., http://127.0.0.1:7890)
+#   - socks5: SOCKS5 proxy (e.g., socks5://127.0.0.1:1080)
+#
+# Authentication (optional):
+#   username: "your_username"
+#   password: "your_password"
+# ==============================================================================
+proxy:
+  enabled: false  # Set to true to enable global proxy
+  type: "http"    # Proxy type: http, https, socks5
+  url: "http://127.0.0.1:7890"  # Proxy server URL
+  # username: ""  # Optional: proxy authentication username
+  # password: ""  # Optional: proxy authentication password
+
+  # Example SOCKS5 with authentication:
+  # enabled: true
+  # type: "socks5"
+  # url: "socks5://proxy.example.com:1080"
+  # username: "user"
+  # password: "pass"
+
+# ==============================================================================
 # Security Configuration (IMPORTANT)
 # ==============================================================================
 # clibot is essentially a Remote Code Execution (RCE) tool.
@@ -186,6 +218,13 @@ bots:
     # See docs above on how to use ENV variables in config
     token: "MTIzNDU2Nzg5MDEyMzQ1Njc4OQ.GhIjKl..."  # Replace with your bot token
     channel_id: "123456789012345678"              # Replace with your channel ID
+    # Optional: Bot-level proxy (overrides global proxy)
+    # proxy:
+    #   enabled: true  # Set to true to use this proxy instead of global
+    #   type: "http"
+    #   url: "http://127.0.0.1:7890"
+    #   # username: ""  # Optional
+    #   # password: ""  # Optional
 
   feishu:
     enabled: false
@@ -200,6 +239,13 @@ bots:
     # TIP: Use environment variables for better security
     # See docs above on how to use ENV variables in config
     token: "123456789:ABCdefGHIjklMNOpqrsTUVwxyz"  # Replace with your bot token
+    # Optional: Bot-level proxy (overrides global proxy)
+    # proxy:
+    #   enabled: true  # Set to true to use this proxy instead of global
+    #   type: "socks5"
+    #   url: "socks5://127.0.0.1:1080"
+    #   # username: ""  # Optional
+    #   # password: ""  # Optional
 
   # DingTalk Bot
   dingtalk:
