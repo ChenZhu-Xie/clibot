@@ -131,7 +131,6 @@ type LoggingConfig struct {
 // ProxyConfig represents network proxy configuration
 type ProxyConfig struct {
 	Enabled  bool   `yaml:"enabled"`  // Whether proxy is enabled
-	Type     string `yaml:"type"`     // Proxy type: http, https, socks5
 	URL      string `yaml:"url"`      // Proxy URL (e.g., http://127.0.0.1:7890, socks5://127.0.0.1:1080)
 	Username string `yaml:"username"` // Optional username for authentication
 	Password string `yaml:"password"` // Optional password for authentication

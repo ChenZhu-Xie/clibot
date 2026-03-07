@@ -52,7 +52,6 @@ clibot serve
 # 或在 config.yaml 中配置
 proxy:
   enabled: true
-  type: "http"
   url: "http://127.0.0.1:7890"
 ```
 
@@ -155,7 +154,6 @@ clibot serve --config ~/.config/clibot/config.yaml
 ```yaml
 sessions:
   - name: "my-project"
-    cli_type: "acp"
     work_dir: "/path/to/project"
     start_cmd: "claude-agent-acp"
     transport: "stdio://"
@@ -189,7 +187,6 @@ opencode --acp
 ```yaml
 sessions:
   - name: "my-project"
-    cli_type: "claude"
     work_dir: "/path/to/project"
     start_cmd: "claude"
 ```

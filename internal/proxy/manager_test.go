@@ -22,7 +22,6 @@ func TestProxyManager_NoProxy_ReturnsClientWithEnvProxy(t *testing.T) {
 func TestProxyManager_GlobalProxy_ReturnsClientWithProxy(t *testing.T) {
 	config := &mockConfigProvider{
 		globalEnabled: true,
-		globalType:    "http",
 		globalURL:     "http://127.0.0.1:8080",
 	}
 
@@ -36,10 +35,8 @@ func TestProxyManager_GlobalProxy_ReturnsClientWithProxy(t *testing.T) {
 func TestProxyManager_BotLevelProxyOverridesGlobal(t *testing.T) {
 	config := &mockConfigProvider{
 		globalEnabled: true,
-		globalType:    "http",
 		globalURL:     "http://127.0.0.1:8080",
 		botEnabled:    true,
-		botType:       "socks5",
 		botURL:        "socks5://127.0.0.1:1080",
 	}
 
@@ -52,7 +49,6 @@ func TestProxyManager_BotLevelProxyOverridesGlobal(t *testing.T) {
 func TestProxyManager_ClientCaching(t *testing.T) {
 	config := &mockConfigProvider{
 		globalEnabled: true,
-		globalType:    "http",
 		globalURL:     "http://127.0.0.1:8080",
 	}
 
@@ -72,7 +68,6 @@ func TestProxyManager_ClientCaching(t *testing.T) {
 func TestProxyManager_ClearCache(t *testing.T) {
 	config := &mockConfigProvider{
 		globalEnabled: true,
-		globalType:    "http",
 		globalURL:     "http://127.0.0.1:8080",
 	}
 
@@ -96,7 +91,6 @@ func TestProxyManager_ClearCache(t *testing.T) {
 func TestProxyManager_InvalidProxyURL(t *testing.T) {
 	config := &mockConfigProvider{
 		globalEnabled: true,
-		globalType:    "http",
 		globalURL:     "://invalid-url",
 	}
 
@@ -110,7 +104,6 @@ func TestProxyManager_InvalidProxyURL(t *testing.T) {
 func TestProxyManager_UnsupportedProxyType(t *testing.T) {
 	config := &mockConfigProvider{
 		globalEnabled: true,
-		globalType:    "ftp",
 		globalURL:     "ftp://127.0.0.1:2121",
 	}
 
@@ -118,13 +111,12 @@ func TestProxyManager_UnsupportedProxyType(t *testing.T) {
 	_, err := pm.GetHTTPClient("telegram")
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unsupported proxy type")
+	assert.Contains(t, err.Error(), "unsupported proxy scheme")
 }
 
 func TestProxyManager_ProxyWithAuth(t *testing.T) {
 	config := &mockConfigProvider{
 		globalEnabled: true,
-		globalType:    "http",
 		globalURL:     "http://127.0.0.1:8080",
 		globalUser:    "user",
 		globalPass:    "pass",
@@ -141,7 +133,6 @@ func TestProxyManager_ProxyWithAuth(t *testing.T) {
 func TestProxyManager_Socks5Proxy(t *testing.T) {
 	config := &mockConfigProvider{
 		globalEnabled: true,
-		globalType:    "socks5",
 		globalURL:     "socks5://127.0.0.1:1080",
 	}
 
@@ -156,7 +147,6 @@ func TestProxyManager_Socks5Proxy(t *testing.T) {
 func TestProxyManager_Socks5WithAuth(t *testing.T) {
 	config := &mockConfigProvider{
 		globalEnabled: true,
-		globalType:    "socks5",
 		globalURL:     "socks5://127.0.0.1:1080",
 		globalUser:    "user",
 		globalPass:    "pass",

@@ -177,14 +177,12 @@ func TestLoggingConfig_Struct(t *testing.T) {
 func TestProxyConfig_FullConfig(t *testing.T) {
 	config := ProxyConfig{
 		Enabled:  true,
-		Type:     "socks5",
 		URL:      "socks5://127.0.0.1:1080",
 		Username: "user",
 		Password: "pass",
 	}
 
 	assert.True(t, config.Enabled)
-	assert.Equal(t, "socks5", config.Type)
 	assert.Equal(t, "socks5://127.0.0.1:1080", config.URL)
 	assert.Equal(t, "user", config.Username)
 	assert.Equal(t, "pass", config.Password)
@@ -194,7 +192,6 @@ func TestProxyConfig_FullConfig(t *testing.T) {
 func TestProxyConfig_OptionalAuth(t *testing.T) {
 	config := ProxyConfig{
 		Enabled:  true,
-		Type:     "http",
 		URL:      "http://127.0.0.1:7890",
 		Username: "",
 		Password: "",

@@ -13,7 +13,6 @@ import (
 // ProxyConfig represents a proxy configuration
 type ProxyConfig struct {
 	Enabled  bool
-	Type     string
 	URL      string
 	Username string
 	Password string
@@ -93,7 +92,6 @@ func (pm *ProxyManager) resolveProxyConfig(botType string) (*ProxyConfig, error)
 	if pm.configProvider.GetBotProxyEnabled(botType) {
 		return &ProxyConfig{
 			Enabled:  true,
-			Type:     pm.configProvider.GetBotProxyType(botType),
 			URL:      pm.configProvider.GetBotProxyURL(botType),
 			Username: pm.configProvider.GetBotProxyUsername(botType),
 			Password: pm.configProvider.GetBotProxyPassword(botType),
@@ -104,7 +102,6 @@ func (pm *ProxyManager) resolveProxyConfig(botType string) (*ProxyConfig, error)
 	if pm.configProvider.GetGlobalProxyEnabled() {
 		return &ProxyConfig{
 			Enabled:  true,
-			Type:     pm.configProvider.GetGlobalProxyType(),
 			URL:      pm.configProvider.GetGlobalProxyURL(),
 			Username: pm.configProvider.GetGlobalProxyUsername(),
 			Password: pm.configProvider.GetGlobalProxyPassword(),
@@ -153,7 +150,8 @@ func (pm *ProxyManager) createClient(proxyConfig *ProxyConfig) (*http.Client, er
 func (pm *ProxyManager) createTransport(cfg *ProxyConfig, proxyURL *url.URL) (*http.Transport, error) {
 	var transport *http.Transport
 
-	switch cfg.Type {
+	// Auto-detect proxy type from URL scheme
+	switch proxyURL.Scheme {
 	case "http", "https":
 		// HTTP/HTTPS proxy uses standard HTTP CONNECT method
 		// This works for both HTTP and HTTPS requests
@@ -188,7 +186,7 @@ func (pm *ProxyManager) createTransport(cfg *ProxyConfig, proxyURL *url.URL) (*h
 		}
 
 	default:
-		return nil, fmt.Errorf("unsupported proxy type: %s", cfg.Type)
+		return nil, fmt.Errorf("unsupported proxy scheme: %s (supported: http, https, socks5)", proxyURL.Scheme)
 	}
 
 	return transport, nil

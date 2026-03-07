@@ -56,14 +56,12 @@ hook_server:
 # ==============================================================================
 proxy:
   enabled: false  # Set to true to enable global proxy
-  type: "http"    # Proxy type: http, https, socks5
   url: "http://127.0.0.1:7890"  # Proxy server URL
   # username: ""  # Optional: proxy authentication username
   # password: ""  # Optional: proxy authentication password
 
   # Example SOCKS5 with authentication:
   # enabled: true
-  # type: "socks5"
   # url: "socks5://proxy.example.com:1080"
   # username: "user"
   # password: "pass"
@@ -221,7 +219,6 @@ bots:
     # Optional: Bot-level proxy (overrides global proxy)
     # proxy:
     #   enabled: true  # Set to true to use this proxy instead of global
-    #   type: "http"
     #   url: "http://127.0.0.1:7890"
     #   # username: ""  # Optional
     #   # password: ""  # Optional
@@ -242,7 +239,6 @@ bots:
     # Optional: Bot-level proxy (overrides global proxy)
     # proxy:
     #   enabled: true  # Set to true to use this proxy instead of global
-    #   type: "socks5"
     #   url: "socks5://127.0.0.1:1080"
     #   # username: ""  # Optional
     #   # password: ""  # Optional

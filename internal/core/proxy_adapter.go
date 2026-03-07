@@ -16,10 +16,6 @@ func (a *CoreConfigAdapter) GetGlobalProxyEnabled() bool {
 	return a.config.Proxy.Enabled
 }
 
-func (a *CoreConfigAdapter) GetGlobalProxyType() string {
-	return a.config.Proxy.Type
-}
-
 func (a *CoreConfigAdapter) GetGlobalProxyURL() string {
 	return a.config.Proxy.URL
 }
@@ -37,13 +33,6 @@ func (a *CoreConfigAdapter) GetBotProxyEnabled(botType string) bool {
 		return botConfig.Proxy.Enabled
 	}
 	return false
-}
-
-func (a *CoreConfigAdapter) GetBotProxyType(botType string) string {
-	if botConfig, exists := a.config.Bots[botType]; exists && botConfig.Proxy != nil {
-		return botConfig.Proxy.Type
-	}
-	return ""
 }
 
 func (a *CoreConfigAdapter) GetBotProxyURL(botType string) string {

@@ -7,7 +7,6 @@ import (
 func BenchmarkProxyManager_GetHTTPClient_Cached(b *testing.B) {
 	config := &mockConfigProvider{
 		globalEnabled: true,
-		globalType:    "http",
 		globalURL:     "http://127.0.0.1:8080",
 	}
 	pm := NewProxyManager(config)
@@ -24,7 +23,6 @@ func BenchmarkProxyManager_GetHTTPClient_Cached(b *testing.B) {
 func BenchmarkProxyManager_GetHTTPClient_Uncached(b *testing.B) {
 	config := &mockConfigProvider{
 		globalEnabled: true,
-		globalType:    "http",
 		globalURL:     "http://127.0.0.1:8080",
 	}
 

@@ -19,7 +19,6 @@ clibot serve
 ```yaml
 proxy:
   enabled: true
-  type: "http"
   url: "http://127.0.0.1:7890"
 ```
 
@@ -38,7 +37,6 @@ clibot 使用三层回退系统：
 ```yaml
 proxy:
   enabled: true
-  type: "http"
   url: "http://127.0.0.1:7890"
 ```
 
@@ -47,7 +45,6 @@ proxy:
 ```yaml
 proxy:
   enabled: true
-  type: "socks5"
   url: "socks5://127.0.0.1:1080"
 ```
 
@@ -58,7 +55,6 @@ proxy:
 ```yaml
 proxy:
   enabled: true
-  type: "http"
   url: "http://proxy.example.com:8080"
   username: "your_username"
   password: "your_password"
@@ -69,7 +65,6 @@ proxy:
 ```yaml
 proxy:
   enabled: true
-  type: "socks5"
   url: "socks5://proxy.example.com:1080"
   username: "your_username"
   password: "your_password"
@@ -82,7 +77,6 @@ proxy:
 ```yaml
 proxy:
   enabled: true
-  type: "http"
   url: "http://127.0.0.1:8080"
 
 bots:
@@ -151,7 +145,6 @@ bots:
 ```yaml
 proxy:
   enabled: true
-  type: "http"
   url: "http://127.0.0.1:7890"  # Clash 默认 HTTP 端口
 ```
 
@@ -160,7 +153,6 @@ proxy:
 ```yaml
 proxy:
   enabled: true
-  type: "socks5"
   url: "socks5://127.0.0.1:1080"  # V2Ray 默认 SOCKS5 端口
 ```
 
