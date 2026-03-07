@@ -215,7 +215,9 @@ func registerBotAdapters(engine *core.Engine, config *core.Config) error {
 
 		switch botType {
 		case "discord":
-			botAdapter = bot.NewDiscordBot(botConfig.Token, botConfig.ChannelID)
+			discordBot := bot.NewDiscordBot(botConfig.Token, botConfig.ChannelID)
+			discordBot.SetProxyManager(engine.GetProxyManager())
+			botAdapter = discordBot
 			log.Printf("Registered %s bot adapter", botType)
 
 		case "feishu":
@@ -226,15 +228,20 @@ func registerBotAdapters(engine *core.Engine, config *core.Config) error {
 			if botConfig.VerificationToken != "" {
 				feishuBot.SetVerificationToken(botConfig.VerificationToken)
 			}
+			feishuBot.SetProxyManager(engine.GetProxyManager())
 			botAdapter = feishuBot
 			log.Printf("Registered %s bot adapter (WebSocket long connection)", botType)
 
 		case "dingtalk":
-			botAdapter = bot.NewDingTalkBot(botConfig.AppID, botConfig.AppSecret)
+			dingtalkBot := bot.NewDingTalkBot(botConfig.AppID, botConfig.AppSecret)
+			dingtalkBot.SetProxyManager(engine.GetProxyManager())
+			botAdapter = dingtalkBot
 			log.Printf("Registered %s bot adapter (WebSocket long connection)", botType)
 
 		case "telegram":
-			botAdapter = bot.NewTelegramBot(botConfig.Token)
+			telegramBot := bot.NewTelegramBot(botConfig.Token)
+			telegramBot.SetProxyManager(engine.GetProxyManager())
+			botAdapter = telegramBot
 			log.Printf("Registered %s bot adapter (long polling)", botType)
 
 		default:

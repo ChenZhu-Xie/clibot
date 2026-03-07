@@ -146,6 +146,11 @@ func (e *Engine) RegisterBotAdapter(botType string, adapter bot.BotAdapter) {
 	e.activeBots[botType] = adapter
 }
 
+// GetProxyManager returns the proxy manager
+func (e *Engine) GetProxyManager() *proxy.ProxyManager {
+	return e.proxyMgr
+}
+
 // initializeSessions initializes all configured sessions
 func (e *Engine) initializeSessions() error {
 	e.sessionMu.Lock()
