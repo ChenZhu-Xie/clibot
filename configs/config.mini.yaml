@@ -31,6 +31,12 @@ bots:
     enabled: true
     token: "YOUR_BOT_TOKEN"         # Replace with your Telegram bot token
 
+  # QQ Bot Configuration (optional)
+  # qq:
+  #   enabled: false                 # Set to true to enable QQ bot
+  #   app_id: "YOUR_QQ_APP_ID"      # Get from QQ Open Platform: https://bots.qq.com
+  #   app_secret: "YOUR_QQ_APP_SECRET"  # Get from QQ Open Platform
+
 # ==============================================================================
 # Session Configuration
 # ==============================================================================

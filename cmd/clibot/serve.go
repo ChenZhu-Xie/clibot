@@ -244,6 +244,12 @@ func registerBotAdapters(engine *core.Engine, config *core.Config) error {
 			botAdapter = telegramBot
 			log.Printf("Registered %s bot adapter (long polling)", botType)
 
+		case "qq":
+			qqBot := bot.NewQQBot(botConfig.AppID, botConfig.AppSecret)
+			qqBot.SetProxyManager(engine.GetProxyManager())
+			botAdapter = qqBot
+			log.Printf("Registered %s bot adapter (WebSocket long connection)", botType)
+
 		default:
 			log.Printf("Warning: Bot type '%s' not implemented yet", botType)
 			continue
