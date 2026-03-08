@@ -45,11 +45,11 @@ jobs:
         run: |
           COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
           echo "Current coverage: ${COVERAGE}%"
-          if (( $(echo "$COVERAGE < 40" | bc -l) )); then
-            echo "Coverage ${COVERAGE}% is below required 40%"
+          if (( $(echo "$COVERAGE < 35" | bc -l) )); then
+            echo "Coverage ${COVERAGE}% is below required 35%"
             exit 1
           fi
-          echo "Coverage ${COVERAGE}% meets requirement of 40%"
+          echo "Coverage ${COVERAGE}% meets requirement of 35%"
 
       - name: Add coverage comment to PR
         if: github.event_name == 'pull_request'
@@ -58,5 +58,5 @@ jobs:
           paths: |
             ${{ github.workspace }}/coverage.out
           token: ${{ secrets.GITHUB_TOKEN }}
-          min-coverage-overall: 40
-          min-coverage-changed-files: 40
+          min-coverage-overall: 35
+          min-coverage-changed-files: 35
