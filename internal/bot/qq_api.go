@@ -8,6 +8,25 @@ import (
 	"time"
 )
 
+// QQ Bot API constants
+const (
+	// HTTP request timeouts
+	qqAPIRequestTimeout     = 10 * time.Second // Timeout for token and gateway requests
+	qqMessageSendTimeout    = 15 * time.Second // Timeout for sending messages
+
+	// Token management
+	qqTokenExpirationBuffer = 60 // Buffer in seconds before token expiration
+
+	// Message limits
+	qqMaxMessageLength = 2000 // Maximum message length for QQ (characters)
+
+	// Message types
+	qqMessageTypeText = 0 // Text message type
+
+	// Message splitting
+	qqSplitMinNewlineIndex = 2 // Minimum index for newline split (maxLen / 2)
+)
+
 // QQTokenResponse represents the token response from QQ API
 type QQTokenResponse struct {
 	AccessToken string `json:"access_token"`
@@ -50,7 +69,7 @@ func (q *QQBot) getAccessToken() (string, error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: qqAPIRequestTimeout}
 	if q.proxyMgr != nil {
 		if proxyClient, proxyErr := q.proxyMgr.GetHTTPClient("qq"); proxyErr == nil {
 			client = proxyClient
@@ -72,9 +91,9 @@ func (q *QQBot) getAccessToken() (string, error) {
 		return "", fmt.Errorf("decode token: %w", err)
 	}
 
-	// Cache token with 60s buffer before expiration
+	// Cache token with buffer before expiration
 	q.accessToken = tokenResp.AccessToken
-	q.tokenExpiresAt = time.Now().Add(time.Duration(tokenResp.ExpiresIn-60) * time.Second)
+	q.tokenExpiresAt = time.Now().Add(time.Duration(tokenResp.ExpiresIn-qqTokenExpirationBuffer) * time.Second)
 
 	return q.accessToken, nil
 }
@@ -87,7 +106,7 @@ func (q *QQBot) getGatewayURL(token string) (string, error) {
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("QQBot %s", token))
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: qqAPIRequestTimeout}
 	if q.proxyMgr != nil {
 		if proxyClient, proxyErr := q.proxyMgr.GetHTTPClient("qq"); proxyErr == nil {
 			client = proxyClient
@@ -122,10 +141,9 @@ func (q *QQBot) SendMessage(channel, message string) error {
 		return fmt.Errorf("not authenticated")
 	}
 
-	// Split long messages (QQ limit is typically 2000-4000 chars)
-	const maxLen = 2000
-	if len(message) > maxLen {
-		parts := splitMessage(message, maxLen)
+	// Split long messages
+	if len(message) > qqMaxMessageLength {
+		parts := splitMessage(message, qqMaxMessageLength)
 		for _, part := range parts {
 			if err := q.sendSingleMessage(channel, part, token); err != nil {
 				return err
@@ -143,7 +161,7 @@ func (q *QQBot) sendSingleMessage(channel, message, token string) error {
 
 	reqBody := SendMessageRequest{
 		Content: message,
-		MsgType: 0, // Text message
+		MsgType: qqMessageTypeText,
 		// Note: QQ requires msg_id and msg_seq for passive reply
 		// This is a simplified version - production should track these
 	}
@@ -160,7 +178,7 @@ func (q *QQBot) sendSingleMessage(channel, message, token string) error {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("QQBot %s", token))
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := &http.Client{Timeout: qqMessageSendTimeout}
 	if q.proxyMgr != nil {
 		if proxyClient, proxyErr := q.proxyMgr.GetHTTPClient("qq"); proxyErr == nil {
 			client = proxyClient
@@ -190,7 +208,7 @@ func splitMessage(msg string, maxLen int) []string {
 	for len(msg) > maxLen {
 		// Try to split at newline if possible
 		splitIdx := maxLen
-		if nlIdx := strings.LastIndex(msg[:maxLen], "\n"); nlIdx > maxLen/2 {
+		if nlIdx := strings.LastIndex(msg[:maxLen], "\n"); nlIdx > maxLen/qqSplitMinNewlineIndex {
 			splitIdx = nlIdx + 1
 		}
 		parts = append(parts, msg[:splitIdx])

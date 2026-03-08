@@ -36,6 +36,9 @@ const (
 	QQTokenURL   = "https://bots.qq.com/app/getAppAccessToken"
 	QQAPIBase    = "https://api.sgroup.qq.com"
 	QQGatewayURL = QQAPIBase + "/gateway"
+
+	// QQ Bot constants
+	maxMsgSeqMapSize = 500 // Maximum number of message sequences to track
 )
 
 // WebSocket OP codes (https://bots.qq.com/docs/gateway/gateway-events)
@@ -53,6 +56,12 @@ const (
 // Intents for subscribing to events
 const (
 	IntentPublicMessages = 1 << 25 // Public message events (1 << 25)
+)
+
+// Shard configuration
+const (
+	qqShardID       = 0 // Shard ID (0 = first shard)
+	qqShardTotal    = 1 // Total number of shards (1 = no sharding)
 )
 
 // GatewayPayload represents a WebSocket gateway message
@@ -125,7 +134,7 @@ func (q *QQBot) nextMsgSeq(inboundMsgID string) int {
 	q.msgSeqMap[inboundMsgID] = seq
 
 	// Prevent unbounded growth
-	if len(q.msgSeqMap) > 500 {
+	if len(q.msgSeqMap) > maxMsgSeqMapSize {
 		for key := range q.msgSeqMap {
 			delete(q.msgSeqMap, key)
 			break
@@ -268,7 +277,7 @@ func (q *QQBot) handleGatewayPayload(payload GatewayPayload, token string) {
 			D: IdentifyData{
 				Token:   fmt.Sprintf("QQBot %s", token),
 				Intents: IntentPublicMessages,
-				Shard:   []int{0, 1},
+				Shard:   []int{qqShardID, qqShardTotal},
 			},
 		}
 		if err := q.sendGateway(identify); err != nil {
