@@ -244,6 +244,22 @@ bots:
     token: "YOUR_BOT_TOKEN"
 ```
 
+### QQ
+
+1. Create a QQ bot at [QQ Open Platform](https://bots.qq.com)
+2. Get App ID and App Secret
+3. Configure:
+
+```yaml
+bots:
+  qq:
+    enabled: true
+    app_id: "YOUR_QQ_APP_ID"
+    app_secret: "YOUR_QQ_APP_SECRET"
+```
+
+**Note:** QQ bot uses WebSocket for receiving messages and HTTP API for sending. Supports C2C (private chat) messages.
+
 ## 🎮 Usage
 
 ### Special Commands

@@ -244,6 +244,22 @@ bots:
     token: "YOUR_BOT_TOKEN"
 ```
 
+### QQ 机器人
+
+1. 在 [QQ 开放平台](https://bots.qq.com)创建 QQ 机器人
+2. 获取 App ID 和 App Secret
+3. 配置：
+
+```yaml
+bots:
+  qq:
+    enabled: true
+    app_id: "YOUR_QQ_APP_ID"
+    app_secret: "YOUR_QQ_APP_SECRET"
+```
+
+**注意：** QQ 机器人使用 WebSocket 接收消息，使用 HTTP API 发送消息。支持 C2C（私聊）消息。
+
 ## 🎮 使用方法
 
 ### 特殊命令

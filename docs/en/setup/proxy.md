@@ -177,6 +177,7 @@ clibot serve --config config.yaml
 | Discord | ⚠️ Partial | ✅ **Required** | HTTP API (sending) works with config, **WebSocket (receiving) requires env vars** |
 | Feishu | ⚠️ Limited | ✅ **Recommended** | SDK doesn't support custom client, use env vars |
 | DingTalk | ⚠️ Limited | ✅ **Recommended** | SDK doesn't support custom client, use env vars |
+| QQ Bot | ⚠️ Partial | ✅ **Recommended** | HTTP API (sending) works with config, **WebSocket (receiving) may require env vars** |
 
 ### Platform-Specific Details
 
@@ -215,3 +216,20 @@ Or in one command:
 ```bash
 HTTP_PROXY="http://127.0.0.1:7890" HTTPS_PROXY="http://127.0.0.1:7890" clibot serve
 ```
+
+#### QQ Bot ⚠️ Partial Support
+- **Sending messages (HTTP API)**: Uses config file proxy ✅
+- **Receiving messages (WebSocket)**: **May require environment variables** ⚠️
+
+**Why?** QQ bot uses `gorilla/websocket` for receiving messages (similar to Discord). The HTTP API for sending messages supports config file proxy.
+
+**Recommended setup for QQ Bot**:
+```bash
+# Try config file proxy first (for HTTP API)
+# If WebSocket connection fails, use environment variables
+export HTTP_PROXY="http://127.0.0.1:7890"
+export HTTPS_PROXY="http://127.0.0.1:7890"
+clibot serve --config config.yaml
+```
+
+**Note**: QQ bot support is experimental. If you encounter connection issues, please report them with details about your proxy setup.

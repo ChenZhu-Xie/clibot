@@ -177,6 +177,7 @@ clibot serve --config config.yaml
 | Discord | ⚠️ 部分支持 | ✅ **必须使用** | HTTP API（发送）支持配置，**WebSocket（接收）必须用环境变量** |
 | 飞书 | ⚠️ 有限支持 | ✅ **推荐** | SDK 不支持自定义 Client，建议使用环境变量 |
 | 钉钉 | ⚠️ 有限支持 | ✅ **推荐** | SDK 不支持自定义 Client，建议使用环境变量 |
+| QQ 机器人 | ⚠️ 部分支持 | ✅ **推荐** | HTTP API（发送）支持配置，**WebSocket（接收）可能需要环境变量** |
 
 ### 平台详细说明
 
@@ -215,3 +216,20 @@ clibot serve --config config.yaml
 ```bash
 HTTP_PROXY="http://127.0.0.1:7890" HTTPS_PROXY="http://127.0.0.1:7890" clibot serve
 ```
+
+#### QQ 机器人 ⚠️ 部分支持
+- **发送消息（HTTP API）**：支持配置文件代理 ✅
+- **接收消息（WebSocket）**：**可能需要环境变量** ⚠️
+
+**原因**：QQ 机器人使用 `gorilla/websocket` 接收消息（与 Discord 类似）。HTTP API 发送消息支持配置文件代理。
+
+**QQ 机器人推荐配置**：
+```bash
+# 先尝试配置文件代理（用于 HTTP API）
+# 如果 WebSocket 连接失败，请使用环境变量
+export HTTP_PROXY="http://127.0.0.1:7890"
+export HTTPS_PROXY="http://127.0.0.1:7890"
+clibot serve --config config.yaml
+```
+
+**注意**：QQ 机器人支持处于实验阶段。如果遇到连接问题，请报告并提供代理配置的详细信息。
