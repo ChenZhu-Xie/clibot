@@ -39,7 +39,11 @@
 // from multiple goroutines.
 package bot
 
-import "time"
+import (
+	"time"
+
+	"github.com/keepmind9/clibot/internal/proxy"
+)
 
 // DefaultTypingIndicator provides default empty implementations for typing indicator methods
 // This can be embedded in bot adapters that don't support typing indicators
@@ -84,7 +88,7 @@ type BotAdapter interface {
 	RemoveTypingIndicator(messageID string) error
 
 	// SetProxyManager sets the proxy manager for the bot
-	SetProxyManager(proxyMgr interface{})
+	SetProxyManager(mgr proxy.Manager)
 
 	// Stop stops the bot and cleans up resources
 	Stop() error

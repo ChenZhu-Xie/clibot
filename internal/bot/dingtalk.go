@@ -3,11 +3,11 @@ package bot
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/keepmind9/clibot/internal/logger"
+	"github.com/keepmind9/clibot/internal/proxy"
 	"github.com/keepmind9/clibot/pkg/constants"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/chatbot"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/client"
@@ -24,7 +24,7 @@ type DingTalkBot struct {
 	messageHandler func(BotMessage)
 	ctx            context.Context
 	cancel         context.CancelFunc
-	proxyMgr       interface{}
+	proxyMgr       proxy.Manager
 }
 
 // NewDingTalkBot creates a new DingTalk bot instance
@@ -36,10 +36,10 @@ func NewDingTalkBot(clientID, clientSecret string) *DingTalkBot {
 }
 
 // SetProxyManager sets the proxy manager for the DingTalk bot
-func (d *DingTalkBot) SetProxyManager(proxyMgr interface{}) {
+func (d *DingTalkBot) SetProxyManager(mgr proxy.Manager) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.proxyMgr = proxyMgr
+	d.proxyMgr = mgr
 }
 
 // Start establishes WebSocket long connection to DingTalk and begins listening for messages
@@ -59,18 +59,11 @@ func (d *DingTalkBot) Start(messageHandler func(BotMessage)) error {
 
 	// Create stream client with proxy support
 	if d.proxyMgr != nil {
-		if pm, ok := d.proxyMgr.(interface {
-			GetHTTPClient(string) (*http.Client, error)
-			GetProxyURL(string) string
-		}); ok {
-			proxyURL := pm.GetProxyURL("dingtalk")
-			if proxyURL != "" && proxyURL != "env://HTTP_PROXY" {
-				logger.WithField("proxy", proxyURL).Info("dingtalk-proxy-configured-but-sdk-requires-env-vars")
-			}
-			d.streamClient = client.NewStreamClient(client.WithAppCredential(credential))
-		} else {
-			d.streamClient = client.NewStreamClient(client.WithAppCredential(credential))
+		proxyURL := d.proxyMgr.GetProxyURL("dingtalk")
+		if proxyURL != "" && proxyURL != "env://HTTP_PROXY" {
+			logger.WithField("proxy", proxyURL).Info("dingtalk-proxy-configured-but-sdk-requires-env-vars")
 		}
+		d.streamClient = client.NewStreamClient(client.WithAppCredential(credential))
 	} else {
 		d.streamClient = client.NewStreamClient(client.WithAppCredential(credential))
 	}

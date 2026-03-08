@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/keepmind9/clibot/internal/logger"
+	"github.com/keepmind9/clibot/internal/proxy"
 	"github.com/keepmind9/clibot/pkg/constants"
 	lark "github.com/larksuite/oapi-sdk-go/v3"
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
@@ -32,7 +32,7 @@ type FeishuBot struct {
 	ctx               context.Context
 	cancel            context.CancelFunc
 	typingReactions   map[string]string // messageID -> reactionID
-	proxyMgr          interface{}
+	proxyMgr          proxy.Manager
 }
 
 // NewFeishuBot creates a new Feishu bot instance
@@ -47,10 +47,10 @@ func NewFeishuBot(appID, appSecret string) *FeishuBot {
 }
 
 // SetProxyManager sets the proxy manager for the Feishu bot
-func (f *FeishuBot) SetProxyManager(proxyMgr interface{}) {
+func (f *FeishuBot) SetProxyManager(mgr proxy.Manager) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.proxyMgr = proxyMgr
+	f.proxyMgr = mgr
 }
 
 // Start establishes WebSocket long connection to Feishu and begins listening for messages
@@ -69,19 +69,12 @@ func (f *FeishuBot) Start(messageHandler func(BotMessage)) error {
 
 	// Create lark client with proxy support
 	if f.proxyMgr != nil {
-		if pm, ok := f.proxyMgr.(interface {
-			GetHTTPClient(string) (*http.Client, error)
-			GetProxyURL(string) string
-		}); ok {
-			proxyURL := pm.GetProxyURL("feishu")
-			if proxyURL != "" && proxyURL != "env://HTTP_PROXY" {
-				// Proxy is configured but SDK doesn't support custom client
-				logger.WithField("proxy", proxyURL).Info("feishu-proxy-configured-but-sdk-requires-env-vars")
-			}
-			f.larkClient = lark.NewClient(f.appID, f.appSecret)
-		} else {
-			f.larkClient = lark.NewClient(f.appID, f.appSecret)
+		proxyURL := f.proxyMgr.GetProxyURL("feishu")
+		if proxyURL != "" && proxyURL != "env://HTTP_PROXY" {
+			// Proxy is configured but SDK doesn't support custom client
+			logger.WithField("proxy", proxyURL).Info("feishu-proxy-configured-but-sdk-requires-env-vars")
 		}
+		f.larkClient = lark.NewClient(f.appID, f.appSecret)
 	} else {
 		f.larkClient = lark.NewClient(f.appID, f.appSecret)
 	}
@@ -99,13 +92,9 @@ func (f *FeishuBot) Start(messageHandler func(BotMessage)) error {
 	f.mu.Lock()
 	var opts []ws.ClientOption
 	if f.proxyMgr != nil {
-		if pm, ok := f.proxyMgr.(interface {
-			GetProxyURL(string) string
-		}); ok {
-			proxyURL := pm.GetProxyURL("feishu")
-			if proxyURL != "" && proxyURL != "env://HTTP_PROXY" {
-				logger.WithField("proxy", proxyURL).Info("feishu-websocket-proxy-configured-but-sdk-requires-env-vars")
-			}
+		proxyURL := f.proxyMgr.GetProxyURL("feishu")
+		if proxyURL != "" && proxyURL != "env://HTTP_PROXY" {
+			logger.WithField("proxy", proxyURL).Info("feishu-websocket-proxy-configured-but-sdk-requires-env-vars")
 		}
 		opts = []ws.ClientOption{
 			ws.WithEventHandler(dispatcher),

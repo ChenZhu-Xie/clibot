@@ -3,12 +3,12 @@ package bot
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/keepmind9/clibot/internal/logger"
+	"github.com/keepmind9/clibot/internal/proxy"
 	"github.com/keepmind9/clibot/pkg/constants"
 	"github.com/sirupsen/logrus"
 )
@@ -22,7 +22,7 @@ type TelegramBot struct {
 	messageHandler func(BotMessage)
 	ctx            context.Context
 	cancel         context.CancelFunc
-	proxyMgr       interface{}
+	proxyMgr       proxy.Manager
 }
 
 // NewTelegramBot creates a new Telegram bot instance
@@ -33,10 +33,10 @@ func NewTelegramBot(token string) *TelegramBot {
 }
 
 // SetProxyManager sets the proxy manager for the Telegram bot
-func (t *TelegramBot) SetProxyManager(proxyMgr interface{}) {
+func (t *TelegramBot) SetProxyManager(mgr proxy.Manager) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	t.proxyMgr = proxyMgr
+	t.proxyMgr = mgr
 }
 
 // Start establishes long polling connection to Telegram and begins listening for messages
@@ -54,18 +54,12 @@ func (t *TelegramBot) Start(messageHandler func(BotMessage)) error {
 
 	// Use proxy manager if available
 	if t.proxyMgr != nil {
-		if pm, ok := t.proxyMgr.(interface {
-			GetHTTPClient(string) (*http.Client, error)
-		}); ok {
-			client, clientErr := pm.GetHTTPClient("telegram")
-			if clientErr != nil {
-				logger.WithField("error", clientErr).Error("failed-to-create-proxy-client")
-				return fmt.Errorf("failed to create proxy client: %w", clientErr)
-			}
-			t.bot, err = tgbotapi.NewBotAPIWithClient(t.token, tgbotapi.APIEndpoint, client)
-		} else {
-			t.bot, err = tgbotapi.NewBotAPI(t.token)
+		client, clientErr := t.proxyMgr.GetHTTPClient("telegram")
+		if clientErr != nil {
+			logger.WithField("error", clientErr).Error("failed-to-create-proxy-client")
+			return fmt.Errorf("failed to create proxy client: %w", clientErr)
 		}
+		t.bot, err = tgbotapi.NewBotAPIWithClient(t.token, tgbotapi.APIEndpoint, client)
 	} else {
 		t.bot, err = tgbotapi.NewBotAPI(t.token)
 	}

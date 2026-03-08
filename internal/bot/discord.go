@@ -2,12 +2,12 @@ package bot
 
 import (
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/keepmind9/clibot/internal/logger"
+	"github.com/keepmind9/clibot/internal/proxy"
 	"github.com/keepmind9/clibot/pkg/constants"
 	"github.com/sirupsen/logrus"
 )
@@ -34,7 +34,7 @@ type DiscordBot struct {
 	channelID      string
 	session        DiscordSessionInterface
 	messageHandler func(BotMessage)
-	proxyMgr       interface{}
+	proxyMgr       proxy.Manager
 }
 
 // NewDiscordBot creates a new Discord bot instance
@@ -47,10 +47,10 @@ func NewDiscordBot(token, channelID string) *DiscordBot {
 }
 
 // SetProxyManager sets the proxy manager for the Discord bot
-func (d *DiscordBot) SetProxyManager(proxyMgr interface{}) {
+func (d *DiscordBot) SetProxyManager(mgr proxy.Manager) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.proxyMgr = proxyMgr
+	d.proxyMgr = mgr
 }
 
 // Start establishes connection to Discord and begins listening for messages
@@ -69,23 +69,17 @@ func (d *DiscordBot) Start(messageHandler func(BotMessage)) error {
 
 	// Create Discord session with proxy
 	if d.proxyMgr != nil {
-		if pm, ok := d.proxyMgr.(interface {
-			GetHTTPClient(string) (*http.Client, error)
-		}); ok {
-			httpClient, clientErr := pm.GetHTTPClient("discord")
-			if clientErr != nil {
-				return fmt.Errorf("failed to create proxy client: %w", clientErr)
+		httpClient, clientErr := d.proxyMgr.GetHTTPClient("discord")
+		if clientErr != nil {
+			return fmt.Errorf("failed to create proxy client: %w", clientErr)
+		}
+		d.session, err = discordgo.New("Bot " + d.token)
+		if err == nil && d.session != nil {
+			// Discordgo doesn't support custom HTTP client in New()
+			// We need to set it after creation
+			if sess, ok := d.session.(*discordgo.Session); ok {
+				sess.Client = httpClient
 			}
-			d.session, err = discordgo.New("Bot " + d.token)
-			if err == nil && d.session != nil {
-				// Discordgo doesn't support custom HTTP client in New()
-				// We need to set it after creation
-				if sess, ok := d.session.(*discordgo.Session); ok {
-					sess.Client = httpClient
-				}
-			}
-		} else {
-			d.session, err = discordgo.New("Bot " + d.token)
 		}
 	} else {
 		d.session, err = discordgo.New("Bot " + d.token)

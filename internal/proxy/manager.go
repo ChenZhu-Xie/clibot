@@ -10,6 +10,11 @@ import (
 	"golang.org/x/net/proxy"
 )
 
+const (
+	// DefaultHTTPClientTimeout is the default timeout for HTTP requests
+	DefaultHTTPClientTimeout = 30 * time.Second
+)
+
 // ProxyConfig represents a proxy configuration
 type ProxyConfig struct {
 	Enabled  bool
@@ -120,6 +125,7 @@ func (pm *ProxyManager) createClient(proxyConfig *ProxyConfig) (*http.Client, er
 			Transport: &http.Transport{
 				Proxy: http.ProxyFromEnvironment,
 			},
+			Timeout: DefaultHTTPClientTimeout,
 		}, nil
 	}
 
@@ -142,7 +148,7 @@ func (pm *ProxyManager) createClient(proxyConfig *ProxyConfig) (*http.Client, er
 
 	return &http.Client{
 		Transport: transport,
-		Timeout:   30 * time.Second,
+		Timeout:   DefaultHTTPClientTimeout,
 	}, nil
 }
 
