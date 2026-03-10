@@ -196,7 +196,8 @@ func (t *TelegramBot) SendMessage(chatID, message string) error {
 
 	// Create message
 	msg := tgbotapi.NewMessage(chatIDInt, message)
-	msg.ParseMode = "Markdown" // Support markdown formatting
+	// Disable ParseMode to avoid "can't parse entities" errors
+	msg.ParseMode = "" 
 
 	// Send message
 	_, err := bot.Send(msg)
