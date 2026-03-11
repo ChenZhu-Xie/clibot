@@ -579,7 +579,26 @@ func (a *ACPAdapter) ListSessions(sessionName string) ([]string, error) {
 		id = strings.TrimSuffix(id, ".json")
 		sessionIDs = append(sessionIDs, id)
 	}
-	return sessionIDs, nil
+
+	// Sort by modification time (newest first)
+	sort.Slice(sessionIDs, func(i, j int) bool {
+		infoI, _ := os.Stat(filepath.Join(chatsDir, "session-"+sessionIDs[i]+".json"))
+		infoJ, _ := os.Stat(filepath.Join(chatsDir, "session-"+sessionIDs[j]+".json"))
+		return infoI.ModTime().After(infoJ.ModTime())
+	})
+
+	// Add summaries to IDs
+	var results []string
+	for _, id := range sessionIDs {
+		title := a.getSessionTitle(sess.workDir, id)
+		if title != id && title != "" {
+			results = append(results, fmt.Sprintf("%s: %s", id, title))
+		} else {
+			results = append(results, id)
+		}
+	}
+
+	return results, nil
 }
 
 // SwitchSession switches to a specific CLI-native session/conversation
@@ -590,7 +609,8 @@ func (a *ACPAdapter) SwitchSession(sessionName, cliSessionID string) error {
 	}).Info("switching-acp-gemini-session")
 
 	// Send ACP Prompt with switch command
-	return a.SendInput(sessionName, fmt.Sprintf("/session switch %s", cliSessionID))
+	// Adding \n to ensure it executes immediately
+	return a.SendInput(sessionName, fmt.Sprintf("/session switch %s\n", cliSessionID))
 }
 
 // getSessionTitle attempts to extract a descriptive title for a session

@@ -73,7 +73,7 @@ func (g *GeminiAdapter) ListSessionsWithCWD(cwd string) ([]string, error) {
 		id = strings.TrimSuffix(id, ".json")
 		sessionIDs = append(sessionIDs, id)
 	}
-	
+
 	// Sort by modification time (newest first)
 	sort.Slice(sessionIDs, func(i, j int) bool {
 		infoI, _ := os.Stat(filepath.Join(chatsDir, "session-"+sessionIDs[i]+".json"))
@@ -81,10 +81,63 @@ func (g *GeminiAdapter) ListSessionsWithCWD(cwd string) ([]string, error) {
 		return infoI.ModTime().After(infoJ.ModTime())
 	})
 
-	return sessionIDs, nil
+	// Add summaries to IDs
+	var results []string
+	for _, id := range sessionIDs {
+		summary := g.getSessionSummary(chatsDir, id)
+		if summary != "" {
+			results = append(results, fmt.Sprintf("%s: %s", id, summary))
+		} else {
+			results = append(results, id)
+		}
+	}
+
+	return results, nil
+}
+
+// getSessionSummary extracts the first user message as a summary
+func (g *GeminiAdapter) getSessionSummary(chatsDir, sessionID string) string {
+	sessionPath := filepath.Join(chatsDir, fmt.Sprintf("session-%s.json", sessionID))
+	data, err := os.ReadFile(sessionPath)
+	if err != nil {
+		return ""
+	}
+
+	var sessionData struct {
+		Messages []struct {
+			Type    string `json:"type"`
+			Content string `json:"content"`
+			Role    string `json:"role"` // Gemini CLI might use 'role' instead of 'type'
+		} `json:"messages"`
+	}
+
+	if err := json.Unmarshal(data, &sessionData); err != nil {
+		return ""
+	}
+
+	for _, msg := range sessionData.Messages {
+		content := msg.Content
+		role := msg.Role
+		if role == "" {
+			role = msg.Type
+		}
+
+		if role == "user" && content != "" {
+			// Clean up content: remove newlines and truncate
+			summary := strings.ReplaceAll(content, "\n", " ")
+			summary = strings.TrimSpace(summary)
+			if len(summary) > 40 {
+				return summary[:37] + "..."
+			}
+			return summary
+		}
+	}
+
+	return ""
 }
 
 // SwitchSession switches to a specific Gemini session ID
+
 func (g *GeminiAdapter) SwitchSession(sessionName, cliSessionID string) error {
 	logger.WithFields(logrus.Fields{
 		"session":    sessionName,

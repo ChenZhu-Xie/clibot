@@ -1557,12 +1557,25 @@ func (e *Engine) handleListGeminiSessions(args []string, msg bot.BotMessage) {
 	}
 
 	response := fmt.Sprintf("📂 **Gemini Sessions for project: %s**\n\n", filepath.Base(session.WorkDir))
-	for i, id := range sessionIDs {
+	for i, sessionInfo := range sessionIDs {
 		marker := ""
 		if i == 0 {
 			marker = " (latest)"
 		}
-		response += fmt.Sprintf("  • `%s`%s\n", id, marker)
+
+		// sessionInfo is either "ID" or "ID: Summary"
+		parts := strings.SplitN(sessionInfo, ": ", 2)
+		id := parts[0]
+		summary := ""
+		if len(parts) > 1 {
+			summary = parts[1]
+		}
+
+		if summary != "" {
+			response += fmt.Sprintf("  • `%s`%s\n    └─ %s\n", id, marker, summary)
+		} else {
+			response += fmt.Sprintf("  • `%s`%s\n", id, marker)
+		}
 	}
 	response += "\n💡 Use `sssw <id>` to switch to one of these."
 
