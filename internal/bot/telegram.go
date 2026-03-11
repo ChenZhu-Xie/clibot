@@ -23,13 +23,22 @@ type TelegramBot struct {
 	ctx            context.Context
 	cancel         context.CancelFunc
 	proxyMgr       proxy.Manager
+	parseMode      string // NEW: Markdown, HTML, or empty
 }
 
 // NewTelegramBot creates a new Telegram bot instance
 func NewTelegramBot(token string) *TelegramBot {
 	return &TelegramBot{
-		token: token,
+		token:     token,
+		parseMode: "", // Default to plain text
 	}
+}
+
+// SetParseMode sets the message formatting mode (Markdown, HTML, etc.)
+func (t *TelegramBot) SetParseMode(mode string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.parseMode = mode
 }
 
 // SetProxyManager sets the proxy manager for the Telegram bot
@@ -196,8 +205,13 @@ func (t *TelegramBot) SendMessage(chatID, message string) error {
 
 	// Create message
 	msg := tgbotapi.NewMessage(chatIDInt, message)
-	// Disable ParseMode to avoid "can't parse entities" errors
-	msg.ParseMode = "" 
+	
+	t.mu.RLock()
+	parseMode := t.parseMode
+	t.mu.RUnlock()
+
+	// Set ParseMode from config (Markdown, HTML, or empty)
+	msg.ParseMode = parseMode 
 
 	// Send message
 	_, err := bot.Send(msg)

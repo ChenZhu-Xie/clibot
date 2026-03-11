@@ -142,6 +142,47 @@ func (a *ACPAdapter) IsSessionAlive(sessionName string) bool {
 	return ok && sess.active
 }
 
+// ResetSession resets the ACP session by deleting and recreating it
+func (a *ACPAdapter) ResetSession(sessionName string) error {
+	logger.WithField("session", sessionName).Info("resetting-acp-session")
+
+	a.mu.Lock()
+	if _, ok := a.sessions[sessionName]; !ok {
+		a.mu.Unlock()
+		return fmt.Errorf("session %s not found", sessionName)
+	}
+
+	// Capture session info before deleting
+	// We'll need to know how to recreate it
+	// Since ACPAdapter doesn't store workDir/startCmd per session (it uses a.cmd),
+	// this implementation is limited.
+	// For now, let's just delete and let the engine recreate it.
+	a.mu.Unlock()
+
+	if err := a.DeleteSession(sessionName); err != nil {
+		return err
+	}
+
+	// The engine is expected to call CreateSession again if needed
+	return nil
+}
+
+// SwitchWorkDir changes the working directory for an ACP session
+func (a *ACPAdapter) SwitchWorkDir(sessionName, newWorkDir string) error {
+	logger.WithFields(logrus.Fields{
+		"session":     sessionName,
+		"new_work_dir": newWorkDir,
+	}).Info("switching-acp-work-dir")
+
+	// Delete existing session
+	if err := a.DeleteSession(sessionName); err != nil {
+		logger.WithField("error", err).Warn("failed-to-delete-session-during-switch")
+	}
+
+	// Recreate will be handled by the engine after it updates its own state
+	return nil
+}
+
 // ensureGeminiChatsDir ensures that the Gemini chats directory exists
 // Gemini stores history in: ~/.gemini/tmp/{project_hash}/chats
 func ensureGeminiChatsDir(workDir string) error {
@@ -492,6 +533,19 @@ func (a *ACPAdapter) DeleteSession(sessionName string) error {
 	logger.WithField("session", sessionName).Info("acp-session-deleted")
 
 	return nil
+}
+
+// ListSessions returns a list of available CLI-native sessions/conversations
+// Note: ACP protocol support for listing sessions depends on the server implementation.
+// For now, we return an empty list as it's not universally supported via ACP SDK yet.
+func (a *ACPAdapter) ListSessions(sessionName string) ([]string, error) {
+	return []string{}, nil
+}
+
+// SwitchSession switches to a specific CLI-native session/conversation
+// Note: ACP protocol support for switching sessions depends on the server implementation.
+func (a *ACPAdapter) SwitchSession(sessionName, cliSessionID string) error {
+	return fmt.Errorf("SwitchSession not implemented for ACP adapter")
 }
 
 // Close cleans up ACP adapter resources

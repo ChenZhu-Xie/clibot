@@ -240,9 +240,12 @@ func registerBotAdapters(engine *core.Engine, config *core.Config) error {
 
 		case "telegram":
 			telegramBot := bot.NewTelegramBot(botConfig.Token)
+			if botConfig.ParseMode != "" {
+				telegramBot.SetParseMode(botConfig.ParseMode)
+			}
 			telegramBot.SetProxyManager(engine.GetProxyManager())
 			botAdapter = telegramBot
-			logger.Infof("Registered %s bot adapter (long polling)", botType)
+			logger.Infof("Registered %s bot adapter (long polling, parse_mode: %s)", botType, botConfig.ParseMode)
 
 		case "qq":
 			qqBot := bot.NewQQBot(botConfig.AppID, botConfig.AppSecret)

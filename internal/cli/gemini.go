@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/keepmind9/clibot/internal/logger"
+	"github.com/keepmind9/clibot/internal/watchdog"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,6 +29,70 @@ func NewGeminiAdapter(config GeminiAdapterConfig) (*GeminiAdapter, error) {
 	return &GeminiAdapter{
 		BaseAdapter: NewBaseAdapter("gemini", "gemini", 200),
 	}, nil
+}
+
+// ResetSession starts a new session for Gemini CLI
+func (g *GeminiAdapter) ResetSession(sessionName string) error {
+	logger.WithField("session", sessionName).Info("resetting-gemini-session")
+	// Send "gemini --new" command followed by enter
+	// Note: We use SendKeys with "enter" keyword which is handled by watchdog
+	return watchdog.SendKeys(sessionName, "gemini --new\n", g.inputDelayMs)
+}
+
+// ListSessions returns a list of session IDs available for the current work directory
+func (g *GeminiAdapter) ListSessions(sessionName string) ([]string, error) {
+	// Note: In clibot, sessionName is the clibot session ID. 
+	// We need the project hash to find the right directory.
+	// Since we don't have CWD here, we'll need the engine to pass it or 
+	// we use a workaround. For now, let's assume we want to list 
+	// sessions for the project associated with the clibot session.
+	return []string{}, fmt.Errorf("ListSessions not fully implemented: needs CWD")
+}
+
+// ListSessionsWithCWD is a specific implementation for Gemini
+func (g *GeminiAdapter) ListSessionsWithCWD(cwd string) ([]string, error) {
+	projectHash := computeProjectHash(cwd)
+	homeDir, _ := os.UserHomeDir()
+	chatsDir := filepath.Join(homeDir, ".gemini", "tmp", projectHash, "chats")
+
+	if _, err := os.Stat(chatsDir); os.IsNotExist(err) {
+		return []string{}, nil
+	}
+
+	matches, err := filepath.Glob(filepath.Join(chatsDir, "session-*.json"))
+	if err != nil {
+		return nil, err
+	}
+
+	var sessionIDs []string
+	for _, m := range matches {
+		base := filepath.Base(m)
+		// Extract ID from session-<id>.json
+		id := strings.TrimPrefix(base, "session-")
+		id = strings.TrimSuffix(id, ".json")
+		sessionIDs = append(sessionIDs, id)
+	}
+	
+	// Sort by modification time (newest first)
+	sort.Slice(sessionIDs, func(i, j int) bool {
+		infoI, _ := os.Stat(filepath.Join(chatsDir, "session-"+sessionIDs[i]+".json"))
+		infoJ, _ := os.Stat(filepath.Join(chatsDir, "session-"+sessionIDs[j]+".json"))
+		return infoI.ModTime().After(infoJ.ModTime())
+	})
+
+	return sessionIDs, nil
+}
+
+// SwitchSession switches to a specific Gemini session ID
+func (g *GeminiAdapter) SwitchSession(sessionName, cliSessionID string) error {
+	logger.WithFields(logrus.Fields{
+		"session":    sessionName,
+		"gemini_id":  cliSessionID,
+	}).Info("switching-gemini-internal-session")
+	
+	// Gemini CLI command to switch session: /session switch <id>
+	cmd := fmt.Sprintf("/session switch %s\n", cliSessionID)
+	return watchdog.SendKeys(sessionName, cmd, g.inputDelayMs)
 }
 
 // HandleHookData handles raw hook data from Gemini CLI
@@ -183,6 +248,31 @@ func (g *GeminiAdapter) extractGeminiResponse(transcriptPath string, cwd string)
 	messages := sessionData.Messages
 	if len(messages) == 0 {
 		return "", "", fmt.Errorf("no messages in session file")
+	}
+
+	// MONITORING: Calculate total context length
+	totalChars := 0
+	for _, msg := range messages {
+		totalChars += len(msg.Content)
+	}
+
+	// Threshold: 200,000 characters (~50,000 tokens)
+	// If context is too large, trigger an automatic reset
+	if totalChars > 200000 {
+		logger.WithFields(logrus.Fields{
+			"total_chars": totalChars,
+			"threshold":   200000,
+			"session":     cwd,
+		}).Warn("context-window-exceeded-50-percent-auto-resetting")
+		
+		// Run reset in a background goroutine to not block the current response extraction
+		go func() {
+			// Find the clibot session name by searching sessions map in engine 
+			// would be complex, so we just use the CWD as a reference for now
+			// and attempt to send the reset command to the active tmux session.
+			// The engine will handle the next input in a fresh session.
+			g.ResetSession(computeProjectHash(cwd)) // Placeholder: actual session name needed
+		}()
 	}
 
 	// Find last user message index

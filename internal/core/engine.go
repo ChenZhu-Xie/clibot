@@ -44,6 +44,10 @@ var specialCommands = map[string]struct{}{
 	"sdel":    {},
 	"suse":    {},
 	"sclose":  {},
+	"sreset":  {},
+	"scd":     {},
+	"ssls":    {},
+	"sssw":    {},
 }
 
 // isSpecialCommand checks if input is a special command.
@@ -658,6 +662,14 @@ func (e *Engine) HandleSpecialCommandWithArgs(command string, args []string, msg
 		e.handleCloseSession(args, msg)
 	case "sstatus":
 		e.handleSessionStatus(args, msg)
+	case "sreset":
+		e.handleResetSession(args, msg)
+	case "scd":
+		e.handleSwitchWorkDir(args, msg)
+	case "ssls":
+		e.handleListGeminiSessions(args, msg)
+	case "sssw":
+		e.handleSwitchGeminiSession(args, msg)
 	default:
 		e.SendToBot(msg.Platform, msg.Channel,
 			fmt.Sprintf("❌ Unknown command: %s\nUse 'help' to see available commands", command))
@@ -813,6 +825,10 @@ func (e *Engine) showHelp(msg bot.BotMessage) {
   echo         - Echo your IM user info (for whitelist config)
   snew <name> <cli_type> <work_dir> [cmd] - Create new session (admin only)
   sdel <name>  - Delete dynamic session (admin only)
+  sreset       - Reset current session (start new conversation)
+  scd <path>   - Change working directory of current session
+  ssls         - List native Gemini session IDs for current project
+  sssw <id>    - Switch to a specific native Gemini session ID
 
 **Special Keywords** (exact match, case-insensitive):
   ⚠️ These keywords only work in Hook mode with tmux input
@@ -1372,6 +1388,166 @@ func (e *Engine) handleSessionStatus(args []string, msg bot.BotMessage) {
 
 	status := e.getSessionStatus(session)
 	e.sendSessionStatus(msg, status)
+}
+
+// handleResetSession resets the current session
+func (e *Engine) handleResetSession(args []string, msg bot.BotMessage) {
+	userKey := getUserKey(msg.Platform, msg.UserID)
+	e.sessionMu.RLock()
+	sessionName, hasSession := e.userSessions[userKey]
+	var session *Session
+	if hasSession {
+		session = e.sessions[sessionName]
+	}
+	e.sessionMu.RUnlock()
+
+	if session == nil {
+		e.SendToBot(msg.Platform, msg.Channel, "❌ No active session to reset. Select one with 'suse <name>'.")
+		return
+	}
+
+	adapter, exists := e.cliAdapters[session.CLIType]
+	if !exists {
+		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ CLI adapter '%s' not found", session.CLIType))
+		return
+	}
+
+	if err := adapter.ResetSession(session.Name); err != nil {
+		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Failed to reset session: %v", err))
+		return
+	}
+
+	e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("✅ Session '%s' (%s) has been reset.", session.Name, session.CLIType))
+}
+
+// handleSwitchWorkDir switches the working directory of the current session
+func (e *Engine) handleSwitchWorkDir(args []string, msg bot.BotMessage) {
+	if len(args) < 1 {
+		e.SendToBot(msg.Platform, msg.Channel, "❌ Usage: scd <path>")
+		return
+	}
+
+	newPath := args[0]
+	expandedPath, err := expandPath(newPath)
+	if err != nil {
+		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Invalid path: %v", err))
+		return
+	}
+
+	userKey := getUserKey(msg.Platform, msg.UserID)
+	e.sessionMu.RLock()
+	sessionName, hasSession := e.userSessions[userKey]
+	var session *Session
+	if hasSession {
+		session = e.sessions[sessionName]
+	}
+	e.sessionMu.RUnlock()
+
+	if session == nil {
+		e.SendToBot(msg.Platform, msg.Channel, "❌ No active session. Select one with 'suse <name>'.")
+		return
+	}
+
+	adapter, exists := e.cliAdapters[session.CLIType]
+	if !exists {
+		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ CLI adapter '%s' not found", session.CLIType))
+		return
+	}
+
+	// Update session work dir in engine
+	e.sessionMu.Lock()
+	session.WorkDir = expandedPath
+	e.sessionMu.Unlock()
+
+	// Tell adapter to switch (this might restart the process)
+	if err := adapter.SwitchWorkDir(session.Name, expandedPath); err != nil {
+		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Failed to switch directory: %v", err))
+		return
+	}
+
+	e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("✅ Switched session '%s' to: %s", session.Name, expandedPath))
+}
+
+// handleListGeminiSessions lists all available Gemini session files for the current project
+func (e *Engine) handleListGeminiSessions(args []string, msg bot.BotMessage) {
+	userKey := getUserKey(msg.Platform, msg.UserID)
+	e.sessionMu.RLock()
+	sessionName, hasSession := e.userSessions[userKey]
+	var session *Session
+	if hasSession {
+		session = e.sessions[sessionName]
+	}
+	e.sessionMu.RUnlock()
+
+	if session == nil {
+		e.SendToBot(msg.Platform, msg.Channel, "❌ No active session selected.")
+		return
+	}
+
+	if session.CLIType != "gemini" {
+		e.SendToBot(msg.Platform, msg.Channel, "❌ This command is only for Gemini sessions.")
+		return
+	}
+
+	adapter, ok := e.cliAdapters["gemini"].(*cli.GeminiAdapter)
+	if !ok {
+		e.SendToBot(msg.Platform, msg.Channel, "❌ Internal error: Gemini adapter not found.")
+		return
+	}
+
+	sessionIDs, err := adapter.ListSessionsWithCWD(session.WorkDir)
+	if err != nil {
+		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Failed to list sessions: %v", err))
+		return
+	}
+
+	if len(sessionIDs) == 0 {
+		e.SendToBot(msg.Platform, msg.Channel, "📂 No Gemini session history found for this project.")
+		return
+	}
+
+	response := fmt.Sprintf("📂 **Gemini Sessions for project: %s**\n\n", filepath.Base(session.WorkDir))
+	for i, id := range sessionIDs {
+		marker := ""
+		if i == 0 {
+			marker = " (latest)"
+		}
+		response += fmt.Sprintf("  • `%s`%s\n", id, marker)
+	}
+	response += "\n💡 Use `sssw <id>` to switch to one of these."
+
+	e.SendToBot(msg.Platform, msg.Channel, response)
+}
+
+// handleSwitchGeminiSession switches the current Gemini process to a different session file
+func (e *Engine) handleSwitchGeminiSession(args []string, msg bot.BotMessage) {
+	if len(args) < 1 {
+		e.SendToBot(msg.Platform, msg.Channel, "❌ Usage: sssw <gemini_session_id>")
+		return
+	}
+
+	id := args[0]
+	userKey := getUserKey(msg.Platform, msg.UserID)
+	e.sessionMu.RLock()
+	sessionName, hasSession := e.userSessions[userKey]
+	var session *Session
+	if hasSession {
+		session = e.sessions[sessionName]
+	}
+	e.sessionMu.RUnlock()
+
+	if session == nil || session.CLIType != "gemini" {
+		e.SendToBot(msg.Platform, msg.Channel, "❌ No active Gemini session selected.")
+		return
+	}
+
+	adapter := e.cliAdapters["gemini"]
+	if err := adapter.SwitchSession(session.Name, id); err != nil {
+		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Failed to switch session: %v", err))
+		return
+	}
+
+	e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("✅ Switched Gemini session to: `%s`", id))
 }
 
 // showAllSessionsStatus shows status of all sessions
