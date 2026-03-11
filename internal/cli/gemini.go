@@ -250,7 +250,8 @@ func (g *GeminiAdapter) extractGeminiResponse(transcriptPath string, cwd string)
 		return "", "", fmt.Errorf("no messages in session file")
 	}
 
-	// Find last user message index	lastUserIndex := -1
+	// Find last user message index
+	lastUserIndex := -1
 	for i, msg := range messages {
 		if msg.Type == "user" {
 			lastUserIndex = i

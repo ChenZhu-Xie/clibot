@@ -80,7 +80,8 @@ type WatchdogConfig struct {
 
 // SessionGlobalConfig represents global session configuration
 type SessionGlobalConfig struct {
-	MaxDynamicSessions int `yaml:"max_dynamic_sessions"` // Maximum number of dynamic sessions allowed (default: 50)
+	MaxDynamicSessions int  `yaml:"max_dynamic_sessions"` // Maximum number of dynamic sessions allowed (default: 50)
+	ShowSessionStats   bool `yaml:"show_session_stats"`   // Whether to append session stats to responses (default: true)
 }
 
 // SessionConfig represents a session configuration

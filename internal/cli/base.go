@@ -125,6 +125,11 @@ func (b *BaseAdapter) SwitchSession(sessionName, cliSessionID string) error {
 	return fmt.Errorf("SwitchSession not implemented for %s", b.cliName)
 }
 
+// GetSessionStats returns diagnostic stats for the session (default empty implementation)
+func (b *BaseAdapter) GetSessionStats(sessionName string) (map[string]interface{}, error) {
+	return make(map[string]interface{}), nil
+}
+
 // SendInput sends input to the CLI via tmux
 func (b *BaseAdapter) SendInput(sessionName, input string) error {
 	logger.WithFields(logrus.Fields{

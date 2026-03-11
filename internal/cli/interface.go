@@ -83,4 +83,7 @@ type CLIAdapter interface {
 
 	// SwitchSession switches to a specific CLI-native session/conversation
 	SwitchSession(sessionName, cliSessionID string) error
+
+	// GetSessionStats returns diagnostic stats for the session (e.g., context usage)
+	GetSessionStats(sessionName string) (map[string]interface{}, error)
 }

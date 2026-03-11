@@ -1484,18 +1484,18 @@ func (e *Engine) handleListGeminiSessions(args []string, msg bot.BotMessage) {
 		return
 	}
 
-	if session.CLIType != "gemini" {
-		e.SendToBot(msg.Platform, msg.Channel, "❌ This command is only for Gemini sessions.")
+	if session.CLIType != "gemini" && session.CLIType != "acp" {
+		e.SendToBot(msg.Platform, msg.Channel, "❌ This command is only for Gemini or ACP sessions.")
 		return
 	}
 
-	adapter, ok := e.cliAdapters["gemini"].(*cli.GeminiAdapter)
-	if !ok {
-		e.SendToBot(msg.Platform, msg.Channel, "❌ Internal error: Gemini adapter not found.")
+	adapter, exists := e.cliAdapters[session.CLIType]
+	if !exists {
+		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ CLI adapter '%s' not found.", session.CLIType))
 		return
 	}
 
-	sessionIDs, err := adapter.ListSessionsWithCWD(session.WorkDir)
+	sessionIDs, err := adapter.ListSessions(session.Name)
 	if err != nil {
 		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Failed to list sessions: %v", err))
 		return
@@ -1951,11 +1951,10 @@ func (e *Engine) removeTypingIndicatorAsync(platform, messageID string) {
 	}()
 }
 
-// SendResponseToSession sends a message to the bot channel associated with a session
-// This is used by CLI adapters to send responses back to users
 func (e *Engine) SendResponseToSession(sessionName, message string) {
 	e.sessionMu.RLock()
 	botChannel, exists := e.sessionChannels[sessionName]
+	session, sessExists := e.sessions[sessionName]
 	e.sessionMu.RUnlock()
 
 	if !exists {
@@ -1972,15 +1971,44 @@ func (e *Engine) SendResponseToSession(sessionName, message string) {
 		return
 	}
 
+	finalMessage := message
+
+	// Append Session Stats if enabled
+	if sessExists && e.config.Session.ShowSessionStats {
+		adapter, ok := e.cliAdapters[session.CLIType]
+		if ok {
+			stats, err := adapter.GetSessionStats(sessionName)
+			if err == nil && len(stats) > 0 {
+				workDir := ""
+				if wd, ok := stats["work_dir"].(string); ok {
+					workDir = filepath.Base(wd)
+				}
+				sessionID := ""
+				if sid, ok := stats["session_id"].(string); ok {
+					sessionID = sid
+				}
+				usagePerc := 0.0
+				if up, ok := stats["usage_perc"].(float64); ok {
+					usagePerc = up
+				}
+
+				// Format: 📂 [dir] | 💬 [session] | 🧠 [usage]% used
+				statsBar := fmt.Sprintf("\n\n---\n📂 `%s` | 💬 `%s` | 🧠 `%.0f%%` used",
+					workDir, sessionID, usagePerc)
+				finalMessage += statsBar
+			}
+		}
+	}
+
 	logger.WithFields(logrus.Fields{
 		"session":         sessionName,
 		"platform":        botChannel.Platform,
 		"channel":         botChannel.Channel,
-		"response_length": len(message),
+		"response_length": len(finalMessage),
 	}).Info("sending-response-to-user")
 
 	// Send the message
-	e.SendToBot(botChannel.Platform, botChannel.Channel, message)
+	e.SendToBot(botChannel.Platform, botChannel.Channel, finalMessage)
 
 	// Remove typing indicator after a short delay if supported
 	if botChannel.MessageID != "" {

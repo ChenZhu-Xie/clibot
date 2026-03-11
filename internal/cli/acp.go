@@ -591,6 +591,24 @@ func (a *ACPAdapter) SwitchSession(sessionName, cliSessionID string) error {
 	return a.SendInput(sessionName, fmt.Sprintf("/session switch %s", cliSessionID))
 }
 
+// GetSessionStats returns diagnostic stats for the session (e.g., context usage)
+func (a *ACPAdapter) GetSessionStats(sessionName string) (map[string]interface{}, error) {
+	a.mu.Lock()
+	sess, ok := a.sessions[sessionName]
+	a.mu.Unlock()
+
+	if !ok {
+		return nil, fmt.Errorf("session %s not found", sessionName)
+	}
+
+	stats := make(map[string]interface{})
+	stats["work_dir"] = sess.workDir
+	stats["session_id"] = sess.sessionId
+	stats["usage_perc"] = sess.lastUsagePerc
+	
+	return stats, nil
+}
+
 // Close cleans up ACP adapter resources
 func (a *ACPAdapter) Close() error {
 	a.mu.Lock()
