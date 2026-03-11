@@ -828,7 +828,7 @@ func (e *Engine) showHelp(msg bot.BotMessage) {
   echo         - Echo your IM user info (for whitelist config)
   snew <name> <cli_type> <work_dir> [cmd] - Create new session (admin only)
   sdel <name>  - Delete dynamic session (admin only)
-  sreset       - Reset current session (start new conversation)
+  ssnew        - Start a NEW Gemini conversation (keep history)
   scd <path>   - Change working directory of current session
   ssls         - List native Gemini session IDs for current project
   sssw <id>    - Switch to a specific native Gemini session ID
@@ -883,7 +883,7 @@ func (e *Engine) showHelpChinese(msg bot.BotMessage) {
   sclose [名]  - 暂时关闭机器人的后台进程以节省资源
 
 **2. AI 记忆与存档管理 (Gemini 专用):**
-  sreset      - 【重要】重置当前 AI 的记忆 (清空上下文，开启全新对话)
+  ssnew       - 【重要】开启一个全新的 Gemini 对话 (保留旧存档)
   scd <路径>   - 更改当前 AI 关注的项目目录 (会触发记忆环境切换)
   ssls        - 列出当前项目文件夹下的所有历史对话存档 (Session ID)
   sssw <ID>   - 切换到特定的历史对话存档 (读档)
@@ -896,7 +896,7 @@ func (e *Engine) showHelpChinese(msg bot.BotMessage) {
   tab, enter, ctrlc, esc - 在部分模式下向终端发送特殊按键
 
 **提示:**
-- 绝大多数情况下，你只需要用 "suse" 切换机器人，并在聊太久导致 AI 变傻时用 "sreset" 刷新它。
+- 绝大多数情况下，你只需要用 "suse" 切换机器人，并在聊太久导致 AI 变傻时用 "ssnew" 刷新它。
 - 任何非指令的消息都会被直接发送给底层的 AI 工具。`
 
 	e.SendToBot(msg.Platform, msg.Channel, help)
