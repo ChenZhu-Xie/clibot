@@ -51,9 +51,10 @@ func (g *GeminiAdapter) ListSessions(sessionName string) ([]string, error) {
 
 // ListSessionsWithCWD is a specific implementation for Gemini
 func (g *GeminiAdapter) ListSessionsWithCWD(cwd string) ([]string, error) {
-	projectHash := computeProjectHash(cwd)
-	homeDir, _ := os.UserHomeDir()
-	chatsDir := filepath.Join(homeDir, ".gemini", "tmp", projectHash, "chats")
+	chatsDir, err := findGeminiChatsDir(cwd)
+	if err != nil {
+		return []string{}, err
+	}
 
 	if _, err := os.Stat(chatsDir); os.IsNotExist(err) {
 		return []string{}, nil
@@ -172,9 +173,10 @@ func (g *GeminiAdapter) HandleHookData(data []byte) (string, string, string, err
 // Gemini stores history in: ~/.gemini/tmp/{project_hash}/chats/session-*.json
 func (g *GeminiAdapter) lastSessionFile(cwd string) (string, error) {
 	// Build path to chats directory
-	projectHash := computeProjectHash(cwd)
-	homeDir, _ := os.UserHomeDir()
-	chatsDir := filepath.Join(homeDir, ".gemini", "tmp", projectHash, "chats")
+	chatsDir, err := findGeminiChatsDir(cwd)
+	if err != nil {
+		return "", err
+	}
 
 	// Check if directory exists
 	if _, err := os.Stat(chatsDir); os.IsNotExist(err) {
@@ -290,6 +292,59 @@ func (g *GeminiAdapter) extractGeminiResponse(transcriptPath string, cwd string)
 	}).Info("extracted-gemini-response-from-session-file")
 
 	return userPrompt, response, nil
+}
+
+// findGeminiChatsDir finds the Gemini chats directory by searching for the .project_root file
+// if the hash-based approach fails.
+func findGeminiChatsDir(workDir string) (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	absWorkDir, err := filepath.Abs(workDir)
+	if err != nil {
+		absWorkDir = workDir
+	}
+
+	// 1. Try name-based directory (e.g. .gemini/tmp/clibot)
+	projectName := filepath.Base(absWorkDir)
+	nameDir := filepath.Join(homeDir, ".gemini", "tmp", projectName)
+	if _, err := os.Stat(filepath.Join(nameDir, ".project_root")); err == nil {
+		// Verify project root matches
+		rootContent, err := os.ReadFile(filepath.Join(nameDir, ".project_root"))
+		if err == nil && strings.TrimSpace(strings.ToLower(string(rootContent))) == strings.TrimSpace(strings.ToLower(absWorkDir)) {
+			return filepath.Join(nameDir, "chats"), nil
+		}
+	}
+
+	// 2. Try hash-based directory
+	projectHash := computeProjectHash(absWorkDir)
+	hashDir := filepath.Join(homeDir, ".gemini", "tmp", projectHash)
+	if _, err := os.Stat(filepath.Join(hashDir, "chats")); err == nil {
+		return filepath.Join(hashDir, "chats"), nil
+	}
+
+	// 3. Scan all directories in .gemini/tmp for .project_root matching absWorkDir
+	tmpDir := filepath.Join(homeDir, ".gemini", "tmp")
+	entries, err := os.ReadDir(tmpDir)
+	if err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			rootFile := filepath.Join(tmpDir, entry.Name(), ".project_root")
+			if _, err := os.Stat(rootFile); err == nil {
+				rootContent, err := os.ReadFile(rootFile)
+				if err == nil && strings.TrimSpace(strings.ToLower(string(rootContent))) == strings.TrimSpace(strings.ToLower(absWorkDir)) {
+					return filepath.Join(tmpDir, entry.Name(), "chats"), nil
+				}
+			}
+		}
+	}
+
+	// Fallback to the hash-based path
+	return filepath.Join(hashDir, "chats"), nil
 }
 
 // computeProjectHash computes SHA256 hash of project path

@@ -193,13 +193,10 @@ func (a *ACPAdapter) SwitchWorkDir(sessionName, newWorkDir string) error {
 // ensureGeminiChatsDir ensures that the Gemini chats directory exists
 // Gemini stores history in: ~/.gemini/tmp/{project_hash}/chats
 func ensureGeminiChatsDir(workDir string) error {
-	homeDir, err := os.UserHomeDir()
+	chatsDir, err := findGeminiChatsDir(workDir)
 	if err != nil {
-		return fmt.Errorf("failed to get home directory: %w", err)
+		return err
 	}
-
-	projectHash := computeProjectHash(workDir)
-	chatsDir := filepath.Join(homeDir, ".gemini", "tmp", projectHash, "chats")
 
 	// Create directory with permissions 0755 (cross-platform)
 	if err := os.MkdirAll(chatsDir, 0755); err != nil {
@@ -209,7 +206,7 @@ func ensureGeminiChatsDir(workDir string) error {
 	logger.WithFields(logrus.Fields{
 		"work_dir":  workDir,
 		"chats_dir": chatsDir,
-	}).Info("gemini-chats-directory-created")
+	}).Info("gemini-chats-directory-ensured")
 
 	return nil
 }
@@ -561,9 +558,10 @@ func (a *ACPAdapter) ListSessions(sessionName string) ([]string, error) {
 	}
 
 	// For Gemini, we can read the local chat history files
-	projectHash := computeProjectHash(sess.workDir)
-	homeDir, _ := os.UserHomeDir()
-	chatsDir := filepath.Join(homeDir, ".gemini", "tmp", projectHash, "chats")
+	chatsDir, err := findGeminiChatsDir(sess.workDir)
+	if err != nil {
+		return []string{}, nil
+	}
 
 	if _, err := os.Stat(chatsDir); os.IsNotExist(err) {
 		return []string{}, nil
@@ -602,9 +600,11 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID string) string {
 	}
 
 	// Try to find the JSON file for this session
-	projectHash := computeProjectHash(workDir)
-	homeDir, _ := os.UserHomeDir()
-	sessionPath := filepath.Join(homeDir, ".gemini", "tmp", projectHash, "chats", fmt.Sprintf("session-%s.json", sessionID))
+	chatsDir, err := findGeminiChatsDir(workDir)
+	if err != nil {
+		return sessionID
+	}
+	sessionPath := filepath.Join(chatsDir, fmt.Sprintf("session-%s.json", sessionID))
 
 	if _, err := os.Stat(sessionPath); err == nil {
 		// Read file and parse first user message

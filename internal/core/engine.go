@@ -1532,7 +1532,20 @@ func (e *Engine) handleListGeminiSessions(args []string, msg bot.BotMessage) {
 		return
 	}
 
-	sessionIDs, err := adapter.ListSessions(session.Name)
+	var sessionIDs []string
+	var err error
+
+	// Check if the adapter supports ListSessionsWithCWD
+	type cwdLister interface {
+		ListSessionsWithCWD(cwd string) ([]string, error)
+	}
+
+	if lister, ok := adapter.(cwdLister); ok {
+		sessionIDs, err = lister.ListSessionsWithCWD(session.WorkDir)
+	} else {
+		sessionIDs, err = adapter.ListSessions(session.Name)
+	}
+
 	if err != nil {
 		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Failed to list sessions: %v", err))
 		return
@@ -1573,12 +1586,12 @@ func (e *Engine) handleSwitchGeminiSession(args []string, msg bot.BotMessage) {
 	}
 	e.sessionMu.RUnlock()
 
-	if session == nil || session.CLIType != "gemini" {
-		e.SendToBot(msg.Platform, msg.Channel, "❌ No active Gemini session selected.")
+	if session == nil || (session.CLIType != "gemini" && session.CLIType != "acp") {
+		e.SendToBot(msg.Platform, msg.Channel, "❌ No active Gemini or ACP session selected.")
 		return
 	}
 
-	adapter := e.cliAdapters["gemini"]
+	adapter := e.cliAdapters[session.CLIType]
 	if err := adapter.SwitchSession(session.Name, id); err != nil {
 		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Failed to switch session: %v", err))
 		return

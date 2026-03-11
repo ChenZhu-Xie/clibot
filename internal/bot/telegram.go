@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"sync"
 	"time"
 
@@ -203,13 +204,18 @@ func (t *TelegramBot) SendMessage(chatID, message string) error {
 		return fmt.Errorf("invalid chat ID format: %w", err)
 	}
 
-	// Create message
-	msg := tgbotapi.NewMessage(chatIDInt, message)
-	
 	t.mu.RLock()
 	parseMode := t.parseMode
 	t.mu.RUnlock()
 
+	// Convert Markdown to HTML if in HTML mode
+	if parseMode == "HTML" {
+		message = convertMarkdownToHTML(message)
+	}
+
+	// Create message
+	msg := tgbotapi.NewMessage(chatIDInt, message)
+	
 	// Set ParseMode from config (Markdown, HTML, or empty)
 	msg.ParseMode = parseMode 
 
@@ -275,4 +281,53 @@ func (t *TelegramBot) GetMessageHandler() func(BotMessage) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	return t.messageHandler
+}
+
+func escapeHTML(s string) string {
+	s = regexp.MustCompile(`&`).ReplaceAllString(s, "&amp;")
+	s = regexp.MustCompile(`<`).ReplaceAllString(s, "&lt;")
+	s = regexp.MustCompile(`>`).ReplaceAllString(s, "&gt;")
+	return s
+}
+
+// convertMarkdownToHTML converts basic Markdown to Telegram-compatible HTML
+func convertMarkdownToHTML(md string) string {
+	// 1. First, protect code blocks from being escaped
+	// Use a placeholder to keep code blocks intact
+	codeBlocks := [][]string{}
+	codeBlockRegex := regexp.MustCompile("(?s)```(?:[a-zA-Z0-9]*)\n?(.*?)```")
+	md = codeBlockRegex.ReplaceAllStringFunc(md, func(match string) string {
+		inner := codeBlockRegex.FindStringSubmatch(match)[1]
+		placeholder := fmt.Sprintf("CODEBLOCKPLACEHOLDER%d", len(codeBlocks))
+		codeBlocks = append(codeBlocks, []string{placeholder, inner})
+		return placeholder
+	})
+
+	// 2. Escape standard HTML chars in the remaining text
+	md = escapeHTML(md)
+
+	// 3. Inline code `code` ->  <code>code</code>
+	inlineCodeRegex := regexp.MustCompile("`([^`]+)`")
+	md = inlineCodeRegex.ReplaceAllString(md, "<code>$1</code>")
+
+	// 4. Bold **text** or __text__ -> <b>text</b>
+	md = regexp.MustCompile(`\*\*(.*?)\*\*`).ReplaceAllString(md, "<b>$1</b>")
+	md = regexp.MustCompile(`__(.*?)__`).ReplaceAllString(md, "<b>$1</b>")
+
+	// 5. Italic *text* or _text_ -> <i>text</i>
+	md = regexp.MustCompile(`\*(.*?)\*`).ReplaceAllString(md, "<i>$1</i>")
+	md = regexp.MustCompile(`_(.*?)_`).ReplaceAllString(md, "<i>$1</i>")
+
+	// 6. Links [text](url) -> <a href="url">text</a>
+	linkRegex := regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`)
+	md = linkRegex.ReplaceAllString(md, `<a href="$2">$1</a>`)
+
+	// 7. Restore code blocks and wrap in <pre><code>
+	for _, cb := range codeBlocks {
+		placeholder := cb[0]
+		content := escapeHTML(cb[1])
+		md = regexp.MustCompile(placeholder).ReplaceAllString(md, fmt.Sprintf("<pre><code>%s</code></pre>", content))
+	}
+
+	return md
 }
