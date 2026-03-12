@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/keepmind9/clibot/internal/logger"
 	"github.com/keepmind9/clibot/internal/watchdog"
@@ -120,23 +121,34 @@ func geminiSessionSummary(sessionFile string) string {
 			Text string `json:"text"`
 		}
 		if json.Unmarshal(msg.Content, &parts) == nil && len(parts) > 0 {
-			content := strings.TrimSpace(parts[0].Text)
-			if len(content) > 50 {
-				return content[:47] + "..."
-			}
-			return content
+			return truncateRuneSafe(parts[0].Text, 50)
 		}
 		// Try plain string form: "..."
 		var plain string
 		if json.Unmarshal(msg.Content, &plain) == nil {
-			content := strings.TrimSpace(plain)
-			if len(content) > 50 {
-				return content[:47] + "..."
-			}
-			return content
+			return truncateRuneSafe(plain, 50)
 		}
 	}
 	return "(No messages)"
+}
+
+// truncateRuneSafe trims s to at most maxRunes Unicode code points and appends
+// "..." if it was shortened. It also strips any invalid UTF-8 sequences so the
+// output is always safe to send to Telegram.
+func truncateRuneSafe(s string, maxRunes int) string {
+	// Strip invalid UTF-8 bytes
+	s = strings.Map(func(r rune) rune {
+		if r == utf8.RuneError {
+			return -1 // drop replacement characters from bad sequences
+		}
+		return r
+	}, s)
+	s = strings.TrimSpace(s)
+	runes := []rune(s)
+	if len(runes) > maxRunes {
+		return string(runes[:maxRunes-3]) + "..."
+	}
+	return s
 }
 
 // HandleHookData handles raw hook data from Gemini CLI
