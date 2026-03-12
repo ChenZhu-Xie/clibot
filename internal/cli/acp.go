@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -551,70 +550,14 @@ func (a *ACPAdapter) DeleteSession(sessionName string) error {
 	return nil
 }
 
-// ListSessions returns a list of available CLI-native sessions/conversations
+// ListSessions is natively handled by engine routing commands directly to the CLI process.
 func (a *ACPAdapter) ListSessions(sessionName string) ([]string, error) {
-	a.mu.Lock()
-	sess, ok := a.sessions[sessionName]
-	a.mu.Unlock()
-
-	if !ok {
-		return nil, fmt.Errorf("session %s not found", sessionName)
-	}
-
-	// For Gemini, we can read the local chat history files
-	chatsDir, err := findGeminiChatsDir(sess.workDir)
-	if err != nil {
-		return []string{}, nil
-	}
-
-	if _, err := os.Stat(chatsDir); os.IsNotExist(err) {
-		return []string{}, nil
-	}
-
-	matches, err := filepath.Glob(filepath.Join(chatsDir, "session-*.json"))
-	if err != nil {
-		return nil, err
-	}
-
-	var sessionIDs []string
-	for _, m := range matches {
-		base := filepath.Base(m)
-		id := strings.TrimPrefix(base, "session-")
-		id = strings.TrimSuffix(id, ".json")
-		sessionIDs = append(sessionIDs, id)
-	}
-
-	// Sort by modification time (newest first)
-	sort.Slice(sessionIDs, func(i, j int) bool {
-		infoI, _ := os.Stat(filepath.Join(chatsDir, "session-"+sessionIDs[i]+".json"))
-		infoJ, _ := os.Stat(filepath.Join(chatsDir, "session-"+sessionIDs[j]+".json"))
-		return infoI.ModTime().After(infoJ.ModTime())
-	})
-
-	// Add summaries to IDs
-	var results []string
-	for _, id := range sessionIDs {
-		title := a.getSessionTitle(sess.workDir, id)
-		if title != id && title != "" {
-			results = append(results, fmt.Sprintf("%s: %s", id, title))
-		} else {
-			results = append(results, id)
-		}
-	}
-
-	return results, nil
+	return nil, fmt.Errorf("ListSessions is handled natively via /resume pass-through")
 }
 
-// SwitchSession switches to a specific CLI-native session/conversation
+// SwitchSession is natively handled by engine routing commands directly to the CLI process.
 func (a *ACPAdapter) SwitchSession(sessionName, cliSessionID string) error {
-	logger.WithFields(logrus.Fields{
-		"session":   sessionName,
-		"target_id": cliSessionID,
-	}).Info("switching-acp-gemini-session")
-
-	// Send ACP Prompt with switch command
-	// Adding \n to ensure it executes immediately
-	return a.SendInput(sessionName, fmt.Sprintf("/session switch %s\n", cliSessionID))
+	return fmt.Errorf("SwitchSession is handled natively via /resume <id> pass-through")
 }
 
 // getSessionTitle attempts to extract a descriptive title for a session

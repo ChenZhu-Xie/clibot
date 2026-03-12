@@ -1505,7 +1505,7 @@ func (e *Engine) handleSwitchWorkDir(args []string, msg bot.BotMessage) {
 	e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("✅ Switched session '%s' to: %s", session.Name, expandedPath))
 }
 
-// handleListGeminiSessions lists all available Gemini session files for the current project
+// handleListGeminiSessions natively lists all available Gemini session files for the current project
 func (e *Engine) handleListGeminiSessions(args []string, msg bot.BotMessage) {
 	userKey := getUserKey(msg.Platform, msg.UserID)
 	e.sessionMu.RLock()
@@ -1532,57 +1532,16 @@ func (e *Engine) handleListGeminiSessions(args []string, msg bot.BotMessage) {
 		return
 	}
 
-	var sessionIDs []string
-	var err error
-
-	// Check if the adapter supports ListSessionsWithCWD
-	type cwdLister interface {
-		ListSessionsWithCWD(cwd string) ([]string, error)
-	}
-
-	if lister, ok := adapter.(cwdLister); ok {
-		sessionIDs, err = lister.ListSessionsWithCWD(session.WorkDir)
-	} else {
-		sessionIDs, err = adapter.ListSessions(session.Name)
-	}
-
+	// Natively pass the /resume command to the CLI. 
+	// The CLI will respond with its own formatted list of sessions and summaries natively!
+	err := adapter.SendInput(session.Name, "/resume")
 	if err != nil {
-		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Failed to list sessions: %v", err))
+		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Failed to send /resume command: %v", err))
 		return
 	}
-
-	if len(sessionIDs) == 0 {
-		e.SendToBot(msg.Platform, msg.Channel, "📂 No Gemini session history found for this project.")
-		return
-	}
-
-	response := fmt.Sprintf("📂 **Gemini Sessions for project: %s**\n\n", filepath.Base(session.WorkDir))
-	for i, sessionInfo := range sessionIDs {
-		marker := ""
-		if i == 0 {
-			marker = " (latest)"
-		}
-
-		// sessionInfo is either "ID" or "ID: Summary"
-		parts := strings.SplitN(sessionInfo, ": ", 2)
-		id := parts[0]
-		summary := ""
-		if len(parts) > 1 {
-			summary = parts[1]
-		}
-
-		if summary != "" {
-			response += fmt.Sprintf("  • `%s`%s\n    └─ %s\n", id, marker, summary)
-		} else {
-			response += fmt.Sprintf("  • `%s`%s\n", id, marker)
-		}
-	}
-	response += "\n💡 Use `sssw <id>` to switch to one of these."
-
-	e.SendToBot(msg.Platform, msg.Channel, response)
 }
 
-// handleSwitchGeminiSession switches the current Gemini process to a different session file
+// handleSwitchGeminiSession switches the current Gemini process to a different session file natively
 func (e *Engine) handleSwitchGeminiSession(args []string, msg bot.BotMessage) {
 	if len(args) < 1 {
 		e.SendToBot(msg.Platform, msg.Channel, "❌ Usage: sssw <gemini_session_id>")
@@ -1604,13 +1563,19 @@ func (e *Engine) handleSwitchGeminiSession(args []string, msg bot.BotMessage) {
 		return
 	}
 
-	adapter := e.cliAdapters[session.CLIType]
-	if err := adapter.SwitchSession(session.Name, id); err != nil {
-		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Failed to switch session: %v", err))
+	adapter, exists := e.cliAdapters[session.CLIType]
+	if !exists {
+		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ CLI adapter '%s' not found.", session.CLIType))
 		return
 	}
 
-	e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("✅ Switched Gemini session to: `%s`", id))
+	// Natively pass the /resume <id> command to the CLI.
+	err := adapter.SendInput(session.Name, fmt.Sprintf("/resume %s", id))
+	if err != nil {
+		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Failed to send command to switch session: %v", err))
+		return
+	}
+	// The CLI will seamlessly process the context reload and report it natively.
 }
 
 // showAllSessionsStatus shows status of all sessions
