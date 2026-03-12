@@ -2055,8 +2055,8 @@ func (e *Engine) SendResponseToSession(sessionName, message string) {
 					sessionTitle = st
 				}
 
-				// HTML Format: 📂 <code>[dir]</code> | 💬 <code>[title]</code> | 🧠 <code>[usage]%</code> used
-				statsBar := fmt.Sprintf("\n\n---\n📂 <code>%s</code> | 💬 <code>%s</code> | 🧠 <code>%.0f%%</code> used",
+				// Markdown Format: 📂 `[dir]` | 💬 `[title]` | 🧠 `[usage]%` used
+				statsBar := fmt.Sprintf("\n\n---\n📂 `%s` | 💬 `%s` | 🧠 `%.0f%%` used",
 					workDir, sessionTitle, usagePerc)
 				finalMessage += statsBar
 			}

@@ -402,9 +402,12 @@ func (a *ACPAdapter) SendInput(sessionName, input string) error {
 		logger.WithFields(logrus.Fields{
 			"session":         sessionName,
 			"response_length": len(response),
-		}).Info("acp-sending-complete-response")
+		}).Info("acp-prompt-response-completed")
 
-		// Send response to user via engine
+		// Send response to user via engine if not already fully streamed
+		// NOTE: In streaming mode, some chunks might have been sent already.
+		// However, for bots that don't support streaming (like current Telegram implementation),
+		// we still rely on this final response for the full message.
 		a.mu.Lock()
 		engine := a.currentEngine
 		a.mu.Unlock()
@@ -632,19 +635,31 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID string) string {
 		data, err := os.ReadFile(sessionPath)
 		if err == nil {
 			var sessionData struct {
+				Title    string `json:"title"`
+				Name     string `json:"name"`
 				Messages []struct {
 					Type    string `json:"type"`
 					Content string `json:"content"`
 				} `json:"messages"`
 			}
 			if err := json.Unmarshal(data, &sessionData); err == nil {
+				// 1. Check for explicit title or name
+				if sessionData.Title != "" {
+					return sessionData.Title
+				}
+				if sessionData.Name != "" {
+					return sessionData.Name
+				}
+
+				// 2. Extract from first user message
 				for _, msg := range sessionData.Messages {
-					if msg.Type == "user" {
-						// Extract first 20 chars of first user message as title
+					msgType := strings.ToLower(msg.Type)
+					if msgType == "user" || msgType == "human" {
+						// Extract first 30 chars of first user message as title
 						title := strings.TrimSpace(msg.Content)
 						title = strings.ReplaceAll(title, "\n", " ")
-						if len(title) > 20 {
-							return title[:17] + "..."
+						if len(title) > 30 {
+							return title[:27] + "..."
 						}
 						return title
 					}
@@ -653,9 +668,9 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID string) string {
 		}
 	}
 
-	// Fallback: use first 8 chars of ID
-	if len(sessionID) > 8 {
-		return sessionID[:8]
+	// Fallback: use first 12 chars of ID (usually a timestamp or hash)
+	if len(sessionID) > 12 {
+		return sessionID[:12]
 	}
 	return sessionID
 }
