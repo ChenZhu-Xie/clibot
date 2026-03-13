@@ -65,19 +65,24 @@ func (g *GeminiAdapter) ListSessions(sessionName string, botUsername string) ([]
 	var formatted []string
 	for _, s := range sessions {
 		sessionID := url.QueryEscape(s.ID)
+		summaryEscaped := url.QueryEscape(s.Summary)
 		link := s.ID
+		summaryLink := ""
 		if botUsername != "" {
 			link = fmt.Sprintf("[**%s**](tg://resolve?domain=%s&text=sssw%%20%s)", s.ID, botUsername, sessionID)
+			summaryLink = fmt.Sprintf("tg://resolve?domain=%s&text=%s", botUsername, summaryEscaped)
 		} else {
 			link = fmt.Sprintf("[**%s**](tg://msg?text=sssw%%20%s)", s.ID, sessionID)
+			summaryLink = fmt.Sprintf("tg://msg?text=%s", summaryEscaped)
 		}
 		
 		summary := s.Summary
 		if summary == "" {
 			summary = "No summary available"
+			formatted = append(formatted, fmt.Sprintf("%s: `%s`", link, summary))
+		} else {
+			formatted = append(formatted, fmt.Sprintf("%s: [%s](%s)", link, summary, summaryLink))
 		}
-		
-		formatted = append(formatted, fmt.Sprintf("%s: `%s`", link, summary))
 	}
 	return formatted, nil
 }
@@ -104,10 +109,10 @@ func (g *GeminiAdapter) GetSessionStats(sessionName string, botUsername string) 
 		var link, summaryLink string
 		if botUsername != "" {
 			link = fmt.Sprintf("[**%s**](tg://resolve?domain=%s&text=sssw%%20%s)", id, botUsername, sessionID)
-			summaryLink = fmt.Sprintf("[**%s**](tg://resolve?domain=%s&text=%s)", safeSummary, botUsername, url.QueryEscape(summary))
+			summaryLink = fmt.Sprintf("[%s](tg://resolve?domain=%s&text=%s)", safeSummary, botUsername, url.QueryEscape(summary))
 		} else {
 			link = fmt.Sprintf("[**%s**](tg://msg?text=sssw%%20%s)", id, sessionID)
-			summaryLink = fmt.Sprintf("[**%s**](tg://msg?text=%s)", safeSummary, url.QueryEscape(summary))
+			summaryLink = fmt.Sprintf("[%s](tg://msg?text=%s)", safeSummary, url.QueryEscape(summary))
 		}
 		
 		// Format: ID: Summary

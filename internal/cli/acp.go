@@ -257,18 +257,23 @@ func (a *ACPAdapter) ListSessions(sessionName string, botUsername string) ([]str
 		summary := s.Summary
 
 		sessionID := url.QueryEscape(id)
+		summaryEscaped := url.QueryEscape(summary)
 		link := id
+		summaryLink := ""
 		if botUsername != "" {
 			link = fmt.Sprintf("[**%s**](tg://resolve?domain=%s&text=sssw%%20%s)", id, botUsername, sessionID)
+			summaryLink = fmt.Sprintf("tg://resolve?domain=%s&text=%s", botUsername, summaryEscaped)
 		} else {
 			link = fmt.Sprintf("[**%s**](tg://msg?text=sssw%%20%s)", id, sessionID)
+			summaryLink = fmt.Sprintf("tg://msg?text=%s", summaryEscaped)
 		}
 
 		if summary == "" {
 			summary = "No summary available"
+			formatted = append(formatted, fmt.Sprintf("%s: `%s`", link, summary))
+		} else {
+			formatted = append(formatted, fmt.Sprintf("%s: [%s](%s)", link, summary, summaryLink))
 		}
-		
-		formatted = append(formatted, fmt.Sprintf("%s: `%s`", link, summary))
 	}
 
 	return formatted, nil
@@ -683,7 +688,7 @@ func (a *ACPAdapter) DeleteSession(sessionName string) error {
 
 
 // getSessionTitle attempts to extract a descriptive title for a session
-func (a *ACPAdapter) getSessionTitle(workDir, sessionID string) (string, string) {
+func (a *ACPAdapter) getSessionTitle(workDir, sessionID, botUsername string) (string, string) {
 	if sessionID == "" {
 		return "new-session", ""
 	}
@@ -736,9 +741,22 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID string) (string, string)
 					title = strings.ReplaceAll(title, "\n", " ")
 					safeTitle := strings.ReplaceAll(strings.ReplaceAll(title, "[", "("), "]", ")")
 					safeTitle = bot.TruncateRuneSafe(safeTitle, 40)
-					// Format: [**id**](tg://msg?text=/sssw%20id): [**summary**](tg://msg?text=summary)
-					return fmt.Sprintf("[**%s**](tg://msg?text=/sssw%%20%s): [**%s**](tg://msg?text=%s)",
-						sessionID, sessionID, safeTitle, url.QueryEscape(title)), sessionID
+					
+					sessionIDEscaped := url.QueryEscape(sessionID)
+					titleEscaped := url.QueryEscape(title)
+					
+					var idLink, summaryLink string
+					if botUsername != "" {
+						idLink = fmt.Sprintf("tg://resolve?domain=%s&text=sssw%%20%s", botUsername, sessionIDEscaped)
+						summaryLink = fmt.Sprintf("tg://resolve?domain=%s&text=%s", botUsername, titleEscaped)
+					} else {
+						idLink = fmt.Sprintf("tg://msg?text=sssw%%20%s", sessionIDEscaped)
+						summaryLink = fmt.Sprintf("tg://msg?text=%s", titleEscaped)
+					}
+					
+					// Format: [**id**](link): [summary](link)
+					return fmt.Sprintf("[**%s**](%s): [%s](%s)",
+						sessionID, idLink, safeTitle, summaryLink), sessionID
 				}
 
 				// 2. Extract from first user message
@@ -765,9 +783,22 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID string) (string, string)
 						// Sanitize summary for markdown link
 						safeTitle := strings.ReplaceAll(strings.ReplaceAll(title, "[", "("), "]", ")")
 						safeTitle = bot.TruncateRuneSafe(safeTitle, 40)
-						// Format: [**id**](tg://msg?text=/sssw%20id): [**summary**](tg://msg?text=summary)
-						return fmt.Sprintf("[**%s**](tg://msg?text=/sssw%%20%s): [**%s**](tg://msg?text=%s)",
-							sessionID, sessionID, safeTitle, url.QueryEscape(title)), sessionID
+						
+						sessionIDEscaped := url.QueryEscape(sessionID)
+						titleEscaped := url.QueryEscape(title)
+						
+						var idLink, summaryLink string
+						if botUsername != "" {
+							idLink = fmt.Sprintf("tg://resolve?domain=%s&text=sssw%%20%s", botUsername, sessionIDEscaped)
+							summaryLink = fmt.Sprintf("tg://resolve?domain=%s&text=%s", botUsername, titleEscaped)
+						} else {
+							idLink = fmt.Sprintf("tg://msg?text=sssw%%20%s", sessionIDEscaped)
+							summaryLink = fmt.Sprintf("tg://msg?text=%s", titleEscaped)
+						}
+						
+						// Format: [**id**](link): [summary](link)
+						return fmt.Sprintf("[**%s**](%s): [%s](%s)",
+							sessionID, idLink, safeTitle, summaryLink), sessionID
 					}
 				}
 			}
@@ -791,7 +822,7 @@ func (a *ACPAdapter) GetSessionStats(sessionName string, botUsername string) (ma
 	stats["work_dir"] = sess.workDir
 	stats["usage_perc"] = sess.lastUsagePerc
 	
-	title, actualID := a.getSessionTitle(sess.workDir, sess.sessionId)
+	title, actualID := a.getSessionTitle(sess.workDir, sess.sessionId, botUsername)
 	stats["session_title"] = title
 	stats["session_id"] = actualID
 	
