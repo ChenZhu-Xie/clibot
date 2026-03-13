@@ -35,7 +35,7 @@ type TelegramBot struct {
 func NewTelegramBot(token string) *TelegramBot {
 	return &TelegramBot{
 		token:     token,
-		parseMode: "", // Default to plain text
+		parseMode: "HTML", // Default to HTML mode for formatting support
 		running:   false,
 	}
 }

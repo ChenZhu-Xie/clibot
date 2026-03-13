@@ -858,19 +858,19 @@ func (e *Engine) showHelp(msg bot.BotMessage) {
 # (Tap a command to copy/pre-fill)
 ` + e.fmtCmd(msg, "help") + `          - Show this help message
 ` + e.fmtCmd(msg, "slist") + `         - List all available sessions
-` + e.fmtCmd(msg, "suse <name>") + `   - Switch current session
+` + e.fmtCmd(msg, "suse [name]") + `   - Switch current session
 ` + e.fmtCmd(msg, "sclose [name]") + ` - Close session (default: current)
 ` + e.fmtCmd(msg, "sstatus [name]") + ` - Show detailed session status
 ` + e.fmtCmd(msg, "status") + `        - Show status of all sessions
 ` + e.fmtCmd(msg, "whoami") + `        - Show your current session info
 ` + e.fmtCmd(msg, "echo") + `          - Echo your IM user info
-` + e.fmtCmd(msg, "snew <name> <type> <dir> [cmd]") + ` - New session
-` + e.fmtCmd(msg, "snewg <name> <work_dir>") + ` - New Gemini ACP session
-` + e.fmtCmd(msg, "sdel <name>") + `   - Delete dynamic session
+` + e.fmtCmd(msg, "snew [name] [type] [dir] [cmd]") + ` - New session
+` + e.fmtCmd(msg, "snewg [name] [work_dir]") + ` - New Gemini ACP session
+` + e.fmtCmd(msg, "sdel [name]") + `   - Delete dynamic session
 ` + e.fmtCmd(msg, "ssnew") + `         - Start a NEW Gemini conversation
-` + e.fmtCmd(msg, "scd <path>") + `    - Change working directory
+` + e.fmtCmd(msg, "scd [path]") + `    - Change working directory
 ` + e.fmtCmd(msg, "ssls") + `          - List native Gemini session IDs
-` + e.fmtCmd(msg, "sssw <id>") + `     - Switch to a specific Gemini ID
+` + e.fmtCmd(msg, "sssw [id]") + `     - Switch to a specific Gemini ID
 
 **Special Keywords** (exact match, case-insensitive):
   ⚠️ These keywords only work in Hook mode with tmux input
@@ -907,22 +907,22 @@ func (e *Engine) showHelpChinese(msg bot.BotMessage) {
 **1. 机器人分身管理 (点击指令可复制):**
 
 ` + e.fmtCmd(msg, "slist") + `        - 查看所有已配置的机器人
-` + e.fmtCmd(msg, "suse <名>") + `    - 切换到指定的机器人
+` + e.fmtCmd(msg, "suse [名]") + `    - 切换到指定的机器人
 ` + e.fmtCmd(msg, "sstatus [名]") + ` - 查看 PID, 内存, 运行时间
 ` + e.fmtCmd(msg, "status") + `       - 查看所有机器人的简要状态
 ` + e.fmtCmd(msg, "whoami") + `       - 查看当前会话详情
-` + e.fmtCmd(msg, "snew <名> <类型> <目录> [命令]") + ` - (管理员)
-` + e.fmtCmd(msg, "snewg <名> <目录>") + ` - 快速创建 Gemini ACP (管理员)
-` + e.fmtCmd(msg, "sdel <名>") + `    - 彻底删除会话 (管理员)
+` + e.fmtCmd(msg, "snew [名] [类型] [目录] [命令]") + ` - (管理员)
+` + e.fmtCmd(msg, "snewg [名] [目录]") + ` - 快速创建 Gemini ACP (管理员)
+` + e.fmtCmd(msg, "sdel [名]") + `    - 彻底删除会话 (管理员)
 ` + e.fmtCmd(msg, "sclose [名]") + `  - 暂时关闭后台进程以节省资源
 
 
 **2. AI 记忆与存档管理 (Gemini 专用):**
 
 ` + e.fmtCmd(msg, "ssnew") + `        - 【重要】开启全新对话 (保留旧存档)
-` + e.fmtCmd(msg, "scd <路径>") + `    - 更改 AI 关注的目录 (记忆环境切换)
+` + e.fmtCmd(msg, "scd [路径]") + `    - 更改 AI 关注的目录 (记忆环境切换)
 ` + e.fmtCmd(msg, "ssls") + `         - 列出当前项目的历史存档 ID
-` + e.fmtCmd(msg, "sssw <ID>") + `    - 读档 (切换到特定的历史对话)
+` + e.fmtCmd(msg, "sssw [ID]") + `    - 读档 (切换到特定的历史对话)
 
 
 **3. 其他指令:**
@@ -2434,13 +2434,28 @@ func normalizePath(path string) string {
 
 // fmtCmd formats a command for the specific platform to allow pre-filling/linking
 func (e *Engine) fmtCmd(msg bot.BotMessage, cmd string) string {
-	// For Telegram, use tg://msg?text= link for direct pre-fill (no /)
+	// For Telegram, use Markdown link syntax with optimized pre-filling
 	if msg.Platform == "telegram" {
-		// Just the command name part for the link if it has args, but usually clibot commands or session names
+		botUsername := ""
+		if botAdapter, exists := e.activeBots[msg.Platform]; exists {
+			botUsername = botAdapter.GetBotUsername()
+		}
+
 		parts := strings.Split(cmd, " ")
 		baseCmd := parts[0]
-		return fmt.Sprintf("<a href=\"tg://msg?text=%s\">%s</a>", baseCmd, cmd)
+
+		// Smart pre-fill: add a space if the command takes arguments
+		text := baseCmd
+		if strings.Contains(cmd, "[") {
+			text += " "
+		}
+		escapedText := url.QueryEscape(text)
+
+		if botUsername != "" {
+			return fmt.Sprintf("[%s](tg://resolve?domain=%s&text=%s)", cmd, botUsername, escapedText)
+		}
+		return fmt.Sprintf("[%s](tg://msg?text=%s)", cmd, escapedText)
 	}
-	// Default to monospace/code tag for other platforms
-	return cmd
+	// Default to monospace style for other platforms
+	return "`" + cmd + "`"
 }
