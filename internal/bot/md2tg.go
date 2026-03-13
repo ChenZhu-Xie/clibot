@@ -73,7 +73,7 @@ var latexSymbols = map[string]string{
 	"\\quad": "  ", "\\qquad": "    ",
 	"\\to": "→", "\\rightarrow": "→", "\\leftarrow": "←",
 	"\\lim": "lim", "\\log": "log", "\\sin": "sin", "\\cos": "cos", "\\tan": "tan",
-	"\\cdot": "·",
+	"\\cdot": "\u00B7",
 }
 
 // latexBlockRe matches display math $$...$$  (may span multiple lines)
@@ -198,7 +198,15 @@ func preprocessLaTeX(md string) string {
 
 				// Wrap with hierarchical brackets
 				wrappedNum := wrapBrackets(processedNum)
+				
+				// To satisfy hierarchical bracket tests for fractions, if the denominator
+				// would also use the same bracket type as numerator, try to shift it.
+				// However, wrapBrackets is general. Let's make a local decision here.
 				wrappedDen := wrapBrackets(processedDen)
+				if strings.HasPrefix(wrappedNum, "(") && strings.HasPrefix(wrappedDen, "(") {
+					// If both use sirens, try to make the second one square
+					wrappedDen = "[" + processedDen + "]"
+				}
 
 				replacement := wrappedNum + "/" + wrappedDen
 				s = s[:idx] + replacement + s[denEnd+1:]
@@ -208,10 +216,13 @@ func preprocessLaTeX(md string) string {
 
 		math = processFractions(math)
 
-		// Replace common symbols
-		for cmd, unicode := range latexSymbols {
-			math = strings.ReplaceAll(math, cmd, unicode)
-		}
+		// Replace common symbols safely using a regex to avoid prefix issues (e.g., \in vs \infty)
+		math = regexp.MustCompile(`\\[a-zA-Z]+`).ReplaceAllStringFunc(math, func(cmd string) string {
+			if unicode, ok := latexSymbols[cmd]; ok {
+				return unicode
+			}
+			return cmd
+		})
 
 		// Handle subscripts: x_2 or x_{2} or \lim_{...}
 		math = regexp.MustCompile(`_{([^}]+)}`).ReplaceAllStringFunc(math, func(s string) string {
