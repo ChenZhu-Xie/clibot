@@ -517,7 +517,7 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 		for _, s := range availableSessions {
 			errorMsg += s + "\n"
 		}
-		errorMsg += "\n💡 Use: suse <session_name> to select a session"
+		errorMsg += "\n💡 Use: " + e.fmtCmd(msg, "slist") + " to see available sessions, then " + e.fmtCmd(msg, "suse [name]") + " to select one"
 
 		e.SendToBot(msg.Platform, msg.Channel, errorMsg)
 		return
@@ -683,7 +683,7 @@ func (e *Engine) HandleSpecialCommandWithArgs(command string, args []string, msg
 		e.handleNewGeminiACPSession(args, msg)
 	default:
 		e.SendToBot(msg.Platform, msg.Channel,
-			fmt.Sprintf("❌ Unknown command: %s\nUse 'help' to see available commands", command))
+			fmt.Sprintf("❌ Unknown command: %s\nUse %s to see available commands", command, e.fmtCmd(msg, "help")))
 	}
 }
 
@@ -756,7 +756,7 @@ func (e *Engine) listSessions(msg bot.BotMessage) {
 	}
 
 	if !hasCurrent && len(e.sessions) > 0 {
-		response += "\n💡 Use: suse <session_name> to select a session\n"
+		response += "\n💡 Use: " + e.fmtCmd(msg, "suse [name]") + " to select a session\n"
 	}
 
 	e.SendToBot(msg.Platform, msg.Channel, response)
@@ -823,8 +823,8 @@ func (e *Engine) showWhoami(msg bot.BotMessage) {
 			"**User ID:** `%s`\n"+
 			"**Channel ID:** `%s`\n"+
 			"**Current Session:** ⚠️  Not selected\n\n"+
-			"💡 Use 'slist' to see available sessions\n"+
-			"   Use 'suse <name>' to select a session",
+			"💡 Use " + e.fmtCmd(msg, "slist") + " to see available sessions\n"+
+			"   Use " + e.fmtCmd(msg, "suse [name]") + " to select a session",
 			msg.Platform, msg.UserID, msg.Channel)
 		e.SendToBot(msg.Platform, msg.Channel, response)
 		return
@@ -1459,7 +1459,7 @@ func (e *Engine) handleSessionStatus(args []string, msg bot.BotMessage) {
 	session, exists := e.sessions[sessionName]
 	if !exists {
 		e.SendToBot(msg.Platform, msg.Channel,
-			fmt.Sprintf("❌ Session '%s' does not exist\nUse 'slist' to see available sessions", sessionName))
+			fmt.Sprintf("❌ Session '%s' does not exist\nUse %s to see available sessions", sessionName, e.fmtCmd(msg, "slist")))
 		return
 	}
 
@@ -1479,7 +1479,7 @@ func (e *Engine) handleNewGeminiSession(args []string, msg bot.BotMessage) {
 	e.sessionMu.RUnlock()
 
 	if session == nil {
-		e.SendToBot(msg.Platform, msg.Channel, "❌ No active session. Select one with 'suse <name>'.")
+		e.SendToBot(msg.Platform, msg.Channel, "❌ No active session. Please use "+e.fmtCmd(msg, "slist")+" to see available sessions, then "+e.fmtCmd(msg, "suse [name]")+" to select one.")
 		return
 	}
 
@@ -1521,7 +1521,7 @@ func (e *Engine) handleSwitchWorkDir(args []string, msg bot.BotMessage) {
 	e.sessionMu.RUnlock()
 
 	if session == nil {
-		e.SendToBot(msg.Platform, msg.Channel, "❌ No active session. Select one with 'suse <name>'.")
+		e.SendToBot(msg.Platform, msg.Channel, "❌ No active session. Please use "+e.fmtCmd(msg, "slist")+" to see available sessions, then "+e.fmtCmd(msg, "suse [name]")+" to select one.")
 		return
 	}
 
@@ -1557,7 +1557,7 @@ func (e *Engine) handleListGeminiSessions(args []string, msg bot.BotMessage) {
 	e.sessionMu.RUnlock()
 
 	if session == nil {
-		e.SendToBot(msg.Platform, msg.Channel, "❌ No active session selected.")
+		e.SendToBot(msg.Platform, msg.Channel, "❌ No active session selected. Use "+e.fmtCmd(msg, "slist")+" and "+e.fmtCmd(msg, "suse [name]")+" first.")
 		return
 	}
 
