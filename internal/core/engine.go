@@ -50,6 +50,7 @@ var specialCommands = map[string]struct{}{
 	"scd":     {},
 	"ssls":    {},
 	"sssw":    {},
+	"snewg":   {},
 }
 
 // isSpecialCommand checks if input is a special command.
@@ -70,20 +71,25 @@ func isSpecialCommand(input string) (string, bool, []string) {
 		return "", false, nil
 	}
 
+	// Handle optional leading slash for mobile apps/link clicking compatibility
+	if strings.HasPrefix(input, "/") {
+		input = strings.TrimPrefix(input, "/")
+	}
+
 	// Fast path: exact match for commands without arguments.
 	// This covers 95% of cases with a single O(1) map lookup.
 	if _, exists := specialCommands[input]; exists {
 		return input, true, nil
 	}
 
-	// Handle commands with string arguments (suse, snew, sdel, sclose, sstatus)
+	// Handle commands with string arguments (suse, snew, sdel, sclose, sstatus, etc.)
 	// These commands accept arbitrary string arguments (session names, paths, etc.)
 	fields := strings.Fields(input)
 	if len(fields) > 1 {
 		cmd := fields[0]
 		// Only check known commands that accept string arguments
 		if cmd == "suse" || cmd == "snew" || cmd == "sdel" || cmd == "sclose" || cmd == "sstatus" ||
-			cmd == "sssw" || cmd == "scd" || cmd == "ssnew" || cmd == "ssls" {
+			cmd == "sssw" || cmd == "scd" || cmd == "ssnew" || cmd == "ssls" || cmd == "snewg" {
 			if _, exists := specialCommands[cmd]; exists {
 				return cmd, true, fields[1:]
 			}
@@ -675,6 +681,8 @@ func (e *Engine) HandleSpecialCommandWithArgs(command string, args []string, msg
 		e.handleListGeminiSessions(args, msg)
 	case "sssw":
 		e.handleSwitchGeminiSession(args, msg)
+	case "snewg":
+		e.handleNewGeminiACPSession(args, msg)
 	default:
 		e.SendToBot(msg.Platform, msg.Channel,
 			fmt.Sprintf("❌ Unknown command: %s\nUse 'help' to see available commands", command))
@@ -857,6 +865,7 @@ func (e *Engine) showHelp(msg bot.BotMessage) {
   whoami       - Show your current session info
   echo         - Echo your IM user info (for whitelist config)
   snew <name> <cli_type> <work_dir> [cmd] - Create new session (admin only)
+  sadf <name> <work_dir> - Create new Gemini session in ACP mode (admin only)
   sdel <name>  - Delete dynamic session (admin only)
   ssnew        - Start a NEW Gemini conversation (keep history)
   scd <path>   - Change working directory of current session
@@ -902,32 +911,40 @@ func (e *Engine) showHelp(msg bot.BotMessage) {
 func (e *Engine) showHelpChinese(msg bot.BotMessage) {
 	help := `📖 **clibot 帮助手册**
 
-**1. 机器人分身管理 (clibot Sessions):**
-  slist       - 查看所有已配置的机器人分身
-  suse <名称>  - 切换到指定的机器人
-  sstatus [名] - 查看机器人详细状态 (PID, 内存, 运行时间)
-  status      - 查看所有机器人的简要状态
-  whoami      - 查看你当前正在和哪个机器人聊天
-  snew <名> <类型> <目录> [命令] - 临时创建一个新机器人 (仅限管理员)
-  sdel <名称>  - 彻底删除一个动态创建的机器人 (仅限管理员)
-  sclose [名]  - 暂时关闭机器人的后台进程以节省资源
+**1. 机器人分身管理 (点击指令可预填充):**
+` + "```" + `bash
+/slist       - 查看所有已配置的机器人
+/suse <名>   - 切换到指定的机器人
+/sstatus [名]- 查看 PID, 内存, 运行时间
+/status      - 查看所有机器人的简要状态
+/whoami      - 查看当前会话详情
+/snew <名> <类型> <目录> [命令] - (管理员)
+/snewg <名> <目录> - 快速创建 Gemini ACP (管理员)
+/sdel <名>   - 彻底删除会话 (管理员)
+/sclose [名] - 暂时关闭后台进程以节省资源
+` + "```" + `
 
 **2. AI 记忆与存档管理 (Gemini 专用):**
-  ssnew       - 【重要】开启一个全新的 Gemini 对话 (保留旧存档)
-  scd <路径>   - 更改当前 AI 关注的项目目录 (会触发记忆环境切换)
-  ssls        - 列出当前项目文件夹下的所有历史对话存档 (Session ID)
-  sssw <ID>   - 切换到特定的历史对话存档 (读档)
+` + "```" + `bash
+/ssnew       - 【重要】开启全新对话 (保留旧存档)
+/scd <路径>   - 更改 AI 关注的目录 (记忆环境切换)
+/ssls        - 列出当前项目的历史存档 ID
+/sssw <ID>   - 读档 (切换到特定的历史对话)
+` + "```" + `
 
 **3. 其他指令:**
-  帮助 / help  - 显示此帮助信息
-  echo        - 回显你的 Telegram 账号 ID (用于配置白名单)
+- ` + "`/帮助`" + ` / ` + "`/help`" + ` - 显示此信息
+- ` + "`/echo`" + ` - 回显账号 ID (用于白名单配置)
 
-**特殊关键词 (直接发送即可):**
-  tab, enter, ctrlc, esc - 在部分模式下向终端发送特殊按键
+**特殊关键词 (直接发送):**
+` + "```" + `text
+tab, enter, ctrlc, esc
+` + "```" + `
 
-**提示:**
-- 绝大多数情况下，你只需要用 "suse" 切换机器人，并在聊太久导致 AI 变傻时用 "ssnew" 刷新它。
-- 任何非指令的消息都会被直接发送给底层的 AI 工具。`
+**💡 提示:**
+- 绝大多数情况下，你只需要用 ` + "`/suse`" + ` 切换机器人。
+- 聊太久导致 AI 变傻时，请务必使用 ` + "`/ssnew`" + ` 刷新它。
+- 任何非指令消息都会被直接发送给底层的 AI 工具。`
 
 	e.SendToBot(msg.Platform, msg.Channel, help)
 }
@@ -1598,6 +1615,128 @@ func (e *Engine) handleListGeminiSessions(args []string, msg bot.BotMessage) {
 		}
 		e.SendToBot(msg.Platform, msg.Channel, sb.String())
 	}
+}
+
+// handleNewGeminiACPSession creates a new Gemini session in ACP mode with a specified WorkDir
+// Usage: snewg <name> <work_dir>
+func (e *Engine) handleNewGeminiACPSession(args []string, msg bot.BotMessage) {
+	logger.WithFields(logrus.Fields{
+		"platform": msg.Platform,
+		"user_id":  msg.UserID,
+		"args":     args,
+	}).Info("handle-snewg-command")
+
+	// 1. Permission check
+	if !e.config.IsAdmin(msg.Platform, msg.UserID) {
+		e.SendToBot(msg.Platform, msg.Channel, "❌ Permission denied: admin only")
+		return
+	}
+
+	// 2. Parameter validation
+	if len(args) < 2 {
+		e.SendToBot(msg.Platform, msg.Channel,
+			"❌ Invalid arguments\nUsage: sadf <name> <work_dir>")
+		return
+	}
+
+	name := args[0]
+	workDir := args[1]
+	cliType := "acp"
+	startCmd := "gemini"
+
+	// 3. Validate session name format
+	if !isValidSessionName(name) {
+		e.SendToBot(msg.Platform, msg.Channel,
+			fmt.Sprintf("❌ Invalid session name: '%s'\nUse letters, numbers, hyphen, underscore only", name))
+		return
+	}
+
+	// 4. Validate CLI type
+	adapter, exists := e.cliAdapters[cliType]
+	if !exists {
+		e.SendToBot(msg.Platform, msg.Channel,
+			"❌ ACP CLI adapter not found. Please ensure it is registered.")
+		return
+	}
+
+	// 5. Validate and expand work directory
+	expandedDir, err := expandPath(workDir)
+	if err != nil {
+		e.SendToBot(msg.Platform, msg.Channel,
+			fmt.Sprintf("❌ Invalid work_dir: %v", err))
+		return
+	}
+
+	// Check if directory exists
+	if info, err := os.Stat(expandedDir); err != nil || !info.IsDir() {
+		e.SendToBot(msg.Platform, msg.Channel,
+			fmt.Sprintf("❌ Work directory does not exist or is not a directory: %s", expandedDir))
+		return
+	}
+
+	e.sessionMu.Lock()
+	defer e.sessionMu.Unlock()
+
+	// 6. Check for duplicate session name
+	if _, exists := e.sessions[name]; exists {
+		e.SendToBot(msg.Platform, msg.Channel,
+			fmt.Sprintf("❌ Session '%s' already exists", name))
+		return
+	}
+
+	// 7. Check dynamic session limit
+	dynamicCount := 0
+	for _, s := range e.sessions {
+		if s.IsDynamic {
+			dynamicCount++
+		}
+	}
+	if dynamicCount >= e.config.Session.MaxDynamicSessions {
+		e.SendToBot(msg.Platform, msg.Channel,
+			fmt.Sprintf("❌ Maximum dynamic session limit reached (%d)", e.config.Session.MaxDynamicSessions))
+		return
+	}
+
+	// 8. Create session object
+	session := &Session{
+		Name:      name,
+		CLIType:   cliType,
+		WorkDir:   expandedDir,
+		StartCmd:  startCmd,
+		State:     StateIdle,
+		CreatedAt: time.Now().Format(time.RFC3339),
+		IsDynamic: true,
+		CreatedBy: fmt.Sprintf("%s:%s", msg.Platform, msg.UserID),
+	}
+
+	// 9. Create ACP session
+	if err := adapter.CreateSession(name, expandedDir, startCmd, "stdio://"); err != nil {
+		logger.WithField("error", err).Error("failed-to-create-sadf-session")
+		e.SendToBot(msg.Platform, msg.Channel,
+			fmt.Sprintf("❌ Failed to create session: %v", err))
+		return
+	}
+
+	// 10. Add to sessions map
+	e.sessions[name] = session
+
+	// 11. Automatically select for the current user
+	userKey := getUserKey(msg.Platform, msg.UserID)
+	e.userSessions[userKey] = name
+
+	logger.WithFields(logrus.Fields{
+		"action":     "create_snewg_session",
+		"session":    name,
+		"platform":   msg.Platform,
+		"user_id":    msg.UserID,
+		"work_dir":   expandedDir,
+		"is_dynamic": true,
+	}).Info("admin-created-snewg-session")
+
+	// 12. Success response
+	e.SendToBot(msg.Platform, msg.Channel,
+		fmt.Sprintf("✅ Gemini ACP session '%s' created and selected\nWorkDir: %s",
+			name, expandedDir))
 }
 
 // handleSwitchGeminiSession switches the current Gemini process to a different session file natively
