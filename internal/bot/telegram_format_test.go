@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mattn/go-runewidth"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -54,16 +55,44 @@ func TestConvertMarkdownToTelegramHTML_Links(t *testing.T) {
 }
 
 func TestConvertMarkdownToTelegramHTML_Tables(t *testing.T) {
-	md := "| Name | Age |\n|------|-----|\n| Alice | 30 |\n| Bob | 25 |"
+	md := "| Name | 城市 | Age |\n|------|-----|---|\n| Alice | New York | 30 |\n| 机器人 | 北京 | 25 |"
 
 	result := ConvertMarkdownToTelegramHTML(md)
 	// Should render as <pre> with aligned columns and separator
 	assert.Contains(t, result, "<pre>")
 	assert.Contains(t, result, "</pre>")
 	assert.Contains(t, result, "Alice")
-	assert.Contains(t, result, "Bob")
+	assert.Contains(t, result, "机器人")
+	assert.Contains(t, result, "北京")
 	assert.Contains(t, result, "│")
 	assert.Contains(t, result, "─")
+
+	// Verify alignment roughly by checking if the separator line width matches
+	lines := strings.Split(result, "\n")
+	var preLines []string
+	inPre := false
+	for _, l := range lines {
+		if strings.Contains(l, "<pre>") {
+			inPre = true
+			continue
+		}
+		if strings.Contains(l, "</pre>") {
+			break
+		}
+		if inPre {
+			preLines = append(preLines, l)
+		}
+	}
+	// Check header, separator, and data rows
+	if len(preLines) >= 3 {
+		// Header and first data row should have same structure (ignoring content)
+		// We use runewidth to check visual length
+		hLen := runewidth.StringWidth(preLines[0])
+		sLen := runewidth.StringWidth(preLines[1])
+		dLen := runewidth.StringWidth(preLines[2])
+		assert.Equal(t, hLen, sLen)
+		assert.Equal(t, hLen, dLen)
+	}
 }
 
 func TestConvertMarkdownToTelegramHTML_TaskList(t *testing.T) {
@@ -95,19 +124,18 @@ func TestConvertMarkdownToTelegramHTML_Images(t *testing.T) {
 }
 
 func TestConvertMarkdownToTelegramHTML_LaTeX(t *testing.T) {
-	md := "Inline math $x^2 + y^2 = z^2$ here."
+	md := "Inline math $E = mc^2$ and $H_2O$ and $\\alpha + \\beta$."
 
 	result := ConvertMarkdownToTelegramHTML(md)
-	// LaTeX should be wrapped in code tags
-	assert.Contains(t, result, "<code>")
-	assert.Contains(t, result, "x^2 + y^2 = z^2")
+	assert.Contains(t, result, "<code>E = mc²</code>")
+	assert.Contains(t, result, "<code>H₂O</code>")
+	assert.Contains(t, result, "<code>α + β</code>")
 }
 
 func TestConvertMarkdownToTelegramHTML_DisplayLaTeX(t *testing.T) {
-	md := "Display:\n$$E = mc^2$$\nDone."
+	md := "Display:\n$$\\sum_{i=0}^{n} x_i$$\nDone."
 
 	result := ConvertMarkdownToTelegramHTML(md)
-	// Display LaTeX should be in a code block
 	assert.Contains(t, result, "<pre>")
-	assert.Contains(t, result, "E = mc^2")
+	assert.Contains(t, result, "∑ᵢ₌₀ⁿ xᵢ")
 }

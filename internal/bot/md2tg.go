@@ -6,8 +6,7 @@ import (
 	"html"
 	"regexp"
 	"strings"
-	"unicode/utf8"
-
+	"github.com/mattn/go-runewidth"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
@@ -29,19 +28,121 @@ type tgHTMLRenderer struct {
 	currentCell  strings.Builder
 }
 
+// latexSubscripts maps LaTeX subscript sequences to Unicode
+var latexSubscripts = map[string]string{
+	"0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄",
+	"5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉",
+	"+": "₊", "-": "₋", "=": "₌", "(": "₍", ")": "₎",
+	"a": "ₐ", "e": "ₑ", "o": "ₒ", "x": "ₓ", "h": "ₕ",
+	"k": "ₖ", "l": "ₗ", "m": "ₘ", "n": "ₙ", "p": "ₚ",
+	"s": "ₛ", "t": "ₜ", "i": "ᵢ", "j": "ⱼ", "r": "ᵣ",
+	"u": "ᵤ", "v": "ᵥ",
+}
+
+// latexSuperscripts maps LaTeX superscript sequences to Unicode
+var latexSuperscripts = map[string]string{
+	"0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+	"5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
+	"+": "⁺", "-": "⁻", "=": "⁼", "(": "⁽", ")": "⁾",
+	"n": "ⁿ", "i": "ⁱ", "a": "ᵃ", "b": "ᵇ", "c": "ᶜ",
+	"d": "ᵈ", "e": "ᵉ", "f": "ᶠ", "g": "ᵍ", "h": "ʰ",
+	"j": "ʲ", "k": "ᵏ", "l": "ˡ", "m": "ᵐ", "o": "ᵒ",
+	"p": "ᵖ", "r": "ʳ", "s": "ˢ", "t": "ᵗ", "u": "ᵘ",
+	"v": "ᵛ", "w": "ʷ", "x": "ˣ", "y": "ʸ", "z": "ᶻ",
+}
+
+// latexSymbols maps common LaTeX commands to Unicode
+var latexSymbols = map[string]string{
+	"\\alpha": "α", "\\beta": "β", "\\gamma": "γ", "\\delta": "δ",
+	"\\epsilon": "ε", "\\zeta": "ζ", "\\eta": "η", "\\theta": "θ",
+	"\\iota": "ι", "\\kappa": "κ", "\\lambda": "λ", "\\mu": "μ",
+	"\\nu": "ν", "\\xi": "ξ", "\\omicron": "ο", "\\pi": "π",
+	"\\rho": "ρ", "\\sigma": "σ", "\\tau": "τ", "\\upsilon": "υ",
+	"\\phi": "φ", "\\chi": "χ", "\\psi": "ψ", "\\omega": "ω",
+	"\\Gamma": "Γ", "\\Delta": "Δ", "\\Theta": "Θ", "\\Lambda": "Λ",
+	"\\Xi": "Ξ", "\\Pi": "Π", "\\Sigma": "Σ", "\\Upsilon": "Φ",
+	"\\Phi": "Φ", "\\Psi": "Ψ", "\\Omega": "Ω",
+	"\\infty": "∞", "\\pm": "±", "\\times": "×", "\\div": "÷",
+	"\\neq": "≠", "\\leq": "≤", "\\geq": "≥", "\\approx": "≈",
+	"\\partial": "∂", "\\nabla": "∇", "\\sum": "∑", "\\prod": "∏",
+	"\\int": "∫", "\\sqrt": "√", "\\angle": "∠", "\\cap": "∩",
+	"\\cup": "∪", "\\sub": "⊂", "\\sup": "⊃", "\\in": "∈",
+	"\\notin": "∉", "\\forall": "∀", "\\exists": "∃",
+	"\\quad": "  ", "\\qquad": "    ",
+}
+
 // latexBlockRe matches display math $$...$$  (may span multiple lines)
 var latexBlockRe = regexp.MustCompile(`(?s)\$\$(.+?)\$\$`)
 
 // latexInlineRe matches inline math $...$  (single line, non-greedy)
 var latexInlineRe = regexp.MustCompile(`\$([^\n$]+?)\$`)
 
-// preprocessLaTeX wraps LaTeX math expressions in backticks so goldmark
-// treats them as inline code, preserving readability in Telegram.
+// preprocessLaTeX converts common LaTeX symbols and constructs to Unicode
+// to improve readability in Telegram.
 func preprocessLaTeX(md string) string {
-	// Replace $$...$$ with ```...``` (code block for display math)
-	md = latexBlockRe.ReplaceAllString(md, "```\n$1\n```")
-	// Replace $...$ with `...` (inline code)
-	md = latexInlineRe.ReplaceAllString(md, "`$1`")
+	convertMath := func(math string) string {
+		// Replace common symbols
+		for cmd, unicode := range latexSymbols {
+			math = strings.ReplaceAll(math, cmd, unicode)
+		}
+
+		// Handle superscripts: x^2 or x^{2}
+		math = regexp.MustCompile(`\^{([^}]+)}`).ReplaceAllStringFunc(math, func(s string) string {
+			content := s[2 : len(s)-1]
+			var res strings.Builder
+			for _, r := range content {
+				if v, ok := latexSuperscripts[string(r)]; ok {
+					res.WriteString(v)
+				} else {
+					res.WriteRune(r)
+				}
+			}
+			return res.String()
+		})
+		math = regexp.MustCompile(`\^([^{])`).ReplaceAllStringFunc(math, func(s string) string {
+			char := s[1:]
+			if v, ok := latexSuperscripts[char]; ok {
+				return v
+			}
+			return char
+		})
+
+		// Handle subscripts: x_2 or x_{2}
+		math = regexp.MustCompile(`_{([^}]+)}`).ReplaceAllStringFunc(math, func(s string) string {
+			content := s[2 : len(s)-1]
+			var res strings.Builder
+			for _, r := range content {
+				if v, ok := latexSubscripts[string(r)]; ok {
+					res.WriteString(v)
+				} else {
+					res.WriteRune(r)
+				}
+			}
+			return res.String()
+		})
+		math = regexp.MustCompile(`_([^{])`).ReplaceAllStringFunc(math, func(s string) string {
+			char := s[1:]
+			if v, ok := latexSubscripts[char]; ok {
+				return v
+			}
+			return char
+		})
+
+		return math
+	}
+
+	// Process block math
+	md = latexBlockRe.ReplaceAllStringFunc(md, func(s string) string {
+		content := s[2 : len(s)-2]
+		return "```\n" + strings.TrimSpace(convertMath(content)) + "\n```"
+	})
+
+	// Process inline math
+	md = latexInlineRe.ReplaceAllStringFunc(md, func(s string) string {
+		content := s[1 : len(s)-1]
+		return "<code>" + convertMath(content) + "</code>"
+	})
+
 	return md
 }
 
@@ -331,8 +432,20 @@ func (r *tgHTMLRenderer) renderAlignedTable() {
 		return
 	}
 
+	// First pass: extract plain text (unescaped) for width calculation
+	plainRows := make([][]string, len(r.tableRows))
+	for i, row := range r.tableRows {
+		plainRows[i] = make([]string, maxCols)
+		for j := 0; j < maxCols; j++ {
+			if j < len(row) {
+				// strip any internal HTML tags used for styling inside cells
+				plainRows[i][j] = html.UnescapeString(stripHTMLTags(row[j]))
+			}
+		}
+	}
+
 	colWidths := make([]int, maxCols)
-	for _, row := range r.tableRows {
+	for _, row := range plainRows {
 		for j, cell := range row {
 			w := runeWidth(cell)
 			if w > colWidths[j] {
@@ -342,22 +455,19 @@ func (r *tgHTMLRenderer) renderAlignedTable() {
 	}
 
 	r.buf.WriteString("<pre>")
-	for i, row := range r.tableRows {
+	for i, row := range plainRows {
 		for j := 0; j < maxCols; j++ {
-			cell := ""
-			if j < len(row) {
-				cell = row[j]
-			}
-			// Strip HTML tags for width calculation but keep them in output
-			plainCell := stripHTMLTags(cell)
-			padding := colWidths[j] - runeWidth(plainCell)
+			cell := row[j]
+			w := runeWidth(cell)
+			padding := colWidths[j] - w
 			if padding < 0 {
 				padding = 0
 			}
 			if j > 0 {
 				r.buf.WriteString(" │ ")
 			}
-			r.buf.WriteString(html.EscapeString(plainCell))
+			// Escape again for HTML safety inside <pre>
+			r.buf.WriteString(html.EscapeString(cell))
 			r.buf.WriteString(strings.Repeat(" ", padding))
 		}
 		r.buf.WriteString("\n")
@@ -376,9 +486,9 @@ func (r *tgHTMLRenderer) renderAlignedTable() {
 	r.buf.WriteString("</pre>\n\n")
 }
 
-// runeWidth returns the display width of a string in runes
+// runeWidth returns the display width of a string in runes, CJK aware
 func runeWidth(s string) int {
-	return utf8.RuneCountInString(s)
+	return runewidth.StringWidth(s)
 }
 
 // stripHTMLTags removes HTML tags from a string for width calculation
