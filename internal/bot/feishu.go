@@ -300,6 +300,11 @@ func (f *FeishuBot) SetMessageHandler(handler func(BotMessage)) {
 	f.messageHandler = handler
 }
 
+// GetBotUsername returns the Feishu bot's identifier (AppID)
+func (f *FeishuBot) GetBotUsername() string {
+	return f.appID
+}
+
 // GetMessageHandler gets the message handler in a thread-safe manner
 func (f *FeishuBot) GetMessageHandler() func(BotMessage) {
 	f.mu.RLock()

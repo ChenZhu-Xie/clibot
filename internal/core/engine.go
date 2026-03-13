@@ -1534,7 +1534,13 @@ func (e *Engine) handleListGeminiSessions(args []string, msg bot.BotMessage) {
 	}
 
 	// Use adapter's ListSessions to get a machine-readable list of sessions.
-	sessions, err := adapter.ListSessions(session.Name)
+	// Retrieve bot username for platform-specific linking (e.g., Telegram tg://resolve)
+	var botUsername string
+	if botAdapter, ok := e.activeBots[msg.Platform]; ok {
+		botUsername = botAdapter.GetBotUsername()
+	}
+
+	sessions, err := adapter.ListSessions(session.Name, botUsername)
 	if err != nil {
 		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Failed to list sessions: %v", err))
 		return
@@ -1545,15 +1551,24 @@ func (e *Engine) handleListGeminiSessions(args []string, msg bot.BotMessage) {
 		return
 	}
 
-	// Format sessions into a nice Telegram-friendly message
-	var sb strings.Builder
-	sb.WriteString("📂 *Available Gemini Sessions*\n\n")
-	for _, s := range sessions {
-		sb.WriteString(fmt.Sprintf("%s\n", s))
-	}
-	sb.WriteString("\n💡 Use `sssw <id>` to switch to a session.")
+	// Format sessions into Telegram-friendly chunks (e.g., 15 sessions per message)
+	const chunkSize = 15
+	for i := 0; i < len(sessions); i += chunkSize {
+		end := i + chunkSize
+		if end > len(sessions) {
+			end = len(sessions)
+		}
 
-	e.SendToBot(msg.Platform, msg.Channel, sb.String())
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("📂 *Available Gemini Sessions* (%d/%d)\n\n", (i/chunkSize)+1, (len(sessions)+chunkSize-1)/chunkSize))
+		for _, s := range sessions[i:end] {
+			sb.WriteString(fmt.Sprintf("%s\n", s))
+		}
+		if end == len(sessions) {
+			sb.WriteString("\n💡 Use `sssw <id>` to switch to a session.")
+		}
+		e.SendToBot(msg.Platform, msg.Channel, sb.String())
+	}
 }
 
 // handleSwitchGeminiSession switches the current Gemini process to a different session file natively
@@ -1592,10 +1607,41 @@ func (e *Engine) handleSwitchGeminiSession(args []string, msg bot.BotMessage) {
 		return
 	}
 
-	responseMsg := fmt.Sprintf("✅ Switched Gemini session to: %s", id)
+	responseMsg := fmt.Sprintf("✅ Switched Gemini session to: **%s**", id)
 	if contextStr != "" {
 		responseMsg += fmt.Sprintf("\n\n%s", contextStr)
 	}
+
+	// Append status bar to the switch confirmation if enabled
+	if e.config.Session.ShowSessionStats {
+		// Retrieve bot username for platform-specific linking
+		var botUsername string
+		if botAdapter, ok := e.activeBots[msg.Platform]; ok {
+			botUsername = botAdapter.GetBotUsername()
+		}
+
+		stats, err := adapter.GetSessionStats(session.Name, botUsername)
+		if err == nil && len(stats) > 0 {
+			workDir := ""
+			if wd, ok := stats["work_dir"].(string); ok {
+				workDir = wd
+			}
+			usagePerc := 0.0
+			if up, ok := stats["usage_perc"].(float64); ok {
+				usagePerc = up
+			}
+			sessionTitle := ""
+			if st, ok := stats["session_title"].(string); ok {
+				sessionTitle = st
+			}
+
+			// Markdown Format: 📂 `[dir]` | 💬 ID: Summary | 🧠 `[usage]%` used
+			statsBar := fmt.Sprintf("\n\n---\n📂 `%s` | 💬 %s | 🧠 `%.0f%%` used",
+				workDir, sessionTitle, usagePerc)
+			responseMsg += statsBar
+		}
+	}
+
 	e.SendToBot(msg.Platform, msg.Channel, responseMsg)
 }
 
@@ -2026,7 +2072,13 @@ func (e *Engine) SendResponseToSession(sessionName, message string) {
 	if sessExists && e.config.Session.ShowSessionStats {
 		adapter, ok := e.cliAdapters[session.CLIType]
 		if ok {
-			stats, err := adapter.GetSessionStats(sessionName)
+			// Retrieve bot username for platform-specific linking
+			var botUsername string
+			if botAdapter, ok := e.activeBots[botChannel.Platform]; ok {
+				botUsername = botAdapter.GetBotUsername()
+			}
+
+			stats, err := adapter.GetSessionStats(sessionName, botUsername)
 			if err == nil && len(stats) > 0 {
 				workDir := ""
 				if wd, ok := stats["work_dir"].(string); ok {
@@ -2041,8 +2093,8 @@ func (e *Engine) SendResponseToSession(sessionName, message string) {
 					sessionTitle = st
 				}
 
-				// Markdown Format: 📂 `[dir]` | 💬 `[title]` | 🧠 `[usage]%` used
-				statsBar := fmt.Sprintf("\n\n---\n📂 `%s` | 💬 `%s` | 🧠 `%.0f%%` used",
+				// Markdown Format: 📂 `[dir]` | 💬 [id](...): [summary](...) | 🧠 `[usage]%` used
+				statsBar := fmt.Sprintf("\n\n---\n📂 `%s` | 💬 %s | 🧠 `%.0f%%` used",
 					workDir, sessionTitle, usagePerc)
 				finalMessage += statsBar
 			}

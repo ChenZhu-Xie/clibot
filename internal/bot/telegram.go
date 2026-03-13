@@ -3,8 +3,12 @@ package bot
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
+
+	"unicode/utf8"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/keepmind9/clibot/internal/logger"
@@ -195,20 +199,6 @@ func (t *TelegramBot) SendMessage(chatID, message string) error {
 		return fmt.Errorf("telegram bot not initialized")
 	}
 
-	if chatID == "" {
-		return fmt.Errorf("chat ID is required for Telegram")
-	}
-
-	// Telegram message limit
-	const maxTelegramLength = constants.MaxTelegramMessageLength
-	if len(message) > maxTelegramLength {
-		logger.WithFields(logrus.Fields{
-			"original_length": len(message),
-			"max_length":      maxTelegramLength,
-		}).Info("truncating-message-for-telegram-limit")
-		message = message[:maxTelegramLength]
-	}
-
 	// Parse chat ID (convert string to int64)
 	var chatIDInt int64
 	if _, err := fmt.Sscanf(chatID, "%d", &chatIDInt); err != nil {
@@ -219,46 +209,86 @@ func (t *TelegramBot) SendMessage(chatID, message string) error {
 	parseMode := t.parseMode
 	t.mu.RUnlock()
 
-	// Convert Markdown to HTML if in HTML mode
+	// 1. Convert Markdown to HTML FIRST if in HTML mode
 	if parseMode == "HTML" {
 		message = convertMarkdownToHTML(message)
 	}
 
-	// Create message
-	msg := tgbotapi.NewMessage(chatIDInt, message)
-	
-	// Set ParseMode from config (Markdown, HTML, or empty)
-	msg.ParseMode = parseMode 
-
-	// Send message
-	_, err := bot.Send(msg)
-	if err != nil {
-		err = sanitizeTokenFromError(t.token, err)
-		// FALLBACK: If Markdown fails (often due to unescaped special chars),
-		// retry sending as plain text to ensure user gets the information.
-		if parseMode != "" {
-			logger.WithFields(logrus.Fields{
-				"chat_id":    chatID,
-				"parse_mode": parseMode,
-				"error":      err,
-			}).Warn("failed-to-send-formatted-message-falling-back-to-plain-text")
-			
-			msg.ParseMode = "" // Clear parse mode
-			_, err = bot.Send(msg)
-			if err == nil {
-				return nil // Success with plain text
-			}
-		}
-
+	// 2. Split message into chunks < 4096 bytes
+	const maxTelegramLength = constants.MaxTelegramMessageLength
+	chunks := []string{message}
+	if len(message) > maxTelegramLength {
 		logger.WithFields(logrus.Fields{
-			"chat_id": chatID,
-			"error":   err,
-		}).Error("failed-to-send-message-to-telegram")
-		return fmt.Errorf("failed to send message to chat %s: %w", chatID, err)
+			"original_length": len(message),
+			"max_length":      maxTelegramLength,
+		}).Info("splitting-message-for-telegram-limit")
+		chunks = splitMessageForTelegram(message, maxTelegramLength)
 	}
 
-	logger.WithField("chat_id", chatID).Info("message-sent-to-telegram")
+	// 3. Send each chunk
+	for _, chunk := range chunks {
+		msg := tgbotapi.NewMessage(chatIDInt, chunk)
+		msg.ParseMode = parseMode
+
+		_, err := bot.Send(msg)
+		if err != nil {
+			err = sanitizeTokenFromError(t.token, err)
+			if parseMode != "" {
+				logger.WithFields(logrus.Fields{
+					"chat_id":    chatID,
+					"parse_mode": parseMode,
+					"error":      err,
+				}).Warn("failed-to-send-formatted-chunk-falling-back-to-plain-text")
+				
+				msg.ParseMode = "" 
+				msg.Text = stripHTML(chunk)
+				_, err = bot.Send(msg)
+				if err != nil {
+					return sanitizeTokenFromError(t.token, err)
+				}
+			} else {
+				return err
+			}
+		}
+	}
+
 	return nil
+}
+
+// splitMessageForTelegram splits s into chunks of at most maxSize. 
+func splitMessageForTelegram(s string, maxSize int) []string {
+	var chunks []string
+	for len(s) > 0 {
+		if len(s) <= maxSize {
+			chunks = append(chunks, s)
+			break
+		}
+
+		splitIdx := strings.LastIndex(s[:maxSize], "\n")
+		if splitIdx == -1 {
+			splitIdx = findSafeRuneSplit(s, maxSize)
+		}
+
+		chunks = append(chunks, s[:splitIdx])
+		s = strings.TrimLeft(s[splitIdx:], "\n")
+	}
+	return chunks
+}
+
+func findSafeRuneSplit(s string, maxSize int) int {
+	if len(s) <= maxSize {
+		return len(s)
+	}
+	idx := maxSize
+	for idx > 0 && !utf8.RuneStart(s[idx]) {
+		idx--
+	}
+	return idx
+}
+
+func stripHTML(s string) string {
+	re := regexp.MustCompile(`<[^>]*>`)
+	return re.ReplaceAllString(s, "")
 }
 
 // Stop closes the Telegram long polling connection and cleans up resources
@@ -286,6 +316,16 @@ func (t *TelegramBot) SetMessageHandler(handler func(BotMessage)) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.messageHandler = handler
+}
+
+// GetBotUsername returns the Telegram bot's username
+func (t *TelegramBot) GetBotUsername() string {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	if t.bot != nil {
+		return t.bot.Self.UserName
+	}
+	return ""
 }
 
 // GetMessageHandler gets the message handler in a thread-safe manner

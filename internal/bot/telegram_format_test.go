@@ -154,3 +154,29 @@ func TestConvertMarkdownToTelegramHTML_DisplayLaTeX(t *testing.T) {
 	result4 := ConvertMarkdownToTelegramHTML(md4)
 	assert.Contains(t, result4, "∑ᵢ₌₁ⁿ i = [n(n+1)]/2")
 }
+
+func TestConvertMarkdownToTelegramHTML_SessionLinks(t *testing.T) {
+	// Nested bold text inside a link
+	md := "[**id-123**](tg://msg?text=/sssw%20id-123): [**my session**](tg://msg?text=my%20session)"
+	expected := "<a href=\"tg://msg?text=/sssw%20id-123\"><b>id-123</b></a>: <a href=\"tg://msg?text=my%20session\"><b>my session</b></a>"
+
+	result := ConvertMarkdownToTelegramHTML(md)
+	assert.Equal(t, expected, result)
+}
+
+func TestTruncateRuneSafe(t *testing.T) {
+	// Simple US-ASCII
+	assert.Equal(t, "ab...", TruncateRuneSafe("abcdef", 5))
+	assert.Equal(t, "abcdef", TruncateRuneSafe("abcdef", 6))
+	assert.Equal(t, "abc", TruncateRuneSafe("abc", 3))
+
+	// Multi-byte CJK
+	// "你好世界" (4 characters, 12 bytes)
+	s := "你好世界"
+	assert.Equal(t, "你好世界", TruncateRuneSafe(s, 4))
+	assert.Equal(t, "你好世", TruncateRuneSafe(s, 3)) // maxRunes <= 3 returns characters
+
+	// Invalid UTF-8 (should be stripped)
+	invalid := "abc" + string([]byte{0xff, 0xfe, 0xfd}) + "def"
+	assert.Equal(t, "abcdef", TruncateRuneSafe(invalid, 10))
+}

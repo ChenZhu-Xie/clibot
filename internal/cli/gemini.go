@@ -4,12 +4,14 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/keepmind9/clibot/internal/bot"
 	"github.com/keepmind9/clibot/internal/logger"
 	"github.com/keepmind9/clibot/internal/watchdog"
 	"github.com/sirupsen/logrus"
@@ -32,6 +34,13 @@ func NewGeminiAdapter(config GeminiAdapterConfig) (*GeminiAdapter, error) {
 	}, nil
 }
 
+// GeminiSession represents a Gemini session info
+type GeminiSession struct {
+	ID      string
+	Summary string
+	ModTime int64
+}
+
 // ResetSession starts a new session for Gemini CLI
 func (g *GeminiAdapter) ResetSession(sessionName string) error {
 	logger.WithField("session", sessionName).Info("resetting-gemini-session")
@@ -40,20 +49,40 @@ func (g *GeminiAdapter) ResetSession(sessionName string) error {
 	return watchdog.SendKeys(sessionName, "gemini --new\n", g.inputDelayMs)
 }
 
-// ListSessions returns a list of available Gemini session files for the current project.
-// It scans the ~/.gemini/tmp/{project_hash}/chats directory.
-func (g *GeminiAdapter) ListSessions(sessionName string) ([]string, error) {
+func (g *GeminiAdapter) ListSessions(sessionName string, botUsername string) ([]string, error) {
 	// Get current working directory from tmux session
 	cwd, err := watchdog.GetCWD(sessionName)
 	if err != nil {
 		logger.WithField("error", err).Warn("failed-to-get-cwd-for-gemini-session-listing")
 		return nil, fmt.Errorf("could not determine current work dir: %w", err)
 	}
-	return listGeminiSessionsByWorkDir(cwd)
+	
+	sessions, err := listGeminiSessionsByWorkDir(cwd)
+	if err != nil {
+		return nil, err
+	}
+
+	var formatted []string
+	for _, s := range sessions {
+		sessionID := url.QueryEscape(s.ID)
+		link := s.ID
+		if botUsername != "" {
+			link = fmt.Sprintf("[**%s**](tg://resolve?domain=%s&text=sssw%%20%s)", s.ID, botUsername, sessionID)
+		} else {
+			link = fmt.Sprintf("[**%s**](tg://msg?text=sssw%%20%s)", s.ID, sessionID)
+		}
+		
+		summary := s.Summary
+		if summary == "" {
+			summary = "No summary available"
+		}
+		
+		formatted = append(formatted, fmt.Sprintf("%s: `%s`", link, summary))
+	}
+	return formatted, nil
 }
 
-// GetSessionStats returns diagnostic stats for the session (e.g., current session ID and title)
-func (g *GeminiAdapter) GetSessionStats(sessionName string) (map[string]interface{}, error) {
+func (g *GeminiAdapter) GetSessionStats(sessionName string, botUsername string) (map[string]interface{}, error) {
 	cwd, err := watchdog.GetCWD(sessionName)
 	if err != nil {
 		return nil, err
@@ -67,7 +96,22 @@ func (g *GeminiAdapter) GetSessionStats(sessionName string) (map[string]interfac
 	if err == nil && lastFile != "" {
 		id := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(lastFile), "session-"), ".json")
 		stats["session_id"] = id
-		stats["session_title"] = fmt.Sprintf("%s: %s", id, geminiSessionSummary(lastFile))
+		summary := bot.TruncateRuneSafe(geminiSessionSummary(lastFile), 40)
+		safeSummary := strings.ReplaceAll(strings.ReplaceAll(summary, "[", "("), "]", ")")
+		
+		sessionID := url.QueryEscape(id)
+		
+		var link, summaryLink string
+		if botUsername != "" {
+			link = fmt.Sprintf("[**%s**](tg://resolve?domain=%s&text=sssw%%20%s)", id, botUsername, sessionID)
+			summaryLink = fmt.Sprintf("[**%s**](tg://resolve?domain=%s&text=%s)", safeSummary, botUsername, url.QueryEscape(summary))
+		} else {
+			link = fmt.Sprintf("[**%s**](tg://msg?text=sssw%%20%s)", id, sessionID)
+			summaryLink = fmt.Sprintf("[**%s**](tg://msg?text=%s)", safeSummary, url.QueryEscape(summary))
+		}
+		
+		// Format: ID: Summary
+		stats["session_title"] = fmt.Sprintf("%s: %s", link, summaryLink)
 	}
 
 	return stats, nil
@@ -109,13 +153,12 @@ func getGeminiSessionContext(cwd, cliSessionID string) string {
 	if err != nil {
 		return "(no previous chat text)"
 	}
-	return fmt.Sprintf("🗣 **You**: %s\n\n🤖 **Gemini**: %s\n\n*(...)*", truncateRuneSafe(userPrompt, 150), truncateRuneSafe(response, 300))
+	return fmt.Sprintf("🗣 **You**: %s\n\n🤖 **Gemini**: %s\n\n*(...)*", bot.TruncateRuneSafe(userPrompt, 150), bot.TruncateRuneSafe(response, 300))
 }
 
 // listGeminiSessionsByWorkDir is a shared package-level helper that scans
-// ~/.gemini/tmp/{hash}/chats for session-*.json files and returns formatted
-// "#<id>: <first-user-message>" strings, sorted newest-first.
-func listGeminiSessionsByWorkDir(workDir string) ([]string, error) {
+// ~/.gemini/tmp/{hash}/chats for session-*.json files and returns a list of session info.
+func listGeminiSessionsByWorkDir(workDir string) ([]GeminiSession, error) {
 	chatsDir, err := findGeminiChatsDir(workDir)
 	if err != nil {
 		return nil, err
@@ -126,7 +169,7 @@ func listGeminiSessionsByWorkDir(workDir string) ([]string, error) {
 		return nil, fmt.Errorf("failed to find session files: %w", err)
 	}
 	if len(matches) == 0 {
-		return []string{}, nil
+		return []GeminiSession{}, nil
 	}
 
 	sort.Slice(matches, func(i, j int) bool {
@@ -135,13 +178,29 @@ func listGeminiSessionsByWorkDir(workDir string) ([]string, error) {
 		return infoI.ModTime().After(infoJ.ModTime())
 	})
 
-	var summaries []string
+	var sessions []GeminiSession
 	for _, file := range matches {
+		info, err := os.Stat(file)
+		if err != nil {
+			logger.WithField("file", file).Warn("failed-to-stat-session-file")
+			continue
+		}
+
 		id := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(file), "session-"), ".json")
-		summary := geminiSessionSummary(file)
-		summaries = append(summaries, fmt.Sprintf("`%s`: %s", id, summary))
+		summary := bot.TruncateRuneSafe(geminiSessionSummary(file), 40)
+
+		sessions = append(sessions, GeminiSession{
+			ID:      id,
+			Summary: summary,
+			ModTime: info.ModTime().Unix(),
+		})
 	}
-	return summaries, nil
+
+	sort.Slice(sessions, func(i, j int) bool {
+		return sessions[i].ModTime > sessions[j].ModTime // Newest first
+	})
+
+	return sessions, nil
 }
 
 // resolveFullSessionID attempts to find the full session UUID given a prefix or suffix.
@@ -205,10 +264,10 @@ func geminiSessionSummary(sessionFile string) string {
 
 	// Prefer explicit title or name
 	if sd.Title != "" {
-		return truncateRuneSafe(sd.Title, 50)
+		return bot.TruncateRuneSafe(sd.Title, 50)
 	}
 	if sd.Name != "" {
-		return truncateRuneSafe(sd.Name, 50)
+		return bot.TruncateRuneSafe(sd.Name, 50)
 	}
 
 	for _, msg := range sd.Messages {
@@ -220,21 +279,21 @@ func geminiSessionSummary(sessionFile string) string {
 			Text string `json:"text"`
 		}
 		if json.Unmarshal(msg.Content, &parts) == nil && len(parts) > 0 {
-			return truncateRuneSafe(parts[0].Text, 50)
+			return bot.TruncateRuneSafe(parts[0].Text, 50)
 		}
 		// Try plain string form: "..."
 		var plain string
 		if json.Unmarshal(msg.Content, &plain) == nil {
-			return truncateRuneSafe(plain, 50)
+			return bot.TruncateRuneSafe(plain, 50)
 		}
 	}
 	return "(No messages)"
 }
 
-// truncateRuneSafe trims s to at most maxRunes Unicode code points and appends
+// TruncateRuneSafe trims s to at most maxRunes Unicode code points and appends
 // "..." if it was shortened. It also strips any invalid UTF-8 sequences so the
 // output is always safe to send to Telegram.
-func truncateRuneSafe(s string, maxRunes int) string {
+func TruncateRuneSafe(s string, maxRunes int) string {
 	// Strip invalid UTF-8 bytes
 	s = strings.Map(func(r rune) rune {
 		if r == utf8.RuneError {
@@ -245,6 +304,9 @@ func truncateRuneSafe(s string, maxRunes int) string {
 	s = strings.TrimSpace(s)
 	runes := []rune(s)
 	if len(runes) > maxRunes {
+		if maxRunes <= 3 {
+			return string(runes[:maxRunes])
+		}
 		return string(runes[:maxRunes-3]) + "..."
 	}
 	return s

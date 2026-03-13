@@ -79,12 +79,13 @@ type CLIAdapter interface {
 	SwitchWorkDir(sessionName, newWorkDir string) error
 
 	// ListSessions returns a list of available CLI-native sessions/conversations
-	ListSessions(sessionName string) ([]string, error)
+	// botUsername is passed to allow generating platform-specific links
+	ListSessions(sessionName string, botUsername string) ([]string, error)
 
 	// SwitchSession switches to a specific CLI-native session/conversation
 	// Returns a preview context string of the loaded session on success
 	SwitchSession(sessionName, cliSessionID string) (string, error)
 
-	// GetSessionStats returns diagnostic stats for the session (e.g., context usage)
-	GetSessionStats(sessionName string) (map[string]interface{}, error)
+	// GetSessionStats returns diagnostic stats for the session (e.g., current session ID and title)
+	GetSessionStats(sessionName string, botUsername string) (map[string]interface{}, error)
 }

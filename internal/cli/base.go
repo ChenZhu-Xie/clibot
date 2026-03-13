@@ -126,7 +126,7 @@ func (b *BaseAdapter) SwitchSession(sessionName, cliSessionID string) (string, e
 }
 
 // GetSessionStats returns diagnostic stats for the session (default empty implementation)
-func (b *BaseAdapter) GetSessionStats(sessionName string) (map[string]interface{}, error) {
+func (b *BaseAdapter) GetSessionStats(sessionName string, botUsername string) (map[string]interface{}, error) {
 	return make(map[string]interface{}), nil
 }
 

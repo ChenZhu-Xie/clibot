@@ -189,6 +189,11 @@ func (d *DingTalkBot) SetMessageHandler(handler func(BotMessage)) {
 	d.messageHandler = handler
 }
 
+// GetBotUsername returns the DingTalk bot's identifier (ClientID)
+func (d *DingTalkBot) GetBotUsername() string {
+	return d.clientID
+}
+
 // GetMessageHandler gets the message handler in a thread-safe manner
 func (d *DingTalkBot) GetMessageHandler() func(BotMessage) {
 	d.mu.RLock()

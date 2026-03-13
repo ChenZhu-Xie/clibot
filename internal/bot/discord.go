@@ -201,6 +201,18 @@ func (d *DiscordBot) SetMessageHandler(handler func(BotMessage)) {
 	d.messageHandler = handler
 }
 
+// GetBotUsername returns the Discord bot's username
+func (d *DiscordBot) GetBotUsername() string {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	if d.session != nil {
+		if sess, ok := d.session.(*discordgo.Session); ok && sess.State != nil && sess.State.User != nil {
+			return sess.State.User.Username
+		}
+	}
+	return ""
+}
+
 // GetMessageHandler gets the message handler in a thread-safe manner
 func (d *DiscordBot) GetMessageHandler() func(BotMessage) {
 	d.mu.RLock()

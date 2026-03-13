@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,12 +15,13 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/coder/acp-go-sdk"
+	"github.com/keepmind9/clibot/internal/bot"
 	"github.com/keepmind9/clibot/internal/logger"
 	"github.com/sirupsen/logrus"
-	"syscall"
 )
 
 // - "" or "stdio://" → stdio with no address
@@ -231,7 +233,7 @@ func (a *ACPAdapter) SwitchWorkDir(sessionName, newWorkDir string) error {
 // ListSessions lists available Gemini history sessions for the project associated
 // with this ACP session. It reads session-*.json files from ~/.gemini/tmp/{hash}/chats,
 // the same directory Gemini CLI uses regardless of the transport mode.
-func (a *ACPAdapter) ListSessions(sessionName string) ([]string, error) {
+func (a *ACPAdapter) ListSessions(sessionName string, botUsername string) ([]string, error) {
 	a.mu.Lock()
 	sess, ok := a.sessions[sessionName]
 	var workDir string
@@ -244,7 +246,32 @@ func (a *ACPAdapter) ListSessions(sessionName string) ([]string, error) {
 		return nil, fmt.Errorf("ACP session '%s' has no recorded work directory", sessionName)
 	}
 
-	return listGeminiSessionsByWorkDir(workDir)
+	sessions, err := listGeminiSessionsByWorkDir(workDir)
+	if err != nil {
+		return nil, err
+	}
+
+	var formatted []string
+	for _, s := range sessions {
+		id := s.ID
+		summary := s.Summary
+
+		sessionID := url.QueryEscape(id)
+		link := id
+		if botUsername != "" {
+			link = fmt.Sprintf("[**%s**](tg://resolve?domain=%s&text=sssw%%20%s)", id, botUsername, sessionID)
+		} else {
+			link = fmt.Sprintf("[**%s**](tg://msg?text=sssw%%20%s)", id, sessionID)
+		}
+
+		if summary == "" {
+			summary = "No summary available"
+		}
+		
+		formatted = append(formatted, fmt.Sprintf("%s: `%s`", link, summary))
+	}
+
+	return formatted, nil
 }
 
 // SwitchSession switches the Gemini CLI (running behind ACP) to a different
@@ -698,11 +725,20 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID string) (string, string)
 			}
 			if err := json.Unmarshal(data, &sessionData); err == nil {
 				// 1. Check for explicit title or name
+				var title string
 				if sessionData.Title != "" {
-					return sessionData.Title, sessionID
+					title = sessionData.Title
+				} else if sessionData.Name != "" {
+					title = sessionData.Name
 				}
-				if sessionData.Name != "" {
-					return sessionData.Name, sessionID
+
+				if title != "" {
+					title = strings.ReplaceAll(title, "\n", " ")
+					safeTitle := strings.ReplaceAll(strings.ReplaceAll(title, "[", "("), "]", ")")
+					safeTitle = bot.TruncateRuneSafe(safeTitle, 40)
+					// Format: [**id**](tg://msg?text=/sssw%20id): [**summary**](tg://msg?text=summary)
+					return fmt.Sprintf("[**%s**](tg://msg?text=/sssw%%20%s): [**%s**](tg://msg?text=%s)",
+						sessionID, sessionID, safeTitle, url.QueryEscape(title)), sessionID
 				}
 
 				// 2. Extract from first user message
@@ -726,7 +762,12 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID string) (string, string)
 						if len(title) > 30 {
 							title = title[:27] + "..."
 						}
-						return fmt.Sprintf("%s: %s", sessionID, title), sessionID
+						// Sanitize summary for markdown link
+						safeTitle := strings.ReplaceAll(strings.ReplaceAll(title, "[", "("), "]", ")")
+						safeTitle = bot.TruncateRuneSafe(safeTitle, 40)
+						// Format: [**id**](tg://msg?text=/sssw%20id): [**summary**](tg://msg?text=summary)
+						return fmt.Sprintf("[**%s**](tg://msg?text=/sssw%%20%s): [**%s**](tg://msg?text=%s)",
+							sessionID, sessionID, safeTitle, url.QueryEscape(title)), sessionID
 					}
 				}
 			}
@@ -737,7 +778,7 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID string) (string, string)
 }
 
 // GetSessionStats returns diagnostic stats for the session (e.g., context usage)
-func (a *ACPAdapter) GetSessionStats(sessionName string) (map[string]interface{}, error) {
+func (a *ACPAdapter) GetSessionStats(sessionName string, botUsername string) (map[string]interface{}, error) {
 	a.mu.Lock()
 	sess, ok := a.sessions[sessionName]
 	a.mu.Unlock()
