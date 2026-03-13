@@ -852,50 +852,46 @@ func (e *Engine) showWhoami(msg bot.BotMessage) {
 // showHelp displays help information about available commands and keywords
 // showHelp displays help information about available commands and keywords
 func (e *Engine) showHelp(msg bot.BotMessage) {
-	help := `📖 **clibot Help**
+	help := `📖 **clibot Help Manual**
 
-**Special Commands** (clickable):
+**1. Bot Session Management** (clickable):
 # (Tap a command to copy/pre-fill)
-` + e.fmtCmd(msg, "help") + `          - Show this help message
-` + e.fmtCmd(msg, "slist") + `         - List all available sessions
-` + e.fmtCmd(msg, "suse [name]") + `   - Switch current session
-` + e.fmtCmd(msg, "sclose [name]") + ` - Close session (default: current)
-` + e.fmtCmd(msg, "sstatus [name]") + ` - Show detailed session status
-` + e.fmtCmd(msg, "status") + `        - Show status of all sessions
-` + e.fmtCmd(msg, "whoami") + `        - Show your current session info
-` + e.fmtCmd(msg, "echo") + `          - Echo your IM user info
-` + e.fmtCmd(msg, "snew [name] [type] [dir] [cmd]") + ` - New session
-` + e.fmtCmd(msg, "snewg [name] [work_dir]") + ` - New Gemini ACP session
-` + e.fmtCmd(msg, "sdel [name]") + `   - Delete dynamic session
-` + e.fmtCmd(msg, "ssnew") + `         - Start a NEW Gemini conversation
-` + e.fmtCmd(msg, "scd [path]") + `    - Change working directory
-` + e.fmtCmd(msg, "ssls") + `          - List native Gemini session IDs
-` + e.fmtCmd(msg, "sssw [id]") + `     - Switch to a specific Gemini ID
 
-**Special Keywords** (exact match, case-insensitive):
-  ⚠️ These keywords only work in Hook mode with tmux input
-  tab            - Send Tab key
-  esc            - Send Escape key
-  stab/s-tab     - Send Shift+Tab
-  enter          - Send Enter key
-  ctrlc/ctrl-c    - Send Ctrl+C (interrupt)
-  ctrlt/ctrl-t    - Send Ctrl+T
+` + e.fmtCmd(msg, "slist") + `        - List all available sessions
+` + e.fmtCmd(msg, "suse [name]") + `    - Switch current session
+` + e.fmtCmd(msg, "sstatus [name]") + ` - View PID, memory, uptime
+` + e.fmtCmd(msg, "status") + `       - Brief status of all sessions
+` + e.fmtCmd(msg, "whoami") + `       - Your current session details
+` + e.fmtCmd(msg, "snew [name] [type] [dir] [cmd]") + ` - New session (Admin)
+` + e.fmtCmd(msg, "snewg [name] [dir]") + ` - Fast Gemini ACP (Admin)
+` + e.fmtCmd(msg, "sdel [name]") + `    - Permanently delete session (Admin)
+` + e.fmtCmd(msg, "sclose [name]") + `  - Stop background process to save RAM
 
-**Usage Examples:**
-  status            → Show status
-  tab               → Send Tab key to CLI
-  ctrl-c            → Interrupt current process
-  ctrl-t            → Trigger Ctrl+T action
-  snew myproject claude ~/work  → Create new session
 
-**Tips:**
-  - Special commands are exact match (case-sensitive)
-  - Special keywords are case-insensitive
-  - Any other input will be sent to the CLI
-  - Use "suse" to switch between sessions
-  - Use "sclose" to free up resources when not using a session
-  - Use "sstatus" to monitor session health and resource usage
-  - Use "help" anytime to see this message`
+**2. AI Memory & Context** (Gemini Only):
+
+` + e.fmtCmd(msg, "ssnew") + `        - [Important] Start NEW conversation (keep logic fresh)
+` + e.fmtCmd(msg, "scd [path]") + `    - Change AI focus directory (context switch)
+` + e.fmtCmd(msg, "ssls") + `         - List historical conversation IDs
+` + e.fmtCmd(msg, "sssw [ID]") + `    - Read/Switch to a specific history ID
+
+
+**3. Other Commands:**
+- ` + e.fmtCmd(msg, "help") + ` / ` + e.fmtCmd(msg, "帮助") + ` - Show this help
+- ` + e.fmtCmd(msg, "echo") + ` - Echo your IM User ID (for whitelist)
+
+
+**Special Keywords** (Send directly):
+` + "```text" + `
+tab, enter, ctrlc, esc, stab
+` + "```" + `
+⚠️ *Note: These only work in Hook mode with tmux.*
+
+
+**💡 Tips:**
+- Use ` + "`suse`" + ` frequently to switch between your bots.
+- If AI becomes less coherent, use ` + "`ssnew`" + ` to refresh its memory.
+- Any message not starting with a command will be sent directly to the AI.`
 
 	e.SendToBot(msg.Platform, msg.Channel, help)
 }
@@ -905,6 +901,7 @@ func (e *Engine) showHelpChinese(msg bot.BotMessage) {
 	help := `📖 **clibot 帮助手册**
 
 **1. 机器人分身管理 (点击指令可复制):**
+# (点击指令即可预填充到输入框)
 
 ` + e.fmtCmd(msg, "slist") + `        - 查看所有已配置的机器人
 ` + e.fmtCmd(msg, "suse [名]") + `    - 切换到指定的机器人
@@ -919,20 +916,23 @@ func (e *Engine) showHelpChinese(msg bot.BotMessage) {
 
 **2. AI 记忆与存档管理 (Gemini 专用):**
 
-` + e.fmtCmd(msg, "ssnew") + `        - 【重要】开启全新对话 (保留旧存档)
+` + e.fmtCmd(msg, "ssnew") + `        - 【重要】开启全新对话 (保持 AI 逻辑敏捷)
 ` + e.fmtCmd(msg, "scd [路径]") + `    - 更改 AI 关注的目录 (记忆环境切换)
 ` + e.fmtCmd(msg, "ssls") + `         - 列出当前项目的历史存档 ID
 ` + e.fmtCmd(msg, "sssw [ID]") + `    - 读档 (切换到特定的历史对话)
 
 
 **3. 其他指令:**
-- ` + "`帮助`" + ` / ` + "`help`" + ` - 显示此信息
-- ` + "`echo`" + ` - 回显账号 ID (用于白名单配置)
+- ` + e.fmtCmd(msg, "帮助") + ` / ` + e.fmtCmd(msg, "help") + ` - 显示此帮助
+- ` + e.fmtCmd(msg, "echo") + ` - 回显账号 ID (用于白名单配置)
+
 
 **特殊关键词 (直接发送):**
-` + "```" + `text
-tab, enter, ctrlc, esc
+` + "```text" + `
+tab, enter, ctrlc, esc, stab
 ` + "```" + `
+⚠️ *注意: 这些关键词仅在使用 tmux 的 Hook 模式下有效。*
+
 
 **💡 提示:**
 - 绝大多数情况下，你只需要用 ` + "`suse`" + ` 切换机器人。
