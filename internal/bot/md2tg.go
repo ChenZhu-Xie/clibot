@@ -206,6 +206,7 @@ func ConvertMarkdownToTelegramHTML(mdText string) string {
 			extension.Strikethrough,
 			extension.Table,
 			extension.TaskList,
+			extension.Footnote,
 		),
 	)
 
@@ -365,7 +366,7 @@ func (r *tgHTMLRenderer) Walk(n ast.Node, entering bool) (ast.WalkStatus, error)
 		// GFM task list checkbox: - [ ] or - [x]
 		if entering {
 			if v.IsChecked {
-				r.buf.WriteString("☑ ")
+				r.buf.WriteString("✅ ")
 			} else {
 				r.buf.WriteString("☐ ")
 			}
@@ -444,6 +445,27 @@ func (r *tgHTMLRenderer) Walk(n ast.Node, entering bool) (ast.WalkStatus, error)
 				line := v.Lines().At(i)
 				r.buf.Write(line.Value(r.src))
 			}
+		}
+	case *extast.FootnoteLink:
+		if entering {
+			index := fmt.Sprintf("%d", v.Index)
+			super := strings.Builder{}
+			for _, r := range index {
+				if v, ok := latexSuperscripts[string(r)]; ok {
+					super.WriteString(v)
+				} else {
+					super.WriteRune(r)
+				}
+			}
+			r.buf.WriteString(fmt.Sprintf("([%s])", super.String()))
+		}
+	case *extast.Footnote:
+		// Footnotes are typical list-like blocks at the bottom
+		if entering {
+			r.buf.WriteString(fmt.Sprintf("[%d] ", v.Index))
+		} else {
+			// Goldmark usually wraps the content in a paragraph.
+			// No extra newline needed here if it's already added by Paragraph.
 		}
 	}
 

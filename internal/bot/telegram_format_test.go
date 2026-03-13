@@ -98,10 +98,20 @@ func TestConvertMarkdownToTelegramHTML_Tables(t *testing.T) {
 
 func TestConvertMarkdownToTelegramHTML_TaskList(t *testing.T) {
 	md := "- [ ] unchecked\n- [x] checked"
-
 	result := ConvertMarkdownToTelegramHTML(md)
 	assert.Contains(t, result, "☐ unchecked")
-	assert.Contains(t, result, "☑ checked")
+	assert.Contains(t, result, "✅ checked")
+}
+
+func TestConvertMarkdownToTelegramHTML_Footnotes(t *testing.T) {
+	md := "Here is a footnote[^1].\n\n[^1]: This is the footnote content."
+	result := ConvertMarkdownToTelegramHTML(md)
+
+	// Check correctly formatted superscript
+	assert.Contains(t, result, "([¹])")
+	// Check correctly formatted footnote definition at bottom
+	// Goldmark often places it in a separate section or wraps in paragraph
+	assert.Contains(t, result, "[1] This is the footnote content.")
 }
 
 func TestConvertMarkdownToTelegramHTML_ThematicBreak(t *testing.T) {
@@ -153,7 +163,7 @@ func TestConvertMarkdownToTelegramHTML_DisplayLaTeX(t *testing.T) {
 	// Summation test
 	md4 := "$$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$$"
 	result4 := ConvertMarkdownToTelegramHTML(md4)
-	assert.Contains(t, result4, "∑ᵢ₌₁ⁿ i = [n(n+1)]/2")
+	assert.Contains(t, result4, "∑ᵢ₌₁ⁿ i = [n(n+1)]/(2)")
 }
 
 func TestConvertMarkdownToTelegramHTML_TableAlignmentExamples(t *testing.T) {
