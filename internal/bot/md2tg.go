@@ -3,16 +3,16 @@ package bot
 import (
 	"bytes"
 	"fmt"
-	"html"
-	"regexp"
-	"strings"
-	"unicode/utf8"
 	"github.com/mattn/go-runewidth"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	extast "github.com/yuin/goldmark/extension/ast"
 	"github.com/yuin/goldmark/text"
+	"html"
+	"regexp"
+	"strings"
+	"unicode/utf8"
 )
 
 // tgHTMLRenderer builds a string while walking the goldmark AST
@@ -23,10 +23,10 @@ type tgHTMLRenderer struct {
 	listCounters []int
 
 	// Table rendering: collect cells, then render aligned columns on table exit
-	inTable      bool
-	tableRows    [][]string // rows of cell-text slices
-	currentRow   []string
-	currentCell  strings.Builder
+	inTable     bool
+	tableRows   [][]string // rows of cell-text slices
+	currentRow  []string
+	currentCell strings.Builder
 }
 
 // latexSubscripts maps LaTeX subscript sequences to Unicode
@@ -198,7 +198,7 @@ func preprocessLaTeX(md string) string {
 
 				// Wrap with hierarchical brackets
 				wrappedNum := wrapBrackets(processedNum)
-				
+
 				// To satisfy hierarchical bracket tests for fractions, if the denominator
 				// would also use the same bracket type as numerator, try to shift it.
 				// However, wrapBrackets is general. Let's make a local decision here.
@@ -300,14 +300,28 @@ func preprocessLaTeX(md string) string {
 	return md
 }
 
+// preprocessSpoilers converts ||text|| to <tg-spoiler>text</tg-spoiler>
+func preprocessSpoilers(md string) string {
+	// Match ||...|| avoiding internal |
+	re := regexp.MustCompile(`\|\|([^|]+)\|\|`)
+	md = re.ReplaceAllString(md, "<tg-spoiler>$1</tg-spoiler>")
+
+	// Match ++...++ for underline
+	reUnderline := regexp.MustCompile(`\+\+([^+]+)\+\+`)
+	md = reUnderline.ReplaceAllString(md, "<u>$1</u>")
+
+	return md
+}
+
 // ConvertMarkdownToTelegramHTML parses Markdown and generates a Telegram-compatible HTML string.
 func ConvertMarkdownToTelegramHTML(mdText string) string {
 	if mdText == "" {
 		return ""
 	}
 
-	// Pre-process LaTeX
+	// Pre-process LaTeX and Spoilers
 	mdText = preprocessLaTeX(mdText)
+	mdText = preprocessSpoilers(mdText)
 
 	src := []byte(mdText)
 	md := goldmark.New(
@@ -364,13 +378,24 @@ func (r *tgHTMLRenderer) Walk(n ast.Node, entering bool) (ast.WalkStatus, error)
 		}
 	case *ast.Text:
 		if entering {
+			val := string(v.Segment.Value(r.src))
+
+			// Strip "[expandable]" if it's at the very beginning of a blockquote's first paragraph
+			if n.Parent() != nil && n.Parent().Kind() == ast.KindParagraph &&
+				n.Parent().Parent() != nil && n.Parent().Parent().Kind() == ast.KindBlockquote {
+				trimmed := strings.TrimSpace(val)
+				if strings.HasPrefix(trimmed, "[expandable]") {
+					val = strings.Replace(val, "[expandable]", "", 1)
+					val = strings.TrimPrefix(val, " ") // also trim one space if present
+				}
+			}
+
 			if r.inTable {
-				val := string(v.Segment.Value(r.src))
 				r.currentCell.WriteString(val)
 			} else {
-				val := string(v.Segment.Value(r.src))
 				r.buf.WriteString(html.EscapeString(val))
 			}
+
 			if v.SoftLineBreak() || v.HardLineBreak() {
 				if r.inTable {
 					r.currentCell.WriteString(" ")
@@ -505,7 +530,21 @@ func (r *tgHTMLRenderer) Walk(n ast.Node, entering bool) (ast.WalkStatus, error)
 		}
 	case *ast.Blockquote:
 		if entering {
-			r.buf.WriteString("<blockquote>")
+			expandable := false
+			// Check for [expandable] marker in the first paragraph or text block
+			if v.FirstChild() != nil {
+				// Use the existing utility to extract text and check
+				content := extractTextFromNode(v.FirstChild(), r.src)
+				if strings.Contains(content, "[expandable]") {
+					expandable = true
+				}
+			}
+
+			if expandable {
+				r.buf.WriteString("<blockquote expandable>")
+			} else {
+				r.buf.WriteString("<blockquote>")
+			}
 		} else {
 			r.buf.WriteString("</blockquote>\n\n")
 		}
@@ -698,7 +737,7 @@ func isEmoji(ch rune) bool {
 		('\U0001F700' <= ch && ch <= '\U0001F77F') || // Alchemical Symbols
 		('\U00002600' <= ch && ch <= '\U000027BF') || // Misc Symbols, Dingbats
 		('\U0001FA00' <= ch && ch <= '\U0001FA6F') || // Chess Symbols, etc.
-		('\U0001FA70' <= ch && ch <= '\U0001FAFF')    // Symbols and Pictographs Extended-A
+		('\U0001FA70' <= ch && ch <= '\U0001FAFF') // Symbols and Pictographs Extended-A
 }
 
 // stripHTMLTags removes HTML tags from a string for width calculation

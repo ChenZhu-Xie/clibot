@@ -226,13 +226,13 @@ Rust       │ 内存安全、无 GC、高性能 │ 操作系统、高性能工
 			// Convert to Markdown table (the examples are already formatted as the expected output,
 			// but we want to verify our logic generates aligned output from raw markdown)
 			// For simplicity, we'll verify visual alignment of the examples if they were generated.
-			
+
 			// Actually, let's verify visual alignment of the strings in the examples first
 			lines := strings.Split(example, "\n")
 			if len(lines) < 2 {
 				return
 			}
-			
+
 			// Reference width from first line (header)
 			width := runeWidth(lines[0])
 			for _, line := range lines[1:] {
@@ -253,6 +253,38 @@ func TestConvertMarkdownToTelegramHTML_SessionLinks(t *testing.T) {
 
 	result := ConvertMarkdownToTelegramHTML(md)
 	assert.Equal(t, expected, result)
+}
+
+func TestConvertMarkdownToTelegramHTML_Underline(t *testing.T) {
+	md := "This is ++underlined++."
+	expected := "This is <u>underlined</u>."
+
+	result := ConvertMarkdownToTelegramHTML(md)
+	assert.Equal(t, expected, result)
+}
+
+func TestConvertMarkdownToTelegramHTML_Spoilers(t *testing.T) {
+	md := "Wait for it: ||spoiler||"
+	expected := "Wait for it: <tg-spoiler>spoiler</tg-spoiler>"
+
+	result := ConvertMarkdownToTelegramHTML(md)
+	assert.Equal(t, expected, result)
+}
+
+func TestConvertMarkdownToTelegramHTML_ExpandableBlockquote(t *testing.T) {
+	md := "> [expandable] This is a long quote\n> that should be expandable."
+	result := ConvertMarkdownToTelegramHTML(md)
+	assert.Contains(t, result, "<blockquote expandable>")
+	assert.Contains(t, result, "This is a long quote")
+}
+
+func TestConvertMarkdownToTelegramHTML_NestedFormatting(t *testing.T) {
+	md := "**bold _italic ++underline ||spoiler||++_**"
+	result := ConvertMarkdownToTelegramHTML(md)
+	assert.Contains(t, result, "<b>")
+	assert.Contains(t, result, "<i>")
+	assert.Contains(t, result, "<u>")
+	assert.Contains(t, result, "<tg-spoiler>")
 }
 
 func TestTruncateRuneSafe(t *testing.T) {
