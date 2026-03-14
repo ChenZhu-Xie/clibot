@@ -905,10 +905,21 @@ func (a *ACPAdapter) startStdioServer(sess *acpSession, workDir, command string,
 	// Create ACP client-side connection in goroutine to avoid blocking
 	// IMPORTANT: NewClientSideConnection may block during handshake
 	go func() {
+		defer func() {
+			// Signal that connection setup is complete (success or failure)
+			// This prevents SendInput from waiting indefinitely
+			select {
+			case <-connReady:
+				// Already closed
+			default:
+				close(connReady)
+			}
+		}()
+
 		conn := acp.NewClientSideConnection(clientImpl, stdin, stdout)
-		logger.Info("acp-client-connection-created")
 
 		if conn != nil {
+			logger.WithField("session", sessionName).Info("acp-client-connection-created")
 			sess.conn = conn
 			conn.SetLogger(slog.Default())
 
@@ -923,7 +934,11 @@ func (a *ACPAdapter) startStdioServer(sess *acpSession, workDir, command string,
 			for attempt := 1; attempt <= maxRetries; attempt++ {
 				ctx, cancel := context.WithTimeout(context.Background(), acpNewSessionTimeout)
 
-				logger.WithField("attempt", attempt).Info("acp-calling-new-session")
+				logger.WithFields(logger.Fields{
+					"session": sessionName,
+					"attempt": attempt,
+				}).Info("acp-calling-new-session")
+
 				newSessionResp, err = conn.NewSession(ctx, acp.NewSessionRequest{
 					Cwd:        workDir,
 					McpServers: []acp.McpServer{}, // Pass empty array instead of nil
@@ -938,17 +953,21 @@ func (a *ACPAdapter) startStdioServer(sess *acpSession, workDir, command string,
 						"sessionId": sess.sessionId,
 						"attempt":   attempt,
 					}).Info("acp-session-id-saved")
-					break
+					return // Success
 				}
 
 				// Log failure
 				logger.WithFields(logger.Fields{
+					"session": sessionName,
 					"attempt": attempt,
 					"error":   err,
 				}).Warn("acp-new-session-attempt-failed")
 
 				if attempt < maxRetries {
-					logger.WithField("delay", retryDelay).Info("acp-retrying-new-session")
+					logger.WithFields(logger.Fields{
+						"session": sessionName,
+						"delay":   retryDelay,
+					}).Info("acp-retrying-new-session")
 					time.Sleep(retryDelay)
 				}
 			}
@@ -964,9 +983,11 @@ func (a *ACPAdapter) startStdioServer(sess *acpSession, workDir, command string,
 				sess.active = false
 				a.mu.Unlock()
 			}
-
-			// Signal that connection setup is complete (success or failure)
-			close(connReady)
+		} else {
+			logger.WithField("session", sessionName).Error("acp-client-connection-creation-failed")
+			a.mu.Lock()
+			sess.active = false
+			a.mu.Unlock()
 		}
 	}()
 
@@ -1021,10 +1042,21 @@ func (a *ACPAdapter) connectRemoteServer(sess *acpSession, workDir string, trans
 	// Create ACP client-side connection in goroutine to avoid blocking
 	// IMPORTANT: NewClientSideConnection may block during handshake
 	go func() {
+		defer func() {
+			// Signal that connection setup is complete (success or failure)
+			// This prevents SendInput from waiting indefinitely
+			select {
+			case <-connReady:
+				// Already closed
+			default:
+				close(connReady)
+			}
+		}()
+
 		conn := acp.NewClientSideConnection(clientImpl, connNet, connNet)
-		logger.Info("acp-client-connection-created")
 
 		if conn != nil {
+			logger.WithField("session", sessionName).Info("acp-client-connection-created")
 			sess.conn = conn
 			conn.SetLogger(slog.Default())
 
@@ -1039,7 +1071,11 @@ func (a *ACPAdapter) connectRemoteServer(sess *acpSession, workDir string, trans
 			for attempt := 1; attempt <= maxRetries; attempt++ {
 				ctx, cancel := context.WithTimeout(context.Background(), acpNewSessionTimeout)
 
-				logger.WithField("attempt", attempt).Info("acp-calling-new-session")
+				logger.WithFields(logger.Fields{
+					"session": sessionName,
+					"attempt": attempt,
+				}).Info("acp-calling-new-session")
+
 				newSessionResp, err = conn.NewSession(ctx, acp.NewSessionRequest{
 					Cwd:        workDir,
 					McpServers: []acp.McpServer{}, // Pass empty array instead of nil
@@ -1054,17 +1090,21 @@ func (a *ACPAdapter) connectRemoteServer(sess *acpSession, workDir string, trans
 						"sessionId": sess.sessionId,
 						"attempt":   attempt,
 					}).Info("acp-session-id-saved")
-					break
+					return // Success
 				}
 
 				// Log failure
 				logger.WithFields(logger.Fields{
+					"session": sessionName,
 					"attempt": attempt,
 					"error":   err,
 				}).Warn("acp-new-session-attempt-failed")
 
 				if attempt < maxRetries {
-					logger.WithField("delay", retryDelay).Info("acp-retrying-new-session")
+					logger.WithFields(logger.Fields{
+						"session": sessionName,
+						"delay":   retryDelay,
+					}).Info("acp-retrying-new-session")
 					time.Sleep(retryDelay)
 				}
 			}
@@ -1080,9 +1120,11 @@ func (a *ACPAdapter) connectRemoteServer(sess *acpSession, workDir string, trans
 				sess.active = false
 				a.mu.Unlock()
 			}
-
-			// Signal that connection setup is complete (success or failure)
-			close(connReady)
+		} else {
+			logger.WithField("session", sessionName).Error("acp-client-connection-creation-failed")
+			a.mu.Lock()
+			sess.active = false
+			a.mu.Unlock()
 		}
 	}()
 

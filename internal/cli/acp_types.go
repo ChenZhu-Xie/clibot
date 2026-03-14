@@ -19,8 +19,8 @@ const (
 	// Default max total timeout - absolute maximum time for a request (1 hour)
 	defaultACPMaxTotalTimeout = 1 * time.Hour
 
-	// Connection ready timeout (30 seconds)
-	acpConnectionReadyTimeout = 30 * time.Second
+	// Connection ready timeout (90 seconds)
+	acpConnectionReadyTimeout = 90 * time.Second
 
 	// NewSession configuration
 	acpNewSessionTimeout    = 60 * time.Second // per attempt
