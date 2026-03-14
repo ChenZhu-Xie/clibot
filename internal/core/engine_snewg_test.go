@@ -24,7 +24,7 @@ func (m *mockCLIAdapter) CreateSession(name, workDir, startCmd, transportURL str
 }
 
 func (m *mockCLIAdapter) IsSessionAlive(name string) bool { return true }
-func (m *mockCLIAdapter) ResetSession(name string) error { return nil }
+func (m *mockCLIAdapter) ResetSession(name string) error  { return nil }
 
 func TestEngine_HandleNewGeminiACPSession(t *testing.T) {
 	// Create a temp directory for workDir
@@ -47,7 +47,7 @@ func TestEngine_HandleNewGeminiACPSession(t *testing.T) {
 	// Register mock bot and CLI adapter
 	mockBot := &mockBotAdapter{}
 	engine.RegisterBotAdapter("testbot", mockBot)
-	
+
 	mockCLI := &mockCLIAdapter{}
 	engine.cliAdapters["acp"] = mockCLI
 
@@ -65,7 +65,7 @@ func TestEngine_HandleNewGeminiACPSession(t *testing.T) {
 		assert.Equal(t, 1, mockBot.messageCount)
 		assert.Contains(t, mockBot.lastMessage, "✅ Gemini ACP session 'mysess' created")
 		assert.True(t, mockCLI.createdSessions["mysess"])
-		
+
 		// Verify session exists in engine
 		engine.sessionMu.RLock()
 		sess, exists := engine.sessions["mysess"]
@@ -73,7 +73,7 @@ func TestEngine_HandleNewGeminiACPSession(t *testing.T) {
 		assert.True(t, exists)
 		assert.Equal(t, "acp", sess.CLIType)
 		assert.Equal(t, "gemini", sess.StartCmd)
-		
+
 		// Verify it was selected for the user
 		userKey := getUserKey(msg.Platform, msg.UserID)
 		assert.Equal(t, "mysess", engine.userSessions[userKey])

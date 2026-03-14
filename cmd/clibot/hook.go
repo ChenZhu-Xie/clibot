@@ -11,7 +11,6 @@ import (
 
 	"github.com/keepmind9/clibot/internal/logger"
 	"github.com/keepmind9/clibot/pkg/constants"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -80,7 +79,7 @@ Examples:
 				return
 			}
 
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"cli_type": cliType,
 				"size":     len(stdinData),
 			}).Debug("hook-command-received-data")
@@ -98,7 +97,7 @@ Examples:
 				ctx := context.Background()
 				url := fmt.Sprintf("http://localhost:%d/hook?cli_type=%s", hookPort, cliType)
 
-				logger.WithFields(logrus.Fields{
+				logger.WithFields(logger.Fields{
 					"cli_type": cliType,
 					"url":      url,
 					"size":     len(stdinData),
@@ -106,14 +105,14 @@ Examples:
 
 				notifier := &HookNotifier{timeout: constants.HookHTTPTimeout}
 				if err := notifier.Notify(ctx, url, stdinData); err != nil {
-					logger.WithFields(logrus.Fields{
+					logger.WithFields(logger.Fields{
 						"cli_type": cliType,
 						"error":    err,
 					}).Error("hook-notification-failed")
 					return
 				}
 
-				logger.WithFields(logrus.Fields{
+				logger.WithFields(logger.Fields{
 					"cli_type": cliType,
 				}).Info("hook-notification-succeeded")
 			}()
@@ -124,7 +123,7 @@ Examples:
 
 			// Return immediately - let Claude Code continue execution
 			// The background goroutine will handle the HTTP request independently
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"cli_type": cliType,
 			}).Debug("hook-command-returning-async-notification-sent")
 

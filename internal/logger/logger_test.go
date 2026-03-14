@@ -209,7 +209,7 @@ func TestWithFields(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test WithFields
-	WithFields(logrus.Fields{
+	WithFields(Fields{
 		"user":   "alice",
 		"action": "login",
 	}).Info("User action")

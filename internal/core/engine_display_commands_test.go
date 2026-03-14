@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/keepmind9/clibot/internal/bot"
-		_ "github.com/keepmind9/clibot/internal/proxy"
+	_ "github.com/keepmind9/clibot/internal/proxy"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -61,7 +61,7 @@ func TestEngine_HandleShowHelp(t *testing.T) {
 	// Should send help message
 	assert.Equal(t, 1, mockBot.messageCount)
 	assert.Contains(t, mockBot.lastMessage, "clibot Help")
-	assert.Contains(t, mockBot.lastMessage, "Special Commands")
+	assert.Contains(t, mockBot.lastMessage, "Special Keywords")
 }
 
 // TestEngine_HandleUseSession_NoArgs tests handleUseSession with no arguments

@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/keepmind9/clibot/internal/logger"
 	"github.com/keepmind9/clibot/internal/proxy"
+	"github.com/keepmind9/clibot/pkg/constants"
 )
 
 // QQBot implements BotAdapter interface for QQ Bot Platform (QQ群机器人开放平台)
@@ -43,11 +44,7 @@ const (
 	// QQ Bot constants
 	maxMsgSeqMapSize = 500 // Maximum number of message sequences to track
 
-	// Timeouts
-	qqWebSocketHandshakeTimeout = 10 * time.Second // WebSocket handshake timeout
-	qqAPIRequestTimeout        = 10 * time.Second // Timeout for token and gateway requests
-	qqMessageSendTimeout       = 15 * time.Second // Timeout for sending messages
-
+	// Timeouts moved to pkg/constants
 	// Token management
 	qqTokenExpirationBuffer = 60 // Buffer in seconds before token expiration
 
@@ -278,7 +275,7 @@ func (q *QQBot) connectGateway(token string) error {
 
 	// Create dialer with timeout
 	dialer := &websocket.Dialer{
-		HandshakeTimeout: qqWebSocketHandshakeTimeout,
+		HandshakeTimeout: constants.QQWebSocketHandshakeTimeout,
 	}
 
 	ws, _, err := dialer.Dial(q.gatewayURL, nil)
@@ -447,7 +444,7 @@ func (q *QQBot) getAccessToken() (string, error) {
 
 	// Create client with timeout
 	client := &http.Client{
-		Timeout: qqAPIRequestTimeout,
+		Timeout: constants.QQAPIRequestTimeout,
 	}
 
 	// Use proxy if available
@@ -504,7 +501,7 @@ func (q *QQBot) getGatewayURL(token string) (string, error) {
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("QQBot %s", token))
 
-	client := &http.Client{Timeout: qqAPIRequestTimeout}
+	client := &http.Client{Timeout: constants.QQAPIRequestTimeout}
 	if q.proxyMgr != nil {
 		if proxyClient, proxyErr := q.proxyMgr.GetHTTPClient("qq"); proxyErr == nil {
 			client = proxyClient
@@ -541,7 +538,7 @@ func (q *QQBot) SendMessage(channel, message string) error {
 
 	// Split long messages
 	if len(message) > qqMaxMessageLength {
-		parts := splitMessage(message, qqMaxMessageLength)
+		parts := SplitMessage(message, qqMaxMessageLength)
 		for _, part := range parts {
 			if err := q.sendSingleMessage(channel, part, token); err != nil {
 				return err
@@ -577,7 +574,7 @@ func (q *QQBot) sendSingleMessage(channel, message, token string) error {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("QQBot %s", token))
 
-	client := &http.Client{Timeout: qqMessageSendTimeout}
+	client := &http.Client{Timeout: constants.QQMessageSendTimeout}
 	if q.proxyMgr != nil {
 		if proxyClient, proxyErr := q.proxyMgr.GetHTTPClient("qq"); proxyErr == nil {
 			client = proxyClient
@@ -597,24 +594,4 @@ func (q *QQBot) sendSingleMessage(channel, message, token string) error {
 	return nil
 }
 
-// splitMessage splits a long message into smaller parts
-func splitMessage(msg string, maxLen int) []string {
-	if len(msg) <= maxLen {
-		return []string{msg}
-	}
 
-	var parts []string
-	for len(msg) > maxLen {
-		// Try to split at newline if possible
-		splitIdx := maxLen
-		if nlIdx := strings.LastIndex(msg[:maxLen], "\n"); nlIdx > maxLen/qqSplitMinNewlineIndex {
-			splitIdx = nlIdx + 1
-		}
-		parts = append(parts, msg[:splitIdx])
-		msg = msg[splitIdx:]
-	}
-	if len(msg) > 0 {
-		parts = append(parts, msg)
-	}
-	return parts
-}

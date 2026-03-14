@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/keepmind9/clibot/pkg/constants"
 )
@@ -39,27 +40,27 @@ func WrapTablesInCodeBlocks(text string) string {
 	// This is a common pattern for markdown tables.
 	tableRegex := regexp.MustCompile(`(?m)^(\|?\s*:?-+:?\s*\|?)+\s*$`)
 	lines := strings.Split(text, "\n")
-	
+
 	var result []string
 	inCodeBlock := false
 	inTable := false
 	tableStart := -1
-	
+
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		
+
 		// Track code blocks to avoid double-wrapping
 		if strings.HasPrefix(trimmed, "```") {
 			inCodeBlock = !inCodeBlock
 			result = append(result, line)
 			continue
 		}
-		
+
 		if inCodeBlock {
 			result = append(result, line)
 			continue
 		}
-		
+
 		// Detect table separator
 		if tableRegex.MatchString(trimmed) {
 			if !inTable && i > 0 {
@@ -82,14 +83,54 @@ func WrapTablesInCodeBlocks(text string) string {
 				}
 			}
 		}
-		
+
 		result = append(result, line)
 	}
-	
+
 	// Close table if it reached the end of text
 	if inTable && len(result) > 0 {
 		result[len(result)-1] = result[len(result)-1] + "\n```"
 	}
-	
+
 	return strings.Join(result, "\n")
+}
+
+// SplitMessage splits a string into chunks of at most maxSize.
+// It prefers splitting at newlines, but falls back to safe rune boundaries
+// if no newline is found within the limit.
+func SplitMessage(s string, maxSize int) []string {
+	if len(s) == 0 {
+		return []string{""}
+	}
+	var chunks []string
+	for len(s) > 0 {
+		if len(s) <= maxSize {
+			chunks = append(chunks, s)
+			break
+		}
+
+		splitIdx := strings.LastIndex(s[:maxSize], "\n")
+		// Only split at newline if it's reasonably close to the limit (e.g. > maxSize/2)
+		// Otherwise, fall back to safe rune boundaries
+		if splitIdx > maxSize/2 {
+			splitIdx += 1 // Include the newline in the current chunk
+		} else {
+			splitIdx = findSafeRuneSplit(s, maxSize)
+		}
+
+		chunks = append(chunks, s[:splitIdx])
+		s = s[splitIdx:]
+	}
+	return chunks
+}
+
+func findSafeRuneSplit(s string, maxSize int) int {
+	if len(s) <= maxSize {
+		return len(s)
+	}
+	idx := maxSize
+	for idx > 0 && !utf8.RuneStart(s[idx]) {
+		idx--
+	}
+	return idx
 }

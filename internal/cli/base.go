@@ -6,7 +6,6 @@ import (
 
 	"github.com/keepmind9/clibot/internal/logger"
 	"github.com/keepmind9/clibot/internal/watchdog"
-	"github.com/sirupsen/logrus"
 )
 
 // BaseAdapter provides common fields and methods for CLI adapters
@@ -75,7 +74,7 @@ func (b *BaseAdapter) Start(sessionName, startCmd string) error {
 	if startCmd == "" {
 		startCmd = b.startCmd
 	}
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session":   sessionName,
 		"cli":       b.cliName,
 		"start_cmd": startCmd,
@@ -101,8 +100,8 @@ func (b *BaseAdapter) SwitchWorkDir(sessionName, newWorkDir string) error {
 	// 1. Kill the current session
 	// 2. Create it again in the new directory
 
-	logger.WithFields(logrus.Fields{
-		"session":     sessionName,
+	logger.WithFields(logger.Fields{
+		"session":      sessionName,
 		"new_work_dir": newWorkDir,
 	}).Info("switching-work-dir-for-session")
 
@@ -132,7 +131,7 @@ func (b *BaseAdapter) GetSessionStats(sessionName string, botUsername string) (m
 
 // SendInput sends input to the CLI via tmux
 func (b *BaseAdapter) SendInput(sessionName, input string) error {
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session": sessionName,
 		"cli":     b.cliName,
 		"input":   input,

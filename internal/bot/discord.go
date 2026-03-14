@@ -9,7 +9,6 @@ import (
 	"github.com/keepmind9/clibot/internal/logger"
 	"github.com/keepmind9/clibot/internal/proxy"
 	"github.com/keepmind9/clibot/pkg/constants"
-	"github.com/sirupsen/logrus"
 )
 
 // DiscordMessage represents a Discord message for our interface
@@ -58,7 +57,7 @@ func (d *DiscordBot) Start(messageHandler func(BotMessage)) error {
 	d.SetMessageHandler(messageHandler)
 
 	// Log bot startup
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"token":   maskSecret(d.token),
 		"channel": d.channelID,
 	}).Info("starting-discord-bot")
@@ -99,7 +98,7 @@ func (d *DiscordBot) Start(messageHandler func(BotMessage)) error {
 		}
 
 		// Log received message
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"platform": "discord",
 			"user_id":  m.Author.ID,
 			"username": m.Author.Username,
@@ -118,7 +117,7 @@ func (d *DiscordBot) Start(messageHandler func(BotMessage)) error {
 				Timestamp: time.Now(),
 			})
 
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"platform": "discord",
 				"user":     m.Author.ID,
 				"channel":  m.ChannelID,
@@ -154,7 +153,7 @@ func (d *DiscordBot) SendMessage(channel, message string) error {
 	// Discord limit: message length
 	const maxDiscordLength = constants.MaxDiscordMessageLength
 	if len(message) > maxDiscordLength {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"original_length": len(message),
 			"max_length":      maxDiscordLength,
 		}).Info("truncating-message-for-discord-limit")
@@ -165,7 +164,7 @@ func (d *DiscordBot) SendMessage(channel, message string) error {
 	message = WrapTablesInCodeBlocks(message)
 	_, err := session.ChannelMessageSend(targetChannel, message)
 	if err != nil {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"channel": targetChannel,
 			"error":   err,
 		}).Error("failed-to-send-message-to-discord")

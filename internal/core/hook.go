@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/keepmind9/clibot/internal/logger"
-	"github.com/sirupsen/logrus"
 )
 
 // startHookServer starts the HTTP hook server in a separate goroutine
@@ -87,7 +86,7 @@ func (e *Engine) handleHookRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"cli_type":  cliType,
 		"hook_data": string(data),
 	}).Debug("hook-data-received")
@@ -97,7 +96,7 @@ func (e *Engine) handleHookRequest(w http.ResponseWriter, r *http.Request) {
 	// identifier is used to match the session (e.g., cwd, session name, etc.)
 	identifier, _, response, err := adapter.HandleHookData(data)
 	if err != nil {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"cli_type": cliType,
 			"error":    err,
 		}).Error("failed-to-handle-hook-data")
@@ -122,21 +121,21 @@ func (e *Engine) handleHookRequest(w http.ResponseWriter, r *http.Request) {
 	e.sessionMu.RUnlock()
 
 	if session == nil {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"identifier": identifier,
 		}).Warn("no-session-found-matching-identifier")
 		http.Error(w, "Session not found", http.StatusNotFound)
 		return
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session":  session.Name,
 		"work_dir": session.WorkDir,
 	}).Debug("hook-matched-to-session")
 
 	// Ignore hook requests for ACP sessions (they use ACP protocol, not hooks)
 	if session.CLIType == "acp" {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"session":  session.Name,
 			"cli_type": session.CLIType,
 		}).Debug("ignoring-hook-request-for-acp-session-uses-acp-protocol")
@@ -147,7 +146,7 @@ func (e *Engine) handleHookRequest(w http.ResponseWriter, r *http.Request) {
 
 	// If adapter returned empty response, return error to user
 	if response == "" {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"session":  session.Name,
 			"cli_type": session.CLIType,
 		}).Error("adapter-returned-empty-response-check-transcript-file")
@@ -165,7 +164,7 @@ func (e *Engine) handleHookRequest(w http.ResponseWriter, r *http.Request) {
 
 	if !exists {
 		// No active channel - user might be operating CLI directly
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"session": session.Name,
 		}).Debug("no-active-channel-found-skipping-bot-notification")
 		w.WriteHeader(http.StatusOK)
@@ -174,7 +173,7 @@ func (e *Engine) handleHookRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send to the specific bot channel that initiated the request
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"platform": botChannel.Platform,
 		"channel":  botChannel.Channel,
 		"session":  session.Name,

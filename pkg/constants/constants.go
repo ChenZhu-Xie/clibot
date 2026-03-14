@@ -28,6 +28,11 @@ const (
 	TypingIndicatorTimeout = 5 * time.Second
 	// TypingIndicatorRemoveDelay is the delay before removing typing indicator after sending response
 	TypingIndicatorRemoveDelay = 500 * time.Millisecond
+
+	// QQ Bot Timeouts
+	QQWebSocketHandshakeTimeout = 10 * time.Second
+	QQAPIRequestTimeout         = 10 * time.Second
+	QQMessageSendTimeout        = 15 * time.Second
 )
 
 // Message buffer sizes

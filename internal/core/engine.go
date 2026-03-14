@@ -21,7 +21,6 @@ import (
 	"github.com/keepmind9/clibot/internal/proxy"
 	"github.com/keepmind9/clibot/internal/watchdog"
 	"github.com/keepmind9/clibot/pkg/constants"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -110,7 +109,7 @@ type Engine struct {
 	userSessions    map[string]string         // User key (platform:userID) -> current session name
 	cmdLocksMu      sync.RWMutex              // Protects sessionCmdLocks map
 	sessionCmdLocks map[string]*sync.Mutex    // Per-session command locks (prevents concurrent commands on same session)
-	proxyMgr        *proxy.ProxyManager       // Proxy manager for HTTP clients
+	proxyMgr        proxy.Manager             // Proxy manager for HTTP clients
 	ctx             context.Context           // Context for cancellation
 	cancel          context.CancelFunc        // Cancel function for graceful shutdown
 }
@@ -158,7 +157,7 @@ func (e *Engine) RegisterBotAdapter(botType string, adapter bot.BotAdapter) {
 }
 
 // GetProxyManager returns the proxy manager
-func (e *Engine) GetProxyManager() *proxy.ProxyManager {
+func (e *Engine) GetProxyManager() proxy.Manager {
 	return e.proxyMgr
 }
 
@@ -289,14 +288,14 @@ func (e *Engine) Run(ctx context.Context) error {
 		go func(bt string, ba bot.BotAdapter) {
 			defer func() {
 				if r := recover(); r != nil {
-					logger.WithFields(logrus.Fields{
+					logger.WithFields(logger.Fields{
 						"bot_type": bt,
 						"panic":    r,
 					}).Error("bot-start-panic-recovered")
 				}
 			}()
 			if err := ba.Start(e.HandleBotMessage); err != nil {
-				logger.WithFields(logrus.Fields{
+				logger.WithFields(logger.Fields{
 					"bot_type": bt,
 					"error":    err,
 				}).Error("failed-to-start-bot")
@@ -334,7 +333,7 @@ func (e *Engine) HandleBotMessage(msg bot.BotMessage) {
 
 	if isSpecialCmd {
 		// Special commands are processed asynchronously for immediate response
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"command": cmd,
 			"args":    args,
 			"user":    msg.UserID,
@@ -382,7 +381,7 @@ func (e *Engine) handleSpecialCommandWithAuth(command string, args []string, msg
 
 	// Other commands require whitelist authorization
 	if !e.config.IsUserAuthorized(msg.Platform, msg.UserID) {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"platform": msg.Platform,
 			"user":     msg.UserID,
 		}).Warn("unauthorized-special-command")
@@ -398,7 +397,7 @@ func (e *Engine) handleSpecialCommandWithAuth(command string, args []string, msg
 		lock := e.getSessionCmdLock(sessionName)
 		if !lock.TryLock() {
 			// Lock is held by another command for this session
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"session": sessionName,
 				"command": command,
 				"user":    msg.UserID,
@@ -416,7 +415,7 @@ func (e *Engine) handleSpecialCommandWithAuth(command string, args []string, msg
 
 // HandleUserMessage processes a message from a user
 func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"platform": msg.Platform,
 		"user":     msg.UserID,
 		"channel":  msg.Channel,
@@ -430,7 +429,7 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 	if isSpecialCmd {
 		// Only "help" and "echo" bypass whitelist check
 		if cmd == "help" || cmd == "echo" {
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"command": cmd,
 				"args":    args,
 				"user":    msg.UserID,
@@ -443,7 +442,7 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 	// Step 1: Security check - verify user is in whitelist
 	// Applies to all commands except "help" and "echo", and all AI queries
 	if !e.config.IsUserAuthorized(msg.Platform, msg.UserID) {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"platform": msg.Platform,
 			"user":     msg.UserID,
 		}).Warn("unauthorized-access-attempt")
@@ -455,7 +454,7 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 
 	// Step 2: Handle remaining special commands (status, slist, etc.)
 	if isSpecialCmd {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"command": cmd,
 			"args":    args,
 			"user":    msg.UserID,
@@ -479,7 +478,7 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 			// User's selected session no longer exists, clean up the stale reference
 			delete(e.userSessions, userKey)
 			sessionInvalid = true
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"user":          userKey,
 				"stale_session": sessionName,
 			}).Warn("cleaned-stale-user-session-reference")
@@ -498,12 +497,12 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 		e.sessionMu.RUnlock()
 
 		if sessionInvalid {
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"user":          userKey,
 				"stale_session": sessionName,
 			}).Warn("user-selected-session-no-longer-exists")
 		} else {
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"user": userKey,
 			}).Warn("user-has-no-session-selected")
 		}
@@ -523,7 +522,7 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 		return
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session": session.Name,
 		"state":   session.State,
 		"cli":     session.CLIType,
@@ -555,7 +554,7 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 			go func() {
 				defer func() {
 					if r := recover(); r != nil {
-						logger.WithFields(logrus.Fields{
+						logger.WithFields(logger.Fields{
 							"platform":   platform,
 							"message_id": messageID,
 							"panic":      r,
@@ -564,7 +563,7 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 				}()
 
 				if adapter.AddTypingIndicator(messageID) {
-					logger.WithFields(logrus.Fields{
+					logger.WithFields(logger.Fields{
 						"platform":   platform,
 						"message_id": messageID,
 					}).Info("typing-indicator-added")
@@ -577,7 +576,7 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 	// Converts entire input matching keywords to actual key sequences
 	processedContent := watchdog.ProcessKeyWords(msg.Content)
 	if processedContent != msg.Content {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"original":  msg.Content,
 			"processed": fmt.Sprintf("%q", processedContent),
 		}).Debug("keyword-converted-to-key-sequence")
@@ -588,7 +587,7 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 
 	// Step 5: Send to CLI
 	if err := adapter.SendInput(session.Name, processedContent); err != nil {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"session": session.Name,
 			"error":   err,
 		}).Error("failed-to-send-input-to-cli")
@@ -606,7 +605,7 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 		go func(sessionName string, watchdogCtx context.Context) {
 			defer func() {
 				if r := recover(); r != nil {
-					logger.WithFields(logrus.Fields{
+					logger.WithFields(logger.Fields{
 						"session": sessionName,
 						"panic":   r,
 					}).Error("watchdog-panic-recovered")
@@ -623,7 +622,7 @@ func (e *Engine) HandleUserMessage(msg bot.BotMessage) {
 			}
 
 			if err := e.startWatchdogWithContext(watchdogCtx, session, "", ""); err != nil {
-				logger.WithFields(logrus.Fields{
+				logger.WithFields(logger.Fields{
 					"session": sessionName,
 					"error":   err,
 				}).Error("watchdog-failed")
@@ -823,8 +822,8 @@ func (e *Engine) showWhoami(msg bot.BotMessage) {
 			"**User ID:** `%s`\n"+
 			"**Channel ID:** `%s`\n"+
 			"**Current Session:** ⚠️  Not selected\n\n"+
-			"💡 Use " + e.fmtCmd(msg, "slist") + " to see available sessions\n"+
-			"   Use " + e.fmtCmd(msg, "suse [name]") + " to select a session",
+			"💡 Use "+e.fmtCmd(msg, "slist")+" to see available sessions\n"+
+			"   Use "+e.fmtCmd(msg, "suse [name]")+" to select a session",
 			msg.Platform, msg.UserID, msg.Channel)
 		e.SendToBot(msg.Platform, msg.Channel, response)
 		return
@@ -956,7 +955,7 @@ func (e *Engine) handleEcho(msg bot.BotMessage) {
 // handleNewSession creates a new dynamic session (admin only)
 // Usage: new <name> <cli_type> <work_dir> [start_cmd]
 func (e *Engine) handleNewSession(args []string, msg bot.BotMessage) {
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"platform": msg.Platform,
 		"user_id":  msg.UserID,
 		"args":     args,
@@ -1072,7 +1071,7 @@ func (e *Engine) handleNewSession(args []string, msg bot.BotMessage) {
 	// 10. Add to sessions map
 	e.sessions[name] = session
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"action":     "create_session",
 		"session":    name,
 		"platform":   msg.Platform,
@@ -1117,7 +1116,7 @@ func expandPath(path string) (string, error) {
 // handleUseSession switches the user's current active session
 // Usage: suse <session_name>
 func (e *Engine) handleUseSession(args []string, msg bot.BotMessage) {
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"platform": msg.Platform,
 		"user_id":  msg.UserID,
 		"args":     args,
@@ -1156,7 +1155,7 @@ func (e *Engine) handleUseSession(args []string, msg bot.BotMessage) {
 
 	sessionWasRunning, err := e.ensureSessionStarted(session, sessionConfig)
 	if err != nil {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"session": sessionName,
 			"error":   err,
 		}).Error("failed-to-ensure-session-started")
@@ -1169,7 +1168,7 @@ func (e *Engine) handleUseSession(args []string, msg bot.BotMessage) {
 	wasSwitched := e.userSessions[userKey] != sessionName
 	e.userSessions[userKey] = sessionName
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"user":    userKey,
 		"session": sessionName,
 		"cli":     session.CLIType,
@@ -1202,7 +1201,7 @@ func (e *Engine) handleUseSession(args []string, msg bot.BotMessage) {
 // handleDeleteSession deletes a dynamic session (admin only)
 // Usage: sdel <name>
 func (e *Engine) handleDeleteSession(args []string, msg bot.BotMessage) {
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"platform": msg.Platform,
 		"user_id":  msg.UserID,
 		"args":     args,
@@ -1244,7 +1243,7 @@ func (e *Engine) handleDeleteSession(args []string, msg bot.BotMessage) {
 
 	// 5. Stop the session (close + release resources)
 	if err := e.stopSession(session); err != nil {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"session": name,
 			"error":   err,
 		}).Warn("failed-to-stop-session-before-deletion")
@@ -1264,13 +1263,13 @@ func (e *Engine) handleDeleteSession(args []string, msg bot.BotMessage) {
 	}
 
 	if cleanedUsers > 0 {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"session":       name,
 			"cleaned_users": cleanedUsers,
 		}).Info("cleaned-user-sessions-after-deletion")
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"action":   "delete_session",
 		"session":  name,
 		"platform": msg.Platform,
@@ -1288,7 +1287,7 @@ func (e *Engine) handleDeleteSession(args []string, msg bot.BotMessage) {
 // handleCloseSession handles the sclose command
 // Stops the CLI process for a session without deleting the session configuration
 func (e *Engine) handleCloseSession(args []string, msg bot.BotMessage) {
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"platform": msg.Platform,
 		"user_id":  msg.UserID,
 		"args":     args,
@@ -1348,7 +1347,7 @@ func (e *Engine) handleCloseSession(args []string, msg bot.BotMessage) {
 
 	// Stop the session using shared stopSession method
 	if err := e.stopSession(session); err != nil {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"session":  sessionName,
 			"error":    err,
 			"platform": msg.Platform,
@@ -1359,7 +1358,7 @@ func (e *Engine) handleCloseSession(args []string, msg bot.BotMessage) {
 		return
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"action":   "close_session",
 		"session":  sessionName,
 		"platform": msg.Platform,
@@ -1373,7 +1372,7 @@ func (e *Engine) handleCloseSession(args []string, msg bot.BotMessage) {
 // stopSession stops a running session and releases resources
 // This is a helper method used by both sclose and sdel commands
 func (e *Engine) stopSession(session *Session) error {
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session": session.Name,
 		"cliType": session.CLIType,
 	}).Info("stopping-session")
@@ -1439,7 +1438,7 @@ type ProcessInfo struct {
 // handleSessionStatus handles the sstatus command
 // Usage: sstatus [session_name]
 func (e *Engine) handleSessionStatus(args []string, msg bot.BotMessage) {
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"platform": msg.Platform,
 		"user_id":  msg.UserID,
 		"args":     args,
@@ -1613,7 +1612,7 @@ func (e *Engine) handleListGeminiSessions(args []string, msg bot.BotMessage) {
 // handleNewGeminiACPSession creates a new Gemini session in ACP mode with a specified WorkDir
 // Usage: snewg <name> <work_dir>
 func (e *Engine) handleNewGeminiACPSession(args []string, msg bot.BotMessage) {
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"platform": msg.Platform,
 		"user_id":  msg.UserID,
 		"args":     args,
@@ -1717,7 +1716,7 @@ func (e *Engine) handleNewGeminiACPSession(args []string, msg bot.BotMessage) {
 	userKey := getUserKey(msg.Platform, msg.UserID)
 	e.userSessions[userKey] = name
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"action":     "create_snewg_session",
 		"session":    name,
 		"platform":   msg.Platform,
@@ -2105,7 +2104,7 @@ func (e *Engine) updateSessionState(sessionName string, newState SessionState) {
 	if session, exists := e.sessions[sessionName]; exists {
 		oldState := session.State
 		session.State = newState
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"session":   sessionName,
 			"old_state": oldState,
 			"new_state": newState,
@@ -2167,13 +2166,13 @@ func (e *Engine) startNewWatchdogForSession(sessionName string) (context.Context
 func (e *Engine) SendToBot(platform, channel, message string) {
 	if botAdapter, exists := e.activeBots[platform]; exists {
 		if err := botAdapter.SendMessage(channel, message); err != nil {
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"platform": platform,
 				"channel":  channel,
 				"error":    err,
 			}).Error("failed-to-send-message-to-bot")
 		} else {
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"platform": platform,
 				"channel":  channel,
 				"length":   len(message),
@@ -2220,7 +2219,7 @@ func (e *Engine) SendResponseToSession(sessionName, message string) {
 
 	// Skip empty messages
 	if strings.TrimSpace(message) == "" {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"session": sessionName,
 			"event":   "skip_empty_response",
 		}).Info("skipping-empty-response-delivery")
@@ -2262,7 +2261,7 @@ func (e *Engine) SendResponseToSession(sessionName, message string) {
 		}
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session":         sessionName,
 		"platform":        botChannel.Platform,
 		"channel":         botChannel.Channel,
@@ -2293,7 +2292,7 @@ func (e *Engine) SendToAllBots(message string) {
 func (e *Engine) startWatchdogWithContext(ctx context.Context, session *Session, userPrompt string, beforeCapture string) error {
 	// Check if session needs watchdog monitoring
 	if !session.NeedsWatchdog() {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"session": session.Name,
 			"cliType": session.CLIType,
 		}).Debug("skipping-watchdog-for-async-adapter")
@@ -2327,7 +2326,7 @@ func (e *Engine) sendResponseToUser(sessionName string, content string) {
 	// Step 0: Check if content is empty (trimmed)
 	// We don't send empty messages to avoid bot API errors
 	if strings.TrimSpace(content) == "" {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"session": sessionName,
 			"event":   "skip_empty_response",
 		}).Info("skipping-empty-response-delivery")
@@ -2335,7 +2334,7 @@ func (e *Engine) sendResponseToUser(sessionName string, content string) {
 	}
 
 	// Send response
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session":         sessionName,
 		"platform":        botChannel.Platform,
 		"channel":         botChannel.Channel,
@@ -2366,7 +2365,7 @@ func (e *Engine) Stop() error {
 		if session != nil {
 			logger.WithField("session", sessionName).Info("stopping-session-on-engine-shutdown")
 			if err := e.stopSession(session); err != nil {
-				logger.WithFields(logrus.Fields{
+				logger.WithFields(logger.Fields{
 					"session": sessionName,
 					"error":   err,
 				}).Error("failed-to-stop-session-during-shutdown")
@@ -2379,7 +2378,7 @@ func (e *Engine) Stop() error {
 		if closer, ok := adapter.(interface{ Close() error }); ok {
 			logger.WithField("adapter", cliType).Info("closing-cli-adapter")
 			if err := closer.Close(); err != nil {
-				logger.WithFields(logrus.Fields{
+				logger.WithFields(logger.Fields{
 					"adapter": cliType,
 					"error":   err,
 				}).Error("failed-to-close-cli-adapter")
@@ -2411,7 +2410,7 @@ func (e *Engine) Stop() error {
 	for botType, botAdapter := range e.activeBots {
 		logger.WithField("bot_type", botType).Info("stopping-bot")
 		if err := botAdapter.Stop(); err != nil {
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"bot_type": botType,
 				"error":    err,
 			}).Error("failed-to-stop-bot")

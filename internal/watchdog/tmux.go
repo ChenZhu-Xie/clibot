@@ -42,7 +42,6 @@ import (
 	"time"
 
 	"github.com/keepmind9/clibot/internal/logger"
-	"github.com/sirupsen/logrus"
 )
 
 // tmuxSemaphore limits concurrent tmux operations to prevent system overload
@@ -128,7 +127,7 @@ func SendKeys(sessionName, input string, delayMs ...int) error {
 		delay = delayMs[0]
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session":  sessionName,
 		"input":    input,
 		"delay_ms": delay,
@@ -154,7 +153,7 @@ func SendKeys(sessionName, input string, delayMs ...int) error {
 
 	cmd1 := exec.Command("tmux", args1...)
 	if output, err := cmd1.CombinedOutput(); err != nil {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"session": sessionName,
 			"error":   err,
 			"output":  string(output),
@@ -173,7 +172,7 @@ func SendKeys(sessionName, input string, delayMs ...int) error {
 		args2 := []string{"send-keys", "-t", sessionName, "C-m"}
 		cmd2 := exec.Command("tmux", args2...)
 		if output, err := cmd2.CombinedOutput(); err != nil {
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"session": sessionName,
 				"error":   err,
 				"output":  string(output),

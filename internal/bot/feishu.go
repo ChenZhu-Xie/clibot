@@ -15,7 +15,6 @@ import (
 	"github.com/larksuite/oapi-sdk-go/v3/event/dispatcher"
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 	"github.com/larksuite/oapi-sdk-go/v3/ws"
-	"github.com/sirupsen/logrus"
 )
 
 // FeishuBot implements BotAdapter interface for Feishu (Lark) using WebSocket long connection
@@ -59,7 +58,7 @@ func (f *FeishuBot) Start(messageHandler func(BotMessage)) error {
 	f.ctx, f.cancel = context.WithCancel(context.Background())
 
 	// Log bot startup
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"app_id": maskSecret(f.appID),
 	}).Info("starting-feishu-bot-with-websocket-long-connection")
 
@@ -116,7 +115,7 @@ func (f *FeishuBot) Start(messageHandler func(BotMessage)) error {
 	// Start long connection (this blocks)
 	go func() {
 		if err := wsClient.Start(f.ctx); err != nil {
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"app_id": f.appID,
 				"error":  err,
 			}).Error("feishu-websocket-connection-failed")
@@ -184,7 +183,7 @@ func (f *FeishuBot) handleMessageReceive(ctx context.Context, event *larkim.P2Me
 	}
 
 	// Log parsed event data
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"platform":     "feishu",
 		"user_id":      senderID,
 		"chat_id":      chatID,
@@ -229,7 +228,7 @@ func (f *FeishuBot) SendMessage(chatID, message string) error {
 	// Feishu limit: text message content length
 	const maxFeishuLength = constants.MaxFeishuMessageLength
 	if len(message) > maxFeishuLength {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"original_length": len(message),
 			"max_length":      maxFeishuLength,
 		}).Info("truncating-message-for-feishu-limit")
@@ -255,7 +254,7 @@ func (f *FeishuBot) SendMessage(chatID, message string) error {
 	// Send message
 	resp, err := larkClient.Im.Message.Create(ctx, req)
 	if err != nil {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"chat_id": chatID,
 			"error":   err,
 		}).Error("failed-to-send-message-to-feishu")
@@ -263,7 +262,7 @@ func (f *FeishuBot) SendMessage(chatID, message string) error {
 	}
 
 	if !resp.Success() {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"chat_id":      chatID,
 			"code":         resp.Code,
 			"msg":          resp.Msg,
@@ -373,14 +372,14 @@ func (f *FeishuBot) AddTypingIndicator(messageID string) bool {
 
 	resp, err := larkClient.Im.MessageReaction.Create(ctx, req)
 	if err != nil {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"error": err,
 		}).Error("failed-to-add-typing-indicator")
 		return false
 	}
 
 	if !resp.Success() {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"code":       resp.Code,
 			"msg":        resp.Msg,
 			"message_id": messageID,
@@ -389,7 +388,7 @@ func (f *FeishuBot) AddTypingIndicator(messageID string) bool {
 	}
 
 	if resp.Data == nil || resp.Data.ReactionId == nil {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"message_id": messageID,
 		}).Error("feishu-add-typing-no-reaction-id")
 		return false
@@ -400,7 +399,7 @@ func (f *FeishuBot) AddTypingIndicator(messageID string) bool {
 	f.typingReactions[messageID] = *resp.Data.ReactionId
 	f.mu.Unlock()
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"message_id":  messageID,
 		"reaction_id": *resp.Data.ReactionId,
 	}).Info("feishu-typing-indicator-added")
@@ -447,7 +446,7 @@ func (f *FeishuBot) RemoveTypingIndicator(messageID string) error {
 		return fmt.Errorf("failed to delete typing indicator: code=%d, msg=%s", resp.Code, resp.Msg)
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"message_id":  messageID,
 		"reaction_id": reactionID,
 	}).Info("feishu-typing-indicator-removed")

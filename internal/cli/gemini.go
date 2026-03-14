@@ -14,7 +14,6 @@ import (
 	"github.com/keepmind9/clibot/internal/bot"
 	"github.com/keepmind9/clibot/internal/logger"
 	"github.com/keepmind9/clibot/internal/watchdog"
-	"github.com/sirupsen/logrus"
 )
 
 // GeminiAdapterConfig configuration for Gemini CLI adapter
@@ -56,7 +55,7 @@ func (g *GeminiAdapter) ListSessions(sessionName string, botUsername string) ([]
 		logger.WithField("error", err).Warn("failed-to-get-cwd-for-gemini-session-listing")
 		return nil, fmt.Errorf("could not determine current work dir: %w", err)
 	}
-	
+
 	sessions, err := listGeminiSessionsByWorkDir(cwd)
 	if err != nil {
 		return nil, err
@@ -75,7 +74,7 @@ func (g *GeminiAdapter) ListSessions(sessionName string, botUsername string) ([]
 			link = fmt.Sprintf("[**%s**](tg://msg?text=sssw%%20%s)", s.ID, sessionID)
 			summaryLink = fmt.Sprintf("tg://msg?text=%s", summaryEscaped)
 		}
-		
+
 		summary := s.Summary
 		if summary == "" {
 			summary = "No summary available"
@@ -103,9 +102,9 @@ func (g *GeminiAdapter) GetSessionStats(sessionName string, botUsername string) 
 		stats["session_id"] = id
 		summary := bot.TruncateRuneSafe(geminiSessionSummary(lastFile), 40)
 		safeSummary := strings.ReplaceAll(strings.ReplaceAll(summary, "[", "("), "]", ")")
-		
+
 		sessionID := url.QueryEscape(id)
-		
+
 		var link, summaryLink string
 		if botUsername != "" {
 			link = fmt.Sprintf("[**%s**](tg://resolve?domain=%s&text=sssw%%20%s)", id, botUsername, sessionID)
@@ -114,7 +113,7 @@ func (g *GeminiAdapter) GetSessionStats(sessionName string, botUsername string) 
 			link = fmt.Sprintf("[**%s**](tg://msg?text=sssw%%20%s)", id, sessionID)
 			summaryLink = fmt.Sprintf("[%s](tg://msg?text=%s)", safeSummary, url.QueryEscape(summary))
 		}
-		
+
 		// Format: ID: Summary
 		stats["session_title"] = fmt.Sprintf("%s: %s", link, summaryLink)
 	}
@@ -124,7 +123,7 @@ func (g *GeminiAdapter) GetSessionStats(sessionName string, botUsername string) 
 
 // SwitchSession switches to a specific Gemini session using the /resume command.
 func (g *GeminiAdapter) SwitchSession(sessionName, cliSessionID string) (string, error) {
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session":     sessionName,
 		"cli_session": cliSessionID,
 	}).Info("switching-gemini-session-natively")
@@ -357,7 +356,7 @@ func (g *GeminiAdapter) HandleHookData(data []byte) (string, string, string, err
 		hookEventName = v
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"cwd":             cwd,
 		"transcript_path": transcriptPath,
 		"hook_event_name": hookEventName,
@@ -372,7 +371,7 @@ func (g *GeminiAdapter) HandleHookData(data []byte) (string, string, string, err
 	if !strings.EqualFold(hookEventName, "Notification") {
 		lastUserPrompt, response, err = g.extractGeminiResponse(transcriptPath, cwd)
 		if err != nil {
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"transcript_path": transcriptPath,
 				"cwd":             cwd,
 				"error":           err,
@@ -382,7 +381,7 @@ func (g *GeminiAdapter) HandleHookData(data []byte) (string, string, string, err
 		logger.WithField("hook_event_name", hookEventName).Debug("skipping-response-extraction-for-notification-event")
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"cwd":          cwd,
 		"prompt_len":   len(lastUserPrompt),
 		"response_len": len(response),
@@ -424,7 +423,7 @@ func (g *GeminiAdapter) lastSessionFile(cwd string) (string, error) {
 
 	latestFile := matches[0]
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"latest_file": latestFile,
 		"chats_dir":   chatsDir,
 	}).Debug("found-latest-gemini-session-file")
@@ -520,7 +519,7 @@ func (g *GeminiAdapter) extractGeminiResponse(transcriptPath string, cwd string)
 	// Join all content parts with double newline
 	response := strings.Join(contentParts, "\n\n")
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"total_messages":  len(messages),
 		"last_user_index": lastUserIndex,
 		"gemini_messages": len(contentParts),

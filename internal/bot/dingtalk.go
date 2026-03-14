@@ -11,7 +11,6 @@ import (
 	"github.com/keepmind9/clibot/pkg/constants"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/chatbot"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/client"
-	"github.com/sirupsen/logrus"
 )
 
 // DingTalkBot implements BotAdapter interface for DingTalk using WebSocket long connection
@@ -47,7 +46,7 @@ func (d *DingTalkBot) Start(messageHandler func(BotMessage)) error {
 	d.SetMessageHandler(messageHandler)
 	d.ctx, d.cancel = context.WithCancel(context.Background())
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"client_id": maskSecret(d.clientID),
 	}).Info("starting-dingtalk-bot-with-websocket-long-connection")
 
@@ -75,7 +74,7 @@ func (d *DingTalkBot) Start(messageHandler func(BotMessage)) error {
 	// Start long connection
 	go func() {
 		if err := streamClient.Start(d.ctx); err != nil {
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"client_id": d.clientID,
 				"error":     err,
 			}).Error("dingtalk-websocket-connection-failed")
@@ -96,7 +95,7 @@ func (d *DingTalkBot) handleMessageReceive(ctx context.Context, data *chatbot.Bo
 	}
 
 	// Log the complete event object for debugging
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"platform":          "dingtalk",
 		"conversation_id":   data.ConversationId,
 		"conversation_type": data.ConversationType,
@@ -142,7 +141,7 @@ func (d *DingTalkBot) SendMessage(conversationID, message string) error {
 	// DingTalk message limit
 	const maxDingTalkLength = constants.MaxDingTalkMessageLength
 	if len(message) > maxDingTalkLength {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"original_length": len(message),
 			"max_length":      maxDingTalkLength,
 		}).Info("truncating-message-for-dingtalk-limit")
@@ -154,7 +153,7 @@ func (d *DingTalkBot) SendMessage(conversationID, message string) error {
 	// and reused for replies. This implementation limitation is tracked at:
 	// https://github.com/keepmind9/clibot/issues/125
 	message = WrapTablesInCodeBlocks(message)
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"conversation_id": conversationID,
 		"message_length":  len(message),
 	}).Warn("dingtalk-send-message-not-fully-implemented-needs-session-webhook")

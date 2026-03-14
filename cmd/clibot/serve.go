@@ -13,7 +13,6 @@ import (
 	"github.com/keepmind9/clibot/internal/cli"
 	"github.com/keepmind9/clibot/internal/core"
 	"github.com/keepmind9/clibot/internal/logger"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -49,7 +48,7 @@ var (
 				log.Fatalf("Failed to initialize logger: %v", err)
 			}
 
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"config_file": configFile,
 				"log_level":   config.Logging.Level,
 				"log_file":    config.Logging.File,

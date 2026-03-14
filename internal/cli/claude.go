@@ -11,7 +11,6 @@ import (
 
 	"github.com/keepmind9/clibot/internal/logger"
 	"github.com/keepmind9/clibot/internal/watchdog"
-	"github.com/sirupsen/logrus"
 )
 
 // ClaudeAdapterConfig configuration for Claude Code adapter
@@ -69,7 +68,7 @@ func (c *ClaudeAdapter) HandleHookData(data []byte) (string, string, string, err
 		return "", "", "", fmt.Errorf("missing cwd in hook data")
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"cwd":             hookData.CWD,
 		"transcript_path": hookData.TranscriptPath,
 		"hook_event_name": hookData.EventName,
@@ -82,7 +81,7 @@ func (c *ClaudeAdapter) HandleHookData(data []byte) (string, string, string, err
 	if hookData.TranscriptPath != "" {
 		lastUserPrompt, response, err = extractLatestInteraction(hookData.TranscriptPath)
 		if err != nil {
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"transcript": hookData.TranscriptPath,
 				"error":      err,
 			}).Warn("failed-to-extract-interaction-from-transcript")
@@ -95,7 +94,7 @@ func (c *ClaudeAdapter) HandleHookData(data []byte) (string, string, string, err
 		}
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"cwd":          hookData.CWD,
 		"prompt_len":   len(lastUserPrompt),
 		"response_len": len(response),

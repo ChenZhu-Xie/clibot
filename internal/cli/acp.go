@@ -21,7 +21,6 @@ import (
 	"github.com/coder/acp-go-sdk"
 	"github.com/keepmind9/clibot/internal/bot"
 	"github.com/keepmind9/clibot/internal/logger"
-	"github.com/sirupsen/logrus"
 )
 
 // - "" or "stdio://" → stdio with no address
@@ -50,8 +49,8 @@ type ACPAdapter struct {
 	config            ACPAdapterConfig
 	mu                sync.Mutex
 	sessions          map[string]*acpSession
-	currentEngine     Engine     // Engine reference for sending responses
-	contextUsageLimit float64    // Threshold to trigger auto-reset (0.0 to 1.0, e.g., 0.5 for 50%)
+	currentEngine     Engine  // Engine reference for sending responses
+	contextUsageLimit float64 // Threshold to trigger auto-reset (0.0 to 1.0, e.g., 0.5 for 50%)
 }
 
 type acpSession struct {
@@ -63,7 +62,7 @@ type acpSession struct {
 	workDir       string        // Saved workDir for recreation
 	startCmd      string        // Saved startCmd for recreation
 	lastUsagePerc float64       // Last recorded context usage percentage (0-100)
-	
+
 	// Per-session resources
 	conn     *acp.ClientSideConnection
 	cmd      *exec.Cmd
@@ -99,7 +98,7 @@ func NewACPAdapter(config ACPAdapterConfig) (*ACPAdapter, error) {
 		config.MaxTotalTimeout = defaultACPMaxTotalTimeout
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"idle_timeout":      config.IdleTimeout,
 		"max_total_timeout": config.MaxTotalTimeout,
 		"env_count":         len(config.Env),
@@ -208,7 +207,7 @@ func (a *ACPAdapter) ResetSession(sessionName string) error {
 
 // SwitchWorkDir changes the working directory for an ACP session
 func (a *ACPAdapter) SwitchWorkDir(sessionName, newWorkDir string) error {
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session":      sessionName,
 		"new_work_dir": newWorkDir,
 	}).Info("switching-acp-work-dir")
@@ -283,7 +282,7 @@ func (a *ACPAdapter) ListSessions(sessionName string, botUsername string) ([]str
 // SwitchSession switches the Gemini CLI (running behind ACP) to a different
 // history session by updating the session ID used for future prompt requests.
 func (a *ACPAdapter) SwitchSession(sessionName, cliSessionID string) (string, error) {
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session":     sessionName,
 		"cli_session": cliSessionID,
 	}).Info("switching-acp-gemini-session")
@@ -328,7 +327,7 @@ func ensureGeminiChatsDir(workDir string) error {
 		return fmt.Errorf("failed to create gemini chats directory: %w", err)
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"work_dir":  workDir,
 		"chats_dir": chatsDir,
 	}).Info("gemini-chats-directory-ensured")
@@ -353,7 +352,7 @@ func (a *ACPAdapter) CreateSession(sessionName, workDir, startCmd, transportURL 
 			logger.WithField("session", sessionName).Info("recreating-abandoned-session")
 			sess.active = false
 		}
-		
+
 		// Cleanup old inactive session resources if any
 		if sess.cancel != nil {
 			sess.cancel()
@@ -377,7 +376,7 @@ func (a *ACPAdapter) CreateSession(sessionName, workDir, startCmd, transportURL 
 	// Parse transport URL
 	transportType, address := parseTransportURL(transportURL)
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session":   sessionName,
 		"work_dir":  absWorkDir,
 		"command":   startCmd,
@@ -391,7 +390,7 @@ func (a *ACPAdapter) CreateSession(sessionName, workDir, startCmd, transportURL 
 
 	// Create session context
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// Initialize session object early so start methods can populate it
 	sess := &acpSession{
 		ctx:       ctx,
@@ -436,9 +435,6 @@ func (a *ACPAdapter) CreateSession(sessionName, workDir, startCmd, transportURL 
 	return nil
 }
 
-
-
-
 // SendInput sends input to the ACP server
 func (a *ACPAdapter) SendInput(sessionName, input string) error {
 	a.mu.Lock()
@@ -472,7 +468,7 @@ func (a *ACPAdapter) SendInput(sessionName, input string) error {
 		return fmt.Errorf("ACP connection for session %s not established", sessionName)
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session":   sessionName,
 		"sessionId": sess.sessionId,
 		"input":     input,
@@ -512,7 +508,7 @@ func (a *ACPAdapter) SendInput(sessionName, input string) error {
 	if err != nil {
 		// If error is not a timeout, mark session as inactive to prevent further requests
 		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"session": sessionName,
 				"error":   err,
 			}).Error("acp-connection-error-marking-session-inactive")
@@ -526,7 +522,7 @@ func (a *ACPAdapter) SendInput(sessionName, input string) error {
 		return fmt.Errorf("ACP prompt failed: %w", err)
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"stop_reason": resp.StopReason,
 	}).Debug("acp-prompt-completed")
 
@@ -539,7 +535,7 @@ func (a *ACPAdapter) SendInput(sessionName, input string) error {
 		clientImpl.responseBuf.Reset()
 		clientImpl.mu.Unlock()
 
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"session":         sessionName,
 			"response_length": len(response),
 		}).Info("acp-prompt-response-completed")
@@ -564,7 +560,7 @@ func (a *ACPAdapter) SendInput(sessionName, input string) error {
 // This allows long-running requests to complete as long as they're actively working,
 // while cancelling truly hung requests that don't produce any output.
 func (a *ACPAdapter) monitorActivity(sessionName string, baseCtx context.Context, cancelFunc context.CancelFunc, client *acpClient, done <-chan struct{}) {
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session":      sessionName,
 		"idle_timeout": a.config.IdleTimeout,
 		"max_timeout":  a.config.MaxTotalTimeout,
@@ -614,7 +610,7 @@ func (a *ACPAdapter) monitorActivity(sessionName string, baseCtx context.Context
 
 			// Check max total timeout (hard limit)
 			if totalTime >= a.config.MaxTotalTimeout {
-				logger.WithFields(logrus.Fields{
+				logger.WithFields(logger.Fields{
 					"session":     sessionName,
 					"total_time":  totalTime,
 					"max_timeout": a.config.MaxTotalTimeout,
@@ -626,7 +622,7 @@ func (a *ACPAdapter) monitorActivity(sessionName string, baseCtx context.Context
 
 			// Check idle timeout
 			if idleTime >= a.config.IdleTimeout {
-				logger.WithFields(logrus.Fields{
+				logger.WithFields(logger.Fields{
 					"session":      sessionName,
 					"idle_time":    idleTime,
 					"idle_timeout": a.config.IdleTimeout,
@@ -636,7 +632,7 @@ func (a *ACPAdapter) monitorActivity(sessionName string, baseCtx context.Context
 				return
 			}
 
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"session":    sessionName,
 				"idle_time":  idleTime,
 				"total_time": totalTime,
@@ -663,7 +659,7 @@ func (a *ACPAdapter) DeleteSession(sessionName string) error {
 	a.mu.Unlock()
 
 	// Debug logging
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session":  sessionName,
 		"isRemote": sess.isRemote,
 		"cmd":      sess.cmd != nil,
@@ -686,7 +682,6 @@ func (a *ACPAdapter) DeleteSession(sessionName string) error {
 
 	return nil
 }
-
 
 // getSessionTitle attempts to extract a descriptive title for a session
 func (a *ACPAdapter) getSessionTitle(workDir, sessionID, botUsername string) (string, string) {
@@ -742,10 +737,10 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID, botUsername string) (st
 					title = strings.ReplaceAll(title, "\n", " ")
 					safeTitle := strings.ReplaceAll(strings.ReplaceAll(title, "[", "("), "]", ")")
 					safeTitle = bot.TruncateRuneSafe(safeTitle, 40)
-					
+
 					sessionIDEscaped := url.QueryEscape(sessionID)
 					titleEscaped := url.QueryEscape(title)
-					
+
 					var idLink, summaryLink string
 					if botUsername != "" {
 						idLink = fmt.Sprintf("tg://resolve?domain=%s&text=sssw%%20%s", botUsername, sessionIDEscaped)
@@ -754,7 +749,7 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID, botUsername string) (st
 						idLink = fmt.Sprintf("tg://msg?text=sssw%%20%s", sessionIDEscaped)
 						summaryLink = fmt.Sprintf("tg://msg?text=%s", titleEscaped)
 					}
-					
+
 					// Format: [**id**](link): [summary](link)
 					return fmt.Sprintf("[**%s**](%s): [%s](%s)",
 						sessionID, idLink, safeTitle, summaryLink), sessionID
@@ -774,7 +769,7 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID, botUsername string) (st
 								}
 							}
 						}
-						
+
 						// Extract first 30 chars of first user message as title
 						title := strings.TrimSpace(contentStr)
 						title = strings.ReplaceAll(title, "\n", " ")
@@ -784,10 +779,10 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID, botUsername string) (st
 						// Sanitize summary for markdown link
 						safeTitle := strings.ReplaceAll(strings.ReplaceAll(title, "[", "("), "]", ")")
 						safeTitle = bot.TruncateRuneSafe(safeTitle, 40)
-						
+
 						sessionIDEscaped := url.QueryEscape(sessionID)
 						titleEscaped := url.QueryEscape(title)
-						
+
 						var idLink, summaryLink string
 						if botUsername != "" {
 							idLink = fmt.Sprintf("tg://resolve?domain=%s&text=sssw%%20%s", botUsername, sessionIDEscaped)
@@ -796,7 +791,7 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID, botUsername string) (st
 							idLink = fmt.Sprintf("tg://msg?text=sssw%%20%s", sessionIDEscaped)
 							summaryLink = fmt.Sprintf("tg://msg?text=%s", titleEscaped)
 						}
-						
+
 						// Format: [**id**](link): [summary](link)
 						return fmt.Sprintf("[**%s**](%s): [%s](%s)",
 							sessionID, idLink, safeTitle, summaryLink), sessionID
@@ -822,11 +817,11 @@ func (a *ACPAdapter) GetSessionStats(sessionName string, botUsername string) (ma
 	stats := make(map[string]interface{})
 	stats["work_dir"] = sess.workDir
 	stats["usage_perc"] = sess.lastUsagePerc
-	
+
 	title, actualID := a.getSessionTitle(sess.workDir, sess.sessionId, botUsername)
 	stats["session_title"] = title
 	stats["session_id"] = actualID
-	
+
 	return stats, nil
 }
 
@@ -843,7 +838,7 @@ func (a *ACPAdapter) Close() error {
 	// Delete each session properly
 	for _, name := range sessionNames {
 		if err := a.DeleteSession(name); err != nil {
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"session": name,
 				"error":   err,
 			}).Warn("failed-to-delete-session-during-close")
@@ -877,7 +872,7 @@ func (a *ACPAdapter) startStdioServer(sess *acpSession, workDir, command string,
 	}
 	cmd.Env = env
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session":       sessionName,
 		"env_var_count": envVarCount,
 		"env_vars":      a.config.Env,
@@ -912,7 +907,7 @@ func (a *ACPAdapter) startStdioServer(sess *acpSession, workDir, command string,
 	go func() {
 		conn := acp.NewClientSideConnection(clientImpl, stdin, stdout)
 		logger.Info("acp-client-connection-created")
-		
+
 		if conn != nil {
 			sess.conn = conn
 			conn.SetLogger(slog.Default())
@@ -938,7 +933,7 @@ func (a *ACPAdapter) startStdioServer(sess *acpSession, workDir, command string,
 				if err == nil {
 					// Success - save sessionId and break
 					sess.sessionId = string(newSessionResp.SessionId)
-					logger.WithFields(logrus.Fields{
+					logger.WithFields(logger.Fields{
 						"session":   sessionName,
 						"sessionId": sess.sessionId,
 						"attempt":   attempt,
@@ -947,7 +942,7 @@ func (a *ACPAdapter) startStdioServer(sess *acpSession, workDir, command string,
 				}
 
 				// Log failure
-				logger.WithFields(logrus.Fields{
+				logger.WithFields(logger.Fields{
 					"attempt": attempt,
 					"error":   err,
 				}).Warn("acp-new-session-attempt-failed")
@@ -961,7 +956,7 @@ func (a *ACPAdapter) startStdioServer(sess *acpSession, workDir, command string,
 			// If NewSession failed after all retries, mark session as inactive
 			// so that SendInput won't attempt to use an empty sessionId.
 			if err != nil {
-				logger.WithFields(logrus.Fields{
+				logger.WithFields(logger.Fields{
 					"session": sessionName,
 					"error":   err,
 				}).Error("acp-new-session-all-retries-failed-marking-inactive")
@@ -989,7 +984,7 @@ func (a *ACPAdapter) startStdioServer(sess *acpSession, workDir, command string,
 		}
 	}()
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"pid":     cmd.Process.Pid,
 		"session": sessionName,
 	}).Info("acp-stdio-server-started")
@@ -1054,7 +1049,7 @@ func (a *ACPAdapter) connectRemoteServer(sess *acpSession, workDir string, trans
 				if err == nil {
 					// Success - save sessionId and break
 					sess.sessionId = string(newSessionResp.SessionId)
-					logger.WithFields(logrus.Fields{
+					logger.WithFields(logger.Fields{
 						"session":   sessionName,
 						"sessionId": sess.sessionId,
 						"attempt":   attempt,
@@ -1063,7 +1058,7 @@ func (a *ACPAdapter) connectRemoteServer(sess *acpSession, workDir string, trans
 				}
 
 				// Log failure
-				logger.WithFields(logrus.Fields{
+				logger.WithFields(logger.Fields{
 					"attempt": attempt,
 					"error":   err,
 				}).Warn("acp-new-session-attempt-failed")
@@ -1077,7 +1072,7 @@ func (a *ACPAdapter) connectRemoteServer(sess *acpSession, workDir string, trans
 			// If NewSession failed after all retries, mark session as inactive
 			// so that SendInput won't attempt to use an empty sessionId.
 			if err != nil {
-				logger.WithFields(logrus.Fields{
+				logger.WithFields(logger.Fields{
 					"session": sessionName,
 					"error":   err,
 				}).Error("acp-new-session-all-retries-failed-marking-inactive")
@@ -1091,7 +1086,7 @@ func (a *ACPAdapter) connectRemoteServer(sess *acpSession, workDir string, trans
 		}
 	}()
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"network": network,
 		"address": address,
 		"session": sessionName,
@@ -1137,7 +1132,7 @@ func (c *acpClient) SessionUpdate(ctx context.Context, params acp.SessionNotific
 	}
 
 	// Log session update (contains AI responses)
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"session_id":   params.SessionId,
 		"session_name": c.sessionName,
 		"update":       params.Update,
@@ -1148,7 +1143,7 @@ func (c *acpClient) SessionUpdate(ctx context.Context, params acp.SessionNotific
 	if sess, exists := c.adapter.sessions[c.sessionName]; exists {
 		if sess.sessionId == "" {
 			sess.sessionId = string(params.SessionId)
-			logger.WithFields(logrus.Fields{
+			logger.WithFields(logger.Fields{
 				"session_name": c.sessionName,
 				"session_id":   sess.sessionId,
 			}).Info("acp-session-id-saved")
@@ -1175,7 +1170,7 @@ func (c *acpClient) SessionUpdate(ctx context.Context, params acp.SessionNotific
 					c.adapter.mu.Lock()
 					if sess, ok := c.adapter.sessions[c.sessionName]; ok {
 						sess.lastUsagePerc = perc
-						logger.WithFields(logrus.Fields{
+						logger.WithFields(logger.Fields{
 							"session": c.sessionName,
 							"usage":   perc,
 						}).Info("captured-context-usage-percentage")
@@ -1201,7 +1196,7 @@ func (c *acpClient) SessionUpdate(ctx context.Context, params acp.SessionNotific
 			c.mu.Unlock()
 		}
 	case params.Update.ToolCall != nil:
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"tool_call_id": params.Update.ToolCall.ToolCallId,
 		}).Debug("acp-tool-call")
 	case params.Update.Plan != nil:

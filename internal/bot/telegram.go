@@ -4,17 +4,13 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"strings"
 	"sync"
 	"time"
-
-	"unicode/utf8"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/keepmind9/clibot/internal/logger"
 	"github.com/keepmind9/clibot/internal/proxy"
 	"github.com/keepmind9/clibot/pkg/constants"
-	"github.com/sirupsen/logrus"
 )
 
 // TelegramBot implements BotAdapter interface for Telegram using long polling
@@ -68,7 +64,7 @@ func (t *TelegramBot) Start(messageHandler func(BotMessage)) error {
 	t.SetMessageHandler(messageHandler)
 	t.ctx, t.cancel = context.WithCancel(context.Background())
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"token": maskSecret(t.token),
 	}).Info("starting-telegram-bot-with-long-polling")
 
@@ -90,7 +86,7 @@ func (t *TelegramBot) Start(messageHandler func(BotMessage)) error {
 
 	if err != nil {
 		err = sanitizeTokenFromError(t.token, err)
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"error": err,
 		}).Error("failed-to-initialize-telegram-bot")
 		return fmt.Errorf("failed to initialize Telegram bot: %w", err)
@@ -98,7 +94,7 @@ func (t *TelegramBot) Start(messageHandler func(BotMessage)) error {
 
 	bot := t.bot
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"bot_username": bot.Self.UserName,
 		"bot_id":       bot.Self.ID,
 	}).Info("telegram-bot-initialized-successfully")
@@ -160,7 +156,7 @@ func (t *TelegramBot) handleMessage(message *tgbotapi.Message) {
 	}
 
 	// Log parsed message data
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"platform":    "telegram",
 		"user_id":     userID,
 		"username":    userName,
@@ -218,11 +214,11 @@ func (t *TelegramBot) SendMessage(chatID, message string) error {
 	const maxTelegramLength = constants.MaxTelegramMessageLength
 	chunks := []string{message}
 	if len(message) > maxTelegramLength {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"original_length": len(message),
 			"max_length":      maxTelegramLength,
 		}).Info("splitting-message-for-telegram-limit")
-		chunks = splitMessageForTelegram(message, maxTelegramLength)
+		chunks = SplitMessage(message, maxTelegramLength)
 	}
 
 	// 3. Send each chunk
@@ -234,13 +230,13 @@ func (t *TelegramBot) SendMessage(chatID, message string) error {
 		if err != nil {
 			err = sanitizeTokenFromError(t.token, err)
 			if parseMode != "" {
-				logger.WithFields(logrus.Fields{
+				logger.WithFields(logger.Fields{
 					"chat_id":    chatID,
 					"parse_mode": parseMode,
 					"error":      err,
 				}).Warn("failed-to-send-formatted-chunk-falling-back-to-plain-text")
-				
-				msg.ParseMode = "" 
+
+				msg.ParseMode = ""
 				msg.Text = stripHTML(chunk)
 				_, err = bot.Send(msg)
 				if err != nil {
@@ -255,36 +251,7 @@ func (t *TelegramBot) SendMessage(chatID, message string) error {
 	return nil
 }
 
-// splitMessageForTelegram splits s into chunks of at most maxSize. 
-func splitMessageForTelegram(s string, maxSize int) []string {
-	var chunks []string
-	for len(s) > 0 {
-		if len(s) <= maxSize {
-			chunks = append(chunks, s)
-			break
-		}
 
-		splitIdx := strings.LastIndex(s[:maxSize], "\n")
-		if splitIdx == -1 {
-			splitIdx = findSafeRuneSplit(s, maxSize)
-		}
-
-		chunks = append(chunks, s[:splitIdx])
-		s = strings.TrimLeft(s[splitIdx:], "\n")
-	}
-	return chunks
-}
-
-func findSafeRuneSplit(s string, maxSize int) int {
-	if len(s) <= maxSize {
-		return len(s)
-	}
-	idx := maxSize
-	for idx > 0 && !utf8.RuneStart(s[idx]) {
-		idx--
-	}
-	return idx
-}
 
 func stripHTML(s string) string {
 	re := regexp.MustCompile(`<[^>]*>`)

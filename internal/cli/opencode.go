@@ -11,7 +11,6 @@ import (
 
 	"github.com/keepmind9/clibot/internal/logger"
 	"github.com/keepmind9/clibot/internal/watchdog"
-	"github.com/sirupsen/logrus"
 )
 
 // OpenCodeAdapterConfig configuration for OpenCode adapter
@@ -65,7 +64,7 @@ func (o *OpenCodeAdapter) HandleHookData(data []byte) (string, string, string, e
 		return "", "", "", fmt.Errorf("missing cwd in hook data")
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"cwd":             hookData.CWD,
 		"session_id":      hookData.SessionID,
 		"hook_event_name": hookData.EventName,
@@ -77,7 +76,7 @@ func (o *OpenCodeAdapter) HandleHookData(data []byte) (string, string, string, e
 	// Extract interaction
 	lastUserPrompt, response, err = o.extractLatestInteractionFromStorage(hookData.CWD, hookData.SessionID)
 	if err != nil {
-		logger.WithFields(logrus.Fields{
+		logger.WithFields(logger.Fields{
 			"cwd":   hookData.CWD,
 			"error": err,
 		}).Warn("failed-to-extract-interaction-from-storage")
@@ -88,7 +87,7 @@ func (o *OpenCodeAdapter) HandleHookData(data []byte) (string, string, string, e
 		response = ""
 	}
 
-	logger.WithFields(logrus.Fields{
+	logger.WithFields(logger.Fields{
 		"cwd":          hookData.CWD,
 		"prompt_len":   len(lastUserPrompt),
 		"response_len": len(response),

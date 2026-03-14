@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keepmind9/clibot/pkg/constants"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -156,7 +157,7 @@ func TestSplitMessage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := splitMessage(tt.message, tt.maxLen)
+			result := SplitMessage(tt.message, tt.maxLen)
 			assert.Equal(t, tt.expectedPartCount, len(result), "should split into correct number of parts")
 
 			// Verify each part is within max length
@@ -210,9 +211,9 @@ func TestQQBot_Constants(t *testing.T) {
 	assert.Equal(t, 2000, qqMaxMessageLength)
 	assert.Equal(t, 60, qqTokenExpirationBuffer)
 	assert.Equal(t, 500, maxMsgSeqMapSize)
-	assert.Equal(t, 10*time.Second, qqWebSocketHandshakeTimeout)
-	assert.Equal(t, 10*time.Second, qqAPIRequestTimeout)
-	assert.Equal(t, 15*time.Second, qqMessageSendTimeout)
+	assert.Equal(t, 10*time.Second, constants.QQWebSocketHandshakeTimeout)
+	assert.Equal(t, 10*time.Second, constants.QQAPIRequestTimeout)
+	assert.Equal(t, 15*time.Second, constants.QQMessageSendTimeout)
 }
 
 func TestQQBot_HandlerIntegration(t *testing.T) {
