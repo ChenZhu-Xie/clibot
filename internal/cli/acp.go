@@ -15,7 +15,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/coder/acp-go-sdk"
@@ -23,6 +22,8 @@ import (
 	"github.com/keepmind9/clibot/internal/logger"
 )
 
+// parseTransportURL parses transport URL into type and address
+// Supported formats:
 // - "" or "stdio://" → stdio with no address
 // - "tcp://host:port" → TCP with address
 // - "unix:///path" → Unix socket with path
@@ -165,26 +166,6 @@ func (a *ACPAdapter) IsSessionAlive(sessionName string) bool {
 		logger.WithField("session", sessionName).Debug("session-alive-check-failed-process-died")
 	}
 	return alive
-}
-
-// isSessionActive checks if the underlying process or connection for a session is still alive.
-func (a *ACPAdapter) isSessionActive(sess *acpSession) bool {
-	if sess.isRemote {
-		if sess.conn == nil {
-			return false
-		}
-		select {
-		case <-sess.conn.Done():
-			return false
-		default:
-			return true
-		}
-	} else {
-		if sess.cmd == nil || sess.cmd.Process == nil {
-			return false
-		}
-		return sess.cmd.Process.Signal(os.Signal(syscall.Signal(0))) == nil
-	}
 }
 
 // ResetSession clears the session ID in memory to start a new conversation.
@@ -349,7 +330,10 @@ func (a *ACPAdapter) CreateSession(sessionName, workDir, startCmd, transportURL 
 				return nil
 			}
 			// Not really active, mark it as inactive and fall through to recreation
-			logger.WithField("session", sessionName).Info("recreating-abandoned-session")
+			logger.WithFields(logger.Fields{
+				"session": sessionName,
+				"reason":  "process-not-alive",
+			}).Info("recreating-abandoned-session")
 			sess.active = false
 		}
 
@@ -426,6 +410,10 @@ func (a *ACPAdapter) CreateSession(sessionName, workDir, startCmd, transportURL 
 	}
 
 	if err != nil {
+		logger.WithFields(logger.Fields{
+			"session": sessionName,
+			"error":   err,
+		}).Error("acp-session-creation-failed-marking-inactive")
 		sess.active = false
 		return err
 	}
@@ -462,6 +450,7 @@ func (a *ACPAdapter) SendInput(sessionName, input string) error {
 
 	if sess.conn == nil {
 		// Connection not established, mark session as inactive
+		logger.WithField("session", sessionName).Warn("acp-connection-missing-marking-inactive")
 		a.mu.Lock()
 		sess.active = false
 		a.mu.Unlock()
@@ -652,6 +641,7 @@ func (a *ACPAdapter) DeleteSession(sessionName string) error {
 
 	// Cancel context
 	sess.cancel()
+	logger.WithField("session", sessionName).Debug("acp-session-inactivated-during-delete")
 	sess.active = false
 
 	// Remove from sessions map
@@ -1086,9 +1076,9 @@ func (a *ACPAdapter) connectRemoteServer(sess *acpSession, workDir string, trans
 					// Success - save sessionId and break
 					sess.sessionId = string(newSessionResp.SessionId)
 					logger.WithFields(logger.Fields{
-						"session":   sessionName,
-						"sessionId": sess.sessionId,
-						"attempt":   attempt,
+						"session_name": sessionName,
+						"id":           sess.sessionId,
+						"attempt":      attempt,
 					}).Info("acp-session-id-saved")
 					return // Success
 				}

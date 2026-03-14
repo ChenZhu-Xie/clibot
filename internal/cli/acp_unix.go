@@ -3,6 +3,7 @@
 package cli
 
 import (
+	"os"
 	"syscall"
 
 	"github.com/keepmind9/clibot/internal/logger"
@@ -29,4 +30,23 @@ func (a *ACPAdapter) killProcess(sess *acpSession) error {
 	}
 
 	return nil
+}
+// isSessionActive checks if the underlying process or connection for a session is still alive.
+func (a *ACPAdapter) isSessionActive(sess *acpSession) bool {
+	if sess.isRemote {
+		if sess.conn == nil {
+			return false
+		}
+		select {
+		case <-sess.conn.Done():
+			return false
+		default:
+			return true
+		}
+	} else {
+		if sess.cmd == nil || sess.cmd.Process == nil {
+			return false
+		}
+		return sess.cmd.Process.Signal(os.Signal(syscall.Signal(0))) == nil
+	}
 }
