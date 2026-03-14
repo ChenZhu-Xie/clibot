@@ -38,6 +38,9 @@ type DiscordBot struct {
 
 // NewDiscordBot creates a new Discord bot instance
 func NewDiscordBot(token, channelID string) *DiscordBot {
+	// Register token for redaction
+	logger.RegisterSensitiveString(token)
+
 	return &DiscordBot{
 		token:     token,
 		channelID: channelID,

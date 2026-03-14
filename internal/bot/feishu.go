@@ -36,6 +36,10 @@ type FeishuBot struct {
 
 // NewFeishuBot creates a new Feishu bot instance
 func NewFeishuBot(appID, appSecret string) *FeishuBot {
+	// Register sensitive info for redaction
+	logger.RegisterSensitiveString(appID)
+	logger.RegisterSensitiveString(appSecret)
+
 	bot := &FeishuBot{
 		appID:           appID,
 		appSecret:       appSecret,

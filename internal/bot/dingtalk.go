@@ -28,6 +28,10 @@ type DingTalkBot struct {
 
 // NewDingTalkBot creates a new DingTalk bot instance
 func NewDingTalkBot(clientID, clientSecret string) *DingTalkBot {
+	// Register sensitive info for redaction
+	logger.RegisterSensitiveString(clientID)
+	logger.RegisterSensitiveString(clientSecret)
+
 	return &DingTalkBot{
 		clientID:     clientID,
 		clientSecret: clientSecret,

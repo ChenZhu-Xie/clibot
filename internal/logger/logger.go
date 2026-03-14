@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -16,7 +17,35 @@ import (
 
 var (
 	globalLogger *logrus.Logger
+	sensitiveStrings []string
+	sensitiveMu      sync.RWMutex
 )
+
+// RegisterSensitiveString registers a string to be redacted from logs
+func RegisterSensitiveString(s string) {
+	if s == "" {
+		return
+	}
+	sensitiveMu.Lock()
+	defer sensitiveMu.Unlock()
+	// Check if already registered
+	for _, existing := range sensitiveStrings {
+		if existing == s {
+			return
+		}
+	}
+	sensitiveStrings = append(sensitiveStrings, s)
+}
+
+// redactContent replaces all registered sensitive strings with <REDACTED>
+func redactContent(s string) string {
+	sensitiveMu.RLock()
+	defer sensitiveMu.RUnlock()
+	for _, sensitive := range sensitiveStrings {
+		s = strings.ReplaceAll(s, sensitive, "<REDACTED>")
+	}
+	return s
+}
 
 // Fields is an alias for map[string]interface{} to avoid requiring logrus imports in other packages
 type Fields map[string]interface{}
@@ -81,7 +110,7 @@ func (f *OpenClawFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	fmt.Fprintf(b, "%s%s %s%s%s ", levelColor, icon, colorBold, levelText, colorReset)
 
 	// 3. Message with Semantic Highlighting
-	msg := entry.Message
+	msg := redactContent(entry.Message)
 	lowerMsg := strings.ToLower(msg)
 	if strings.Contains(lowerMsg, "start") || strings.Contains(lowerMsg, "success") || strings.Contains(lowerMsg, "initialized") {
 		msg = colorSuccess + msg + colorReset
@@ -102,7 +131,7 @@ func (f *OpenClawFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 		for _, k := range keys {
 			v := entry.Data[k]
-			valStr := fmt.Sprintf("%v", v)
+			valStr := redactContent(fmt.Sprintf("%v", v))
 
 			var kClr string
 			switch k {

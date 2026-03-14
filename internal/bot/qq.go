@@ -137,6 +137,10 @@ type SendMessageResponse struct {
 
 // NewQQBot creates a new QQ bot instance
 func NewQQBot(appID, appSecret string) *QQBot {
+	// Register sensitive info for redaction
+	logger.RegisterSensitiveString(appID)
+	logger.RegisterSensitiveString(appSecret)
+
 	return &QQBot{
 		appID:     appID,
 		appSecret: appSecret,

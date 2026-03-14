@@ -27,8 +27,22 @@ type TelegramBot struct {
 	running        bool   // NEW: tracks if the bot is already running
 }
 
+// TelegramBridgeLogger redirects tgbotapi logs to our redacting logger
+type TelegramBridgeLogger struct{}
+
+func (l TelegramBridgeLogger) Println(v ...interface{}) {
+	logger.Info(v...)
+}
+
+func (l TelegramBridgeLogger) Printf(format string, v ...interface{}) {
+	logger.Infof(format, v...)
+}
+
 // NewTelegramBot creates a new Telegram bot instance
 func NewTelegramBot(token string) *TelegramBot {
+	// Register token for redaction
+	logger.RegisterSensitiveString(token)
+
 	return &TelegramBot{
 		token:     token,
 		parseMode: "HTML", // Default to HTML mode for formatting support
@@ -67,6 +81,9 @@ func (t *TelegramBot) Start(messageHandler func(BotMessage)) error {
 	logger.WithFields(logger.Fields{
 		"token": maskSecret(t.token),
 	}).Info("starting-telegram-bot-with-long-polling")
+
+	// Configure global telegram-bot-api logger
+	_ = tgbotapi.SetLogger(TelegramBridgeLogger{})
 
 	var err error
 	t.mu.Lock()
