@@ -6,7 +6,7 @@ import (
 	"html"
 	"regexp"
 	"strings"
-	"unicode/utf8"
+	"github.com/keepmind9/clibot/pkg/utils"
 	"github.com/mattn/go-runewidth"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -734,24 +734,7 @@ func extractTextFromNode(n ast.Node, src []byte) string {
 	return sb.String()
 }
 
-// TruncateRuneSafe trims s to at most maxRunes Unicode code points and appends
-// "..." if it was shortened. It also strips any invalid UTF-8 sequences so the
-// output is always safe to send to Telegram.
+// TruncateRuneSafe is now a wrapper for utils.TruncateRuneSafe
 func TruncateRuneSafe(s string, maxRunes int) string {
-	// Strip invalid UTF-8 bytes
-	s = strings.Map(func(r rune) rune {
-		if r == utf8.RuneError {
-			return -1 // drop replacement characters from bad sequences
-		}
-		return r
-	}, s)
-	s = strings.TrimSpace(s)
-	runes := []rune(s)
-	if len(runes) > maxRunes {
-		if maxRunes <= 3 {
-			return string(runes[:maxRunes])
-		}
-		return string(runes[:maxRunes-3]) + "..."
-	}
-	return s
+	return utils.TruncateRuneSafe(s, maxRunes)
 }

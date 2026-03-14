@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	acp "github.com/coder/acp-go-sdk"
 	"github.com/keepmind9/clibot/internal/bot"
 	"github.com/keepmind9/clibot/internal/proxy"
 	"github.com/stretchr/testify/assert"
@@ -184,4 +186,42 @@ func TestACPAdapter_ResetSession(t *testing.T) {
 	
 	// Verify sessionId is cleared
 	assert.Empty(t, adapter.sessions[sessionName].sessionId)
+}
+// TestACPAdapter_ContextUsageParsing tests context usage parsing from chunks
+func TestACPAdapter_ContextUsageParsing(t *testing.T) {
+	config := ACPAdapterConfig{}
+	adapter, _ := NewACPAdapter(config)
+	sessionName := "test-session"
+	
+	// Create a session
+	adapter.sessions[sessionName] = &acpSession{
+		active: true,
+	}
+	
+	client := &acpClient{
+		adapter:     adapter,
+		sessionName: sessionName,
+	}
+	
+	// Structure directly since acp-go-sdk v0.0.1 may require complex unmarshalling
+	textStr := "I have analyzed the files. 15% context used."
+	params := acp.SessionNotification{
+		SessionId: "sess-1",
+		Update: acp.SessionUpdate{
+			AgentMessageChunk: &acp.SessionUpdateAgentMessageChunk{
+				Content: acp.ContentBlock{
+					Text: &acp.ContentBlockText{
+						Text: textStr,
+					},
+				},
+			},
+		},
+	}
+	var err error
+	
+	err = client.SessionUpdate(context.Background(), params)
+	require.NoError(t, err)
+	
+	// Verify lastUsagePerc is updated
+	assert.Equal(t, 15.0, adapter.sessions[sessionName].lastUsagePerc)
 }

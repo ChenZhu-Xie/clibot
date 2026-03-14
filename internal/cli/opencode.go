@@ -32,7 +32,7 @@ func NewOpenCodeAdapter(config OpenCodeAdapterConfig) (*OpenCodeAdapter, error) 
 }
 
 // ListSessions returns a list of available CLI-native sessions (not implemented for OpenCode)
-func (o *OpenCodeAdapter) ListSessions(sessionName string, botUsername string) ([]string, error) {
+func (o *OpenCodeAdapter) ListSessions(sessionName string, formatter LinkFormatter) ([]string, error) {
 	return nil, nil
 }
 
@@ -300,6 +300,6 @@ func extractLatestInteractionFromFile(path string) (string, string, error) {
 
 	return "", "", fmt.Errorf("unsupported opencode file format: %s", path)
 }
-func (o *OpenCodeAdapter) GetSessionStats(sessionName string, botUsername string) (map[string]interface{}, error) {
+func (o *OpenCodeAdapter) GetSessionStats(sessionName string, formatter LinkFormatter) (map[string]interface{}, error) {
 	return nil, nil
 }

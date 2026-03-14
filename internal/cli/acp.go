@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -109,7 +108,7 @@ func NewACPAdapter(config ACPAdapterConfig) (*ACPAdapter, error) {
 	return &ACPAdapter{
 		config:            config,
 		sessions:          make(map[string]*acpSession),
-		contextUsageLimit: 0.6, // Default to 60%
+		contextUsageLimit: 0.25, // Default to 25%
 	}, nil
 }
 
@@ -234,7 +233,7 @@ func (a *ACPAdapter) SwitchWorkDir(sessionName, newWorkDir string) error {
 // ListSessions lists available Gemini history sessions for the project associated
 // with this ACP session. It reads session-*.json files from ~/.gemini/tmp/{hash}/chats,
 // the same directory Gemini CLI uses regardless of the transport mode.
-func (a *ACPAdapter) ListSessions(sessionName string, botUsername string) ([]string, error) {
+func (a *ACPAdapter) ListSessions(sessionName string, formatter LinkFormatter) ([]string, error) {
 	a.mu.Lock()
 	sess, ok := a.sessions[sessionName]
 	var workDir string
@@ -254,21 +253,16 @@ func (a *ACPAdapter) ListSessions(sessionName string, botUsername string) ([]str
 
 	var formatted []string
 	for _, s := range sessions {
-		id := s.ID
-		summary := s.Summary
-
-		sessionID := url.QueryEscape(id)
-		summaryEscaped := url.QueryEscape(summary)
-		link := id
+		link := s.ID
 		summaryLink := ""
-		if botUsername != "" {
-			link = fmt.Sprintf("[**%s**](tg://resolve?domain=%s&text=sssw%%20%s)", id, botUsername, sessionID)
-			summaryLink = fmt.Sprintf("tg://resolve?domain=%s&text=%s", botUsername, summaryEscaped)
-		} else {
-			link = fmt.Sprintf("[**%s**](tg://msg?text=sssw%%20%s)", id, sessionID)
-			summaryLink = fmt.Sprintf("tg://msg?text=%s", summaryEscaped)
+		if formatter != nil {
+			link = formatter.FormatSessionLink(s.ID, "")
+			if s.Summary != "" {
+				summaryLink = formatter.FormatCommandLink(s.Summary, "")
+			}
 		}
 
+		summary := s.Summary
 		if summary == "" {
 			summary = "No summary available"
 			formatted = append(formatted, fmt.Sprintf("%s: `%s`", link, summary))
@@ -689,7 +683,7 @@ func (a *ACPAdapter) DeleteSession(sessionName string) error {
 
 
 // getSessionTitle attempts to extract a descriptive title for a session
-func (a *ACPAdapter) getSessionTitle(workDir, sessionID, botUsername string) (string, string) {
+func (a *ACPAdapter) getSessionTitle(workDir, sessionID string, formatter LinkFormatter) (string, string) {
 	if sessionID == "" {
 		return "new-session", ""
 	}
@@ -743,21 +737,15 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID, botUsername string) (st
 					safeTitle := strings.ReplaceAll(strings.ReplaceAll(title, "[", "("), "]", ")")
 					safeTitle = bot.TruncateRuneSafe(safeTitle, 40)
 					
-					sessionIDEscaped := url.QueryEscape(sessionID)
-					titleEscaped := url.QueryEscape(title)
-					
 					var idLink, summaryLink string
-					if botUsername != "" {
-						idLink = fmt.Sprintf("tg://resolve?domain=%s&text=sssw%%20%s", botUsername, sessionIDEscaped)
-						summaryLink = fmt.Sprintf("tg://resolve?domain=%s&text=%s", botUsername, titleEscaped)
-					} else {
-						idLink = fmt.Sprintf("tg://msg?text=sssw%%20%s", sessionIDEscaped)
-						summaryLink = fmt.Sprintf("tg://msg?text=%s", titleEscaped)
+					if formatter != nil {
+						idLink = formatter.FormatSessionLink(sessionID, "")
+						summaryLink = formatter.FormatCommandLink(title, "")
 					}
 					
 					// Format: [**id**](link): [summary](link)
-					return fmt.Sprintf("[**%s**](%s): [%s](%s)",
-						sessionID, idLink, safeTitle, summaryLink), sessionID
+					return fmt.Sprintf("%s: [%s](%s)",
+						idLink, safeTitle, summaryLink), sessionID
 				}
 
 				// 2. Extract from first user message
@@ -785,21 +773,15 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID, botUsername string) (st
 						safeTitle := strings.ReplaceAll(strings.ReplaceAll(title, "[", "("), "]", ")")
 						safeTitle = bot.TruncateRuneSafe(safeTitle, 40)
 						
-						sessionIDEscaped := url.QueryEscape(sessionID)
-						titleEscaped := url.QueryEscape(title)
-						
 						var idLink, summaryLink string
-						if botUsername != "" {
-							idLink = fmt.Sprintf("tg://resolve?domain=%s&text=sssw%%20%s", botUsername, sessionIDEscaped)
-							summaryLink = fmt.Sprintf("tg://resolve?domain=%s&text=%s", botUsername, titleEscaped)
-						} else {
-							idLink = fmt.Sprintf("tg://msg?text=sssw%%20%s", sessionIDEscaped)
-							summaryLink = fmt.Sprintf("tg://msg?text=%s", titleEscaped)
+						if formatter != nil {
+							idLink = formatter.FormatSessionLink(sessionID, "")
+							summaryLink = formatter.FormatCommandLink(title, "")
 						}
 						
 						// Format: [**id**](link): [summary](link)
-						return fmt.Sprintf("[**%s**](%s): [%s](%s)",
-							sessionID, idLink, safeTitle, summaryLink), sessionID
+						return fmt.Sprintf("%s: [%s](%s)",
+							idLink, safeTitle, summaryLink), sessionID
 					}
 				}
 			}
@@ -810,7 +792,7 @@ func (a *ACPAdapter) getSessionTitle(workDir, sessionID, botUsername string) (st
 }
 
 // GetSessionStats returns diagnostic stats for the session (e.g., context usage)
-func (a *ACPAdapter) GetSessionStats(sessionName string, botUsername string) (map[string]interface{}, error) {
+func (a *ACPAdapter) GetSessionStats(sessionName string, formatter LinkFormatter) (map[string]interface{}, error) {
 	a.mu.Lock()
 	sess, ok := a.sessions[sessionName]
 	a.mu.Unlock()
@@ -823,7 +805,7 @@ func (a *ACPAdapter) GetSessionStats(sessionName string, botUsername string) (ma
 	stats["work_dir"] = sess.workDir
 	stats["usage_perc"] = sess.lastUsagePerc
 	
-	title, actualID := a.getSessionTitle(sess.workDir, sess.sessionId, botUsername)
+	title, actualID := a.getSessionTitle(sess.workDir, sess.sessionId, formatter)
 	stats["session_title"] = title
 	stats["session_id"] = actualID
 	
@@ -1180,17 +1162,7 @@ func (c *acpClient) SessionUpdate(ctx context.Context, params acp.SessionNotific
 							"usage":   perc,
 						}).Info("captured-context-usage-percentage")
 
-						// Auto-reset if usage > limit (threshold 0.6 = 60%)
-						if perc/100.0 >= c.adapter.contextUsageLimit {
-							// Notify user before reset
-							if c.adapter.currentEngine != nil {
-								msg := fmt.Sprintf("⚠️ Context usage has reached %.0f%%. Automatically switching to a new session to maintain performance...", perc)
-								c.adapter.currentEngine.SendResponseToSession(c.sessionName, msg)
-							}
-
-							// Trigger reset in goroutine to not block update
-							go c.adapter.ResetSession(c.sessionName)
-						}
+						// Note: actual reset is handled by engine.SendResponseToSession
 					}
 					c.adapter.mu.Unlock()
 				}

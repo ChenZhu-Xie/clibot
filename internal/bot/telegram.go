@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 	"sync"
@@ -326,6 +327,36 @@ func (t *TelegramBot) GetBotUsername() string {
 		return t.bot.Self.UserName
 	}
 	return ""
+}
+
+// FormatCommandLink formats a command as a clickable link for Telegram
+func (t *TelegramBot) FormatCommandLink(cmd string, args ...string) string {
+	botUsername := t.GetBotUsername()
+	fullCmd := cmd
+	if len(args) > 0 {
+		fullCmd = cmd + " " + strings.Join(args, " ")
+	}
+	// Encode command for Telegram deep link
+	encodedCmd := strings.ReplaceAll(url.QueryEscape(fullCmd), "+", "%20")
+	if botUsername != "" {
+		return fmt.Sprintf("[**%s**](tg://resolve?domain=%s&text=%s)", cmd, botUsername, encodedCmd)
+	}
+	return fmt.Sprintf("[**%s**](tg://msg?text=%s)", cmd, encodedCmd)
+}
+
+// FormatSessionLink formats a session link for Telegram
+func (t *TelegramBot) FormatSessionLink(sessionID string, summary string) string {
+	botUsername := t.GetBotUsername()
+	sessionEscaped := strings.ReplaceAll(url.QueryEscape(sessionID), "+", "%20")
+	summaryText := summary
+	if summaryText == "" {
+		summaryText = sessionID
+	}
+
+	if botUsername != "" {
+		return fmt.Sprintf("[**%s**](tg://resolve?domain=%s&text=sssw%%20%s)", summaryText, botUsername, sessionEscaped)
+	}
+	return fmt.Sprintf("[**%s**](tg://msg?text=sssw%%20%s)", summaryText, sessionEscaped)
 }
 
 // GetMessageHandler gets the message handler in a thread-safe manner

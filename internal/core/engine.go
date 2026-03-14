@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -714,18 +713,13 @@ func (e *Engine) listSessions(msg bot.BotMessage) {
 		}
 	}
 
-	// Get bot username for link formatting
-	botUsername := ""
-	if botAdapter, exists := e.activeBots[msg.Platform]; exists {
-		botUsername = botAdapter.GetBotUsername()
-	}
+	// Categorize sessions
 
 	formatSessionName := func(name string) string {
-		escaped := url.QueryEscape(name)
-		if botUsername != "" {
-			return fmt.Sprintf("[**%s**](tg://resolve?domain=%s&text=suse%%20%s)", name, botUsername, escaped)
+		if botAdapter, exists := e.activeBots[msg.Platform]; exists {
+			return botAdapter.FormatSessionLink(name, "")
 		}
-		return fmt.Sprintf("[**%s**](tg://msg?text=suse%%20%s)", name, escaped)
+		return name
 	}
 
 	// Display static sessions
@@ -767,18 +761,11 @@ func (e *Engine) showStatus(msg bot.BotMessage) {
 	e.sessionMu.RLock()
 	defer e.sessionMu.RUnlock()
 
-	// Get bot username for link formatting
-	botUsername := ""
-	if botAdapter, exists := e.activeBots[msg.Platform]; exists {
-		botUsername = botAdapter.GetBotUsername()
-	}
-
 	formatSessionName := func(name string) string {
-		escaped := url.QueryEscape(name)
-		if botUsername != "" {
-			return fmt.Sprintf("[**%s**](tg://resolve?domain=%s&text=suse%%20%s)", name, botUsername, escaped)
+		if botAdapter, exists := e.activeBots[msg.Platform]; exists {
+			return botAdapter.FormatSessionLink(name, "")
 		}
-		return fmt.Sprintf("[**%s**](tg://msg?text=suse%%20%s)", name, escaped)
+		return name
 	}
 
 	response := "📊 clibot Status:\n\n"
@@ -1574,12 +1561,12 @@ func (e *Engine) handleListGeminiSessions(args []string, msg bot.BotMessage) {
 
 	// Use adapter's ListSessions to get a machine-readable list of sessions.
 	// Retrieve bot username for platform-specific linking (e.g., Telegram tg://resolve)
-	var botUsername string
+	var formatter cli.LinkFormatter
 	if botAdapter, ok := e.activeBots[msg.Platform]; ok {
-		botUsername = botAdapter.GetBotUsername()
+		formatter = botAdapter
 	}
-
-	sessions, err := adapter.ListSessions(session.Name, botUsername)
+ 
+	sessions, err := adapter.ListSessions(session.Name, formatter)
 	if err != nil {
 		e.SendToBot(msg.Platform, msg.Channel, fmt.Sprintf("❌ Failed to list sessions: %v", err))
 		return
@@ -1776,12 +1763,12 @@ func (e *Engine) handleSwitchGeminiSession(args []string, msg bot.BotMessage) {
 	// Append status bar to the switch confirmation if enabled
 	if e.config.Session.ShowSessionStats {
 		// Retrieve bot username for platform-specific linking
-		var botUsername string
+		var formatter cli.LinkFormatter
 		if botAdapter, ok := e.activeBots[msg.Platform]; ok {
-			botUsername = botAdapter.GetBotUsername()
+			formatter = botAdapter
 		}
-
-		stats, err := adapter.GetSessionStats(session.Name, botUsername)
+ 
+		stats, err := adapter.GetSessionStats(session.Name, formatter)
 		if err == nil && len(stats) > 0 {
 			workDir := ""
 			if wd, ok := stats["work_dir"].(string); ok {
@@ -2230,16 +2217,16 @@ func (e *Engine) SendResponseToSession(sessionName, message string) {
 	finalMessage := message
 
 	// Append Session Stats if enabled
-	if sessExists && e.config.Session.ShowSessionStats {
+	if sessExists {
 		adapter, ok := e.cliAdapters[session.CLIType]
 		if ok {
 			// Retrieve bot username for platform-specific linking
-			var botUsername string
+			var formatter cli.LinkFormatter
 			if botAdapter, ok := e.activeBots[botChannel.Platform]; ok {
-				botUsername = botAdapter.GetBotUsername()
+				formatter = botAdapter
 			}
-
-			stats, err := adapter.GetSessionStats(sessionName, botUsername)
+ 
+			stats, err := adapter.GetSessionStats(sessionName, formatter)
 			if err == nil && len(stats) > 0 {
 				workDir := ""
 				if wd, ok := stats["work_dir"].(string); ok {
@@ -2254,10 +2241,37 @@ func (e *Engine) SendResponseToSession(sessionName, message string) {
 					sessionTitle = st
 				}
 
-				// Markdown Format: 📂 `[dir]` | 💬 [id](...): [summary](...) | 🧠 `[usage]%` used
-				statsBar := fmt.Sprintf("\n\n---\n📂 `%s` | 💬 %s | 🧠 `%.0f%%` used",
-					workDir, sessionTitle, usagePerc)
-				finalMessage += statsBar
+				// AUTO-RESET LOGIC: Trigger snew if context usage >= 25%
+				// Threshold is 25% as requested by the user.
+				const autoResetThreshold = 25.0
+				if usagePerc >= autoResetThreshold {
+					logger.WithFields(logrus.Fields{
+						"session": sessionName,
+						"usage":   usagePerc,
+					}).Info("context-usage-threshold-reached-triggering-automatic-reset")
+
+					// Append warning to the message and trigger reset
+					// Note: We append it to the CURRENT message so the user knows why it happened
+					finalMessage += fmt.Sprintf("\n\n⚠️ **Context usage reached %.0f%%. Automatically switching to a new session to maintain performance...**", usagePerc)
+
+					// Trigger reset in goroutine
+					go func() {
+						if err := adapter.ResetSession(sessionName); err != nil {
+							logger.WithFields(logrus.Fields{
+								"session": sessionName,
+								"error":   err,
+							}).Error("failed-to-reset-session-automatically")
+						}
+					}()
+				}
+
+				// Only append stats bar if enabled in config
+				if e.config.Session.ShowSessionStats {
+					// Markdown Format: 📂 `[dir]` | 💬 [id](...): [summary](...) | 🧠 `[usage]%` used
+					statsBar := fmt.Sprintf("\n\n---\n📂 `%s` | 💬 %s | 🧠 `%.0f%%` used",
+						workDir, sessionTitle, usagePerc)
+					finalMessage += statsBar
+				}
 			}
 		}
 	}
@@ -2423,38 +2437,23 @@ func (e *Engine) Stop() error {
 }
 
 // normalizePath normalizes a path for comparison
-// Removes trailing slashes from the path.
-//
-// Note: Relative path expansion is not yet implemented. Paths are compared
-// as-is after removing trailing slashes. This works for most cases where both
-// paths are either absolute or both relative to the same location.
 func normalizePath(path string) string {
 	return strings.TrimSuffix(path, "/")
 }
 
 // fmtCmd formats a command for the specific platform to allow pre-filling/linking
 func (e *Engine) fmtCmd(msg bot.BotMessage, cmd string) string {
-	// For Telegram, use Markdown link syntax with optimized pre-filling
-	if msg.Platform == "telegram" {
-		botUsername := ""
-		if botAdapter, exists := e.activeBots[msg.Platform]; exists {
-			botUsername = botAdapter.GetBotUsername()
+	if botAdapter, exists := e.activeBots[msg.Platform]; exists {
+		// Extract base command and args for formatting
+		parts := strings.Fields(cmd)
+		if len(parts) > 0 {
+			// Check if it's a command with placeholders like "suse [name]"
+			if strings.Contains(cmd, "[") {
+				// For commands with placeholders, we want to pre-fill just the command
+				return botAdapter.FormatCommandLink(parts[0])
+			}
+			return botAdapter.FormatCommandLink(parts[0], parts[1:]...)
 		}
-
-		parts := strings.Split(cmd, " ")
-		baseCmd := parts[0]
-
-		// Smart pre-fill: add a space if the command takes arguments
-		text := baseCmd
-		if strings.Contains(cmd, "[") {
-			text += " "
-		}
-		escapedText := url.QueryEscape(text)
-
-		if botUsername != "" {
-			return fmt.Sprintf("[%s](tg://resolve?domain=%s&text=%s)", cmd, botUsername, escapedText)
-		}
-		return fmt.Sprintf("[%s](tg://msg?text=%s)", cmd, escapedText)
 	}
 	// Default to monospace style for other platforms
 	return "`" + cmd + "`"

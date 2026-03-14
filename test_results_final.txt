@@ -1,0 +1,44 @@
+﻿[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m1[0m [38;5;37menv_vars[0m:[1mmap[TEST_VAR:test_value][0m [38;5;37midle_timeout[0m:[1m10m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m3m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m [38;5;48mstarting-new-acp-conversation-by-clearing-id[0m  [38;5;120msession[0m:[1mtest-session[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-session-id-saved                 [38;5;37msession_id[0m:[1msess-1[0m [38;5;37msession_name[0m:[1mtest-session[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m captured-context-usage-percentage    [38;5;120msession[0m:[1mtest-session[0m [38;5;37musage[0m:[1m15[0m
+[38;5;242m[01:43:52][0m [38;5;196m鉂?[1mERRO[0m [38;5;196mfailed-to-send-input-to-tmux-session[0m  [38;5;160merror[0m:[1mexec: "tmux": executable file not found in %PATH%[0m [38;5;37moutput[0m:[1m[0m [38;5;120msession[0m:[1mtest-session-nonexistent[0m
+[38;5;242m[01:43:52][0m [38;5;196m鉂?[1mERRO[0m [38;5;196mfailed to send input to tmux: failed to send input to session test-session-nonexistent: exec: "tmux": executable file not found in %PATH% (output: )[0m 
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m interaction-extracted-from-transcript  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;37mprompt_len[0m:[1m0[0m [38;5;37mresponse_len[0m:[1m0[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m interaction-extracted-from-transcript  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;37mprompt_len[0m:[1m0[0m [38;5;37mresponse_len[0m:[1m0[0m
+[38;5;242m[01:43:52][0m [38;5;196m鉂?[1mERRO[0m [38;5;196mfailed-to-parse-hook-json-data[0m  [38;5;160merror[0m:[1minvalid character 'i' looking for beginning of value[0m
+[38;5;242m[01:43:52][0m [38;5;214m鈿狅笍  [1mWARN[0m [38;5;196mfailed-to-extract-gemini-response[0m  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;160merror[0m:[1mfailed to read session file: open /path/to/session.json: The system cannot find the path specified.[0m [38;5;37mtranscript_path[0m:[1m/path/to/session.json[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m response-extracted-from-gemini-history  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;37mprompt_len[0m:[1m0[0m [38;5;37mresponse_len[0m:[1m0[0m
+[38;5;242m[01:43:52][0m [38;5;214m鈿狅笍  [1mWARN[0m [38;5;196mfailed-to-extract-gemini-response[0m  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;160merror[0m:[1mfailed to read session file: open /path/to/session.json: The system cannot find the path specified.[0m [38;5;37mtranscript_path[0m:[1m/path/to/session.json[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m response-extracted-from-gemini-history  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;37mprompt_len[0m:[1m0[0m [38;5;37mresponse_len[0m:[1m0[0m
+[38;5;242m[01:43:52][0m [38;5;196m鉂?[1mERRO[0m [38;5;196mfailed-to-parse-hook-json-data[0m  [38;5;160merror[0m:[1minvalid character 'i' looking for beginning of value[0m
+[38;5;242m[01:43:52][0m [38;5;214m鈿狅笍  [1mWARN[0m missing-cwd-in-hook-data            
+[38;5;242m[01:43:52][0m [38;5;214m鈿狅笍  [1mWARN[0m missing-cwd-in-hook-data            
+[38;5;242m[01:43:52][0m [38;5;214m鈿狅笍  [1mWARN[0m [38;5;196mfailed-to-get-cwd-for-gemini-session-listing[0m  [38;5;160merror[0m:[1mfailed to get CWD for session test: exec: "tmux": executable file not found in %PATH%[0m
+--- FAIL: TestGeminiAdapter_LastSessionFile (0.02s)
+    --- FAIL: TestGeminiAdapter_LastSessionFile/directory_exists_but_no_session_files (0.01s)
+        gemini_test.go:181: 
+            	Error Trace:	E:/MCP/Gemini-Crab/clibot/clibot-repo/internal/cli/gemini_test.go:181
+            	Error:      	"could not determine current work dir: failed to get CWD for session test: exec: \"tmux\": executable file not found in %PATH%" does not contain "no session files found"
+            	Test:       	TestGeminiAdapter_LastSessionFile/directory_exists_but_no_session_files
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m extracted-gemini-response-from-session-file  [38;5;37mgemini_messages[0m:[1m1[0m [38;5;37mlast_user_index[0m:[1m0[0m [38;5;37mresponse_length[0m:[1m9[0m [38;5;37mtotal_messages[0m:[1m2[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m extracted-gemini-response-from-session-file  [38;5;37mgemini_messages[0m:[1m2[0m [38;5;37mlast_user_index[0m:[1m0[0m [38;5;37mresponse_length[0m:[1m14[0m [38;5;37mtotal_messages[0m:[1m3[0m
+[38;5;242m[01:43:52][0m [38;5;214m鈿狅笍  [1mWARN[0m [38;5;196mfailed-to-extract-interaction-from-storage[0m  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;160merror[0m:[1mno messages found for session test-session[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m response-extracted-from-storage      [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;37mprompt_len[0m:[1m0[0m [38;5;37mresponse_len[0m:[1m0[0m
+[38;5;242m[01:43:52][0m [38;5;196m鉂?[1mERRO[0m [38;5;196mfailed-to-parse-hook-json-data[0m  [38;5;160merror[0m:[1minvalid character 'i' looking for beginning of value[0m
+[38;5;242m[01:43:52][0m [38;5;214m鈿狅笍  [1mWARN[0m [38;5;196mfailed-to-extract-interaction-from-storage[0m  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;160merror[0m:[1mno messages found for session test-session[0m
+[38;5;242m[01:43:52][0m [38;5;75m鈩癸笍  [1mINFO[0m response-extracted-from-storage      [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;37mprompt_len[0m:[1m0[0m [38;5;37mresponse_len[0m:[1m0[0m
+FAIL
+FAIL	github.com/keepmind9/clibot/internal/cli	0.419s
+FAIL	github.com/keepmind9/clibot/internal/core [build failed]
+FAIL

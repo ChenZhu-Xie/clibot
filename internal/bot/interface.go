@@ -40,6 +40,7 @@
 package bot
 
 import (
+	"strings"
 	"time"
 
 	"github.com/keepmind9/clibot/internal/proxy"
@@ -62,6 +63,22 @@ func (d *DefaultTypingIndicator) AddTypingIndicator(messageID string) bool {
 // RemoveTypingIndicator does nothing (not supported by default)
 func (d *DefaultTypingIndicator) RemoveTypingIndicator(messageID string) error {
 	return nil
+}
+
+// FormatCommandLink returns the command as-is (not supported by default)
+func (d *DefaultTypingIndicator) FormatCommandLink(cmd string, args ...string) string {
+	if len(args) > 0 {
+		return cmd + " " + strings.Join(args, " ")
+	}
+	return cmd
+}
+
+// FormatSessionLink returns the session ID as-is (not supported by default)
+func (d *DefaultTypingIndicator) FormatSessionLink(sessionID string, summary string) string {
+	if summary != "" {
+		return sessionID + ": " + summary
+	}
+	return sessionID
 }
 
 // GetBotUsername returns an empty string (not supported by default)
@@ -97,6 +114,12 @@ type BotAdapter interface {
 
 	// GetBotUsername returns the bot's username on the platform
 	GetBotUsername() string
+
+	// FormatCommandLink formats a command as a clickable link if the platform supports it
+	FormatCommandLink(cmd string, args ...string) string
+
+	// FormatSessionLink formats a session ID/Summary as a clickable link
+	FormatSessionLink(sessionID string, summary string) string
 
 	// Stop stops the bot and cleans up resources
 	Stop() error

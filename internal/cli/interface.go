@@ -39,6 +39,12 @@ type Engine interface {
 	SendResponseToSession(sessionName, message string)
 }
 
+// LinkFormatter defines an interface for formatting links for different platforms.
+type LinkFormatter interface {
+	FormatSessionLink(name, text string) string
+	FormatCommandLink(command string, args ...string) string
+}
+
 // CLIAdapter defines the interface for CLI adapters
 type CLIAdapter interface {
 	// SendInput sends input to the CLI (via tmux send-keys)
@@ -79,13 +85,13 @@ type CLIAdapter interface {
 	SwitchWorkDir(sessionName, newWorkDir string) error
 
 	// ListSessions returns a list of available CLI-native sessions/conversations
-	// botUsername is passed to allow generating platform-specific links
-	ListSessions(sessionName string, botUsername string) ([]string, error)
+	// formatter is passed to allow generating platform-specific links
+	ListSessions(sessionName string, formatter LinkFormatter) ([]string, error)
 
 	// SwitchSession switches to a specific CLI-native session/conversation
 	// Returns a preview context string of the loaded session on success
 	SwitchSession(sessionName, cliSessionID string) (string, error)
 
 	// GetSessionStats returns diagnostic stats for the session (e.g., current session ID and title)
-	GetSessionStats(sessionName string, botUsername string) (map[string]interface{}, error)
+	GetSessionStats(sessionName string, formatter LinkFormatter) (map[string]interface{}, error)
 }

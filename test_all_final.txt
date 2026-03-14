@@ -1,0 +1,935 @@
+﻿=== RUN   TestNewACPAdapter_DefaultConfig
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+--- PASS: TestNewACPAdapter_DefaultConfig (0.01s)
+=== RUN   TestNewACPAdapter_CustomConfig
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m1[0m [38;5;37menv_vars[0m:[1mmap[TEST_VAR:test_value][0m [38;5;37midle_timeout[0m:[1m10m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+--- PASS: TestNewACPAdapter_CustomConfig (0.00s)
+=== RUN   TestACPAdapter_UseHook
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+--- PASS: TestACPAdapter_UseHook (0.00s)
+=== RUN   TestACPAdapter_GetPollInterval
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+--- PASS: TestACPAdapter_GetPollInterval (0.00s)
+=== RUN   TestACPAdapter_GetStableCount
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+--- PASS: TestACPAdapter_GetStableCount (0.00s)
+=== RUN   TestACPAdapter_GetPollTimeout
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m3m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+--- PASS: TestACPAdapter_GetPollTimeout (0.00s)
+=== RUN   TestACPAdapter_HandleHookData
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+--- PASS: TestACPAdapter_HandleHookData (0.00s)
+=== RUN   TestACPAdapter_IsSessionAlive
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+--- PASS: TestACPAdapter_IsSessionAlive (0.00s)
+=== RUN   TestParseTransportURL
+--- PASS: TestParseTransportURL (0.00s)
+=== RUN   TestACPAdapter_SetEngine
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+--- PASS: TestACPAdapter_SetEngine (0.00s)
+=== RUN   TestACPAdapter_ResetSession
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m [38;5;48mstarting-new-acp-conversation-by-clearing-id[0m  [38;5;120msession[0m:[1mtest-session[0m
+--- PASS: TestACPAdapter_ResetSession (0.00s)
+=== RUN   TestACPAdapter_ContextUsageParsing
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-adapter-configured               [38;5;37menv_count[0m:[1m0[0m [38;5;37menv_vars[0m:[1mmap[][0m [38;5;37midle_timeout[0m:[1m5m0s[0m [38;5;37mmax_total_timeout[0m:[1m1h0m0s[0m
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m acp-session-id-saved                 [38;5;37msession_id[0m:[1msess-1[0m [38;5;37msession_name[0m:[1mtest-session[0m
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m captured-context-usage-percentage    [38;5;120msession[0m:[1mtest-session[0m [38;5;37musage[0m:[1m15[0m
+--- PASS: TestACPAdapter_ContextUsageParsing (0.10s)
+=== RUN   TestNewBaseAdapter
+--- PASS: TestNewBaseAdapter (0.00s)
+=== RUN   TestBaseAdapter_Name
+--- PASS: TestBaseAdapter_Name (0.00s)
+=== RUN   TestBaseAdapter_StartCmd
+--- PASS: TestBaseAdapter_StartCmd (0.00s)
+=== RUN   TestBaseAdapter_InputDelayMs
+=== RUN   TestBaseAdapter_InputDelayMs/custom_delay
+=== RUN   TestBaseAdapter_InputDelayMs/zero_delay
+--- PASS: TestBaseAdapter_InputDelayMs (0.00s)
+    --- PASS: TestBaseAdapter_InputDelayMs/custom_delay (0.00s)
+    --- PASS: TestBaseAdapter_InputDelayMs/zero_delay (0.00s)
+=== RUN   TestIsRealUserMessage
+=== RUN   TestIsRealUserMessage/real_user_message_with_content
+=== RUN   TestIsRealUserMessage/real_user_message_with_content_blocks
+=== RUN   TestIsRealUserMessage/meta_message
+=== RUN   TestIsRealUserMessage/assistant_message
+=== RUN   TestIsRealUserMessage/user_message_with_empty_content
+=== RUN   TestIsRealUserMessage/progress_message
+=== RUN   TestIsRealUserMessage/user_message_with_local_command
+=== RUN   TestIsRealUserMessage/user_message_with_command_name
+--- PASS: TestIsRealUserMessage (0.00s)
+    --- PASS: TestIsRealUserMessage/real_user_message_with_content (0.00s)
+    --- PASS: TestIsRealUserMessage/real_user_message_with_content_blocks (0.00s)
+    --- PASS: TestIsRealUserMessage/meta_message (0.00s)
+    --- PASS: TestIsRealUserMessage/assistant_message (0.00s)
+    --- PASS: TestIsRealUserMessage/user_message_with_empty_content (0.00s)
+    --- PASS: TestIsRealUserMessage/progress_message (0.00s)
+    --- PASS: TestIsRealUserMessage/user_message_with_local_command (0.00s)
+    --- PASS: TestIsRealUserMessage/user_message_with_command_name (0.00s)
+=== RUN   TestGetMessageText
+=== RUN   TestGetMessageText/text_from_ContentText
+=== RUN   TestGetMessageText/text_from_content_blocks
+=== RUN   TestGetMessageText/mixed_content_blocks
+=== RUN   TestGetMessageText/empty_content
+=== RUN   TestGetMessageText/non-text_content_blocks_only
+--- PASS: TestGetMessageText (0.00s)
+    --- PASS: TestGetMessageText/text_from_ContentText (0.00s)
+    --- PASS: TestGetMessageText/text_from_content_blocks (0.00s)
+    --- PASS: TestGetMessageText/mixed_content_blocks (0.00s)
+    --- PASS: TestGetMessageText/empty_content (0.00s)
+    --- PASS: TestGetMessageText/non-text_content_blocks_only (0.00s)
+=== RUN   TestContentBlock_TextExtraction
+=== RUN   TestContentBlock_TextExtraction/text_block
+=== RUN   TestContentBlock_TextExtraction/thinking_block
+=== RUN   TestContentBlock_TextExtraction/image_block
+--- PASS: TestContentBlock_TextExtraction (0.00s)
+    --- PASS: TestContentBlock_TextExtraction/text_block (0.00s)
+    --- PASS: TestContentBlock_TextExtraction/thinking_block (0.00s)
+    --- PASS: TestContentBlock_TextExtraction/image_block (0.00s)
+=== RUN   TestTranscriptMessage_Fields
+--- PASS: TestTranscriptMessage_Fields (0.00s)
+=== RUN   TestMessageContent_Structure
+--- PASS: TestMessageContent_Structure (0.00s)
+=== RUN   TestMessageContent_UnmarshalJSON
+=== RUN   TestMessageContent_UnmarshalJSON/full_message_object_with_string_content
+=== RUN   TestMessageContent_UnmarshalJSON/full_message_object_with_array_content
+=== RUN   TestMessageContent_UnmarshalJSON/simple_string_content
+=== RUN   TestMessageContent_UnmarshalJSON/empty_string
+=== RUN   TestMessageContent_UnmarshalJSON/null_value
+=== RUN   TestMessageContent_UnmarshalJSON/invalid_JSON
+=== RUN   TestMessageContent_UnmarshalJSON/full_message_with_usage
+=== RUN   TestMessageContent_UnmarshalJSON/message_with_stop_reason
+=== RUN   TestMessageContent_UnmarshalJSON/message_with_nested_content_blocks
+--- PASS: TestMessageContent_UnmarshalJSON (0.00s)
+    --- PASS: TestMessageContent_UnmarshalJSON/full_message_object_with_string_content (0.00s)
+    --- PASS: TestMessageContent_UnmarshalJSON/full_message_object_with_array_content (0.00s)
+    --- PASS: TestMessageContent_UnmarshalJSON/simple_string_content (0.00s)
+    --- PASS: TestMessageContent_UnmarshalJSON/empty_string (0.00s)
+    --- PASS: TestMessageContent_UnmarshalJSON/null_value (0.00s)
+    --- PASS: TestMessageContent_UnmarshalJSON/invalid_JSON (0.00s)
+    --- PASS: TestMessageContent_UnmarshalJSON/full_message_with_usage (0.00s)
+    --- PASS: TestMessageContent_UnmarshalJSON/message_with_stop_reason (0.00s)
+    --- PASS: TestMessageContent_UnmarshalJSON/message_with_nested_content_blocks (0.00s)
+=== RUN   TestTranscriptMessage_UnmarshalJSON
+=== RUN   TestTranscriptMessage_UnmarshalJSON/valid_transcript_message
+=== RUN   TestTranscriptMessage_UnmarshalJSON/transcript_message_with_metadata
+--- PASS: TestTranscriptMessage_UnmarshalJSON (0.00s)
+    --- PASS: TestTranscriptMessage_UnmarshalJSON/valid_transcript_message (0.00s)
+    --- PASS: TestTranscriptMessage_UnmarshalJSON/transcript_message_with_metadata (0.00s)
+=== RUN   TestExtractLatestSubagentFile
+=== RUN   TestExtractLatestSubagentFile/nonexistent_directory
+=== RUN   TestExtractLatestSubagentFile/empty_directory_path
+--- PASS: TestExtractLatestSubagentFile (0.00s)
+    --- PASS: TestExtractLatestSubagentFile/nonexistent_directory (0.00s)
+    --- PASS: TestExtractLatestSubagentFile/empty_directory_path (0.00s)
+=== RUN   TestParseTranscript
+=== RUN   TestParseTranscript/nonexistent_file
+=== RUN   TestParseTranscript/empty_file_path
+=== RUN   TestParseTranscript/invalid_JSON_file
+=== RUN   TestParseTranscript/valid_JSONL_with_single_message
+=== RUN   TestParseTranscript/valid_JSONL_with_multiple_messages
+=== RUN   TestParseTranscript/JSONL_with_empty_lines
+--- PASS: TestParseTranscript (0.01s)
+    --- PASS: TestParseTranscript/nonexistent_file (0.00s)
+    --- PASS: TestParseTranscript/empty_file_path (0.00s)
+    --- PASS: TestParseTranscript/invalid_JSON_file (0.00s)
+    --- PASS: TestParseTranscript/valid_JSONL_with_single_message (0.00s)
+    --- PASS: TestParseTranscript/valid_JSONL_with_multiple_messages (0.00s)
+    --- PASS: TestParseTranscript/JSONL_with_empty_lines (0.00s)
+=== RUN   TestExtractLatestInteraction_FromTranscript
+=== RUN   TestExtractLatestInteraction_FromTranscript/transcript_with_user_and_assistant
+=== RUN   TestExtractLatestInteraction_FromTranscript/transcript_with_only_user_message
+=== RUN   TestExtractLatestInteraction_FromTranscript/empty_transcript
+--- PASS: TestExtractLatestInteraction_FromTranscript (0.00s)
+    --- PASS: TestExtractLatestInteraction_FromTranscript/transcript_with_user_and_assistant (0.00s)
+    --- PASS: TestExtractLatestInteraction_FromTranscript/transcript_with_only_user_message (0.00s)
+    --- PASS: TestExtractLatestInteraction_FromTranscript/empty_transcript (0.00s)
+=== RUN   TestClaudeAdapter_NewClaudeAdapter
+--- PASS: TestClaudeAdapter_NewClaudeAdapter (0.00s)
+=== RUN   TestClaudeAdapter_SendInput
+[38;5;242m[16:59:28][0m [38;5;196m鉂?[1mERRO[0m [38;5;196mfailed-to-send-input-to-tmux-session[0m  [38;5;160merror[0m:[1mexec: "tmux": executable file not found in %PATH%[0m [38;5;37moutput[0m:[1m[0m [38;5;120msession[0m:[1mtest-session-nonexistent[0m
+[38;5;242m[16:59:28][0m [38;5;196m鉂?[1mERRO[0m [38;5;196mfailed to send input to tmux: failed to send input to session test-session-nonexistent: exec: "tmux": executable file not found in %PATH% (output: )[0m 
+--- PASS: TestClaudeAdapter_SendInput (0.02s)
+=== RUN   TestClaudeAdapter_IsSessionAlive
+--- PASS: TestClaudeAdapter_IsSessionAlive (0.01s)
+=== RUN   TestClaudeAdapter_CreateSession
+    claude_test.go:73: CreateSession failed as expected in test environment: session test-clibot-session-12345: work_dir does not exist: /tmp
+--- PASS: TestClaudeAdapter_CreateSession (0.05s)
+=== RUN   TestClaudeAdapter_CreateSession_Idempotent
+    claude_test.go:95: Skipping test, First CreateSession failed (tmux may not be installed): session test-clibot-idempotent: work_dir does not exist: /tmp
+--- SKIP: TestClaudeAdapter_CreateSession_Idempotent (0.04s)
+=== RUN   TestExtractLatestInteraction
+=== RUN   TestExtractLatestInteraction/nonexistent_file
+=== RUN   TestExtractLatestInteraction/empty_path
+--- PASS: TestExtractLatestInteraction (0.00s)
+    --- PASS: TestExtractLatestInteraction/nonexistent_file (0.00s)
+    --- PASS: TestExtractLatestInteraction/empty_path (0.00s)
+=== RUN   TestExtractLastAssistantResponse
+=== RUN   TestExtractLastAssistantResponse/nonexistent_file
+=== RUN   TestExtractLastAssistantResponse/empty_path
+--- PASS: TestExtractLastAssistantResponse (0.00s)
+    --- PASS: TestExtractLastAssistantResponse/nonexistent_file (0.00s)
+    --- PASS: TestExtractLastAssistantResponse/empty_path (0.00s)
+=== RUN   TestClaudeAdapter_HandleHookData
+=== RUN   TestClaudeAdapter_HandleHookData/valid_hook_data_with_cwd
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m interaction-extracted-from-transcript  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;37mprompt_len[0m:[1m0[0m [38;5;37mresponse_len[0m:[1m0[0m
+=== RUN   TestClaudeAdapter_HandleHookData/hook_data_with_prompt_and_response
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m interaction-extracted-from-transcript  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;37mprompt_len[0m:[1m0[0m [38;5;37mresponse_len[0m:[1m0[0m
+=== RUN   TestClaudeAdapter_HandleHookData/invalid_JSON_data
+[38;5;242m[16:59:28][0m [38;5;196m鉂?[1mERRO[0m [38;5;196mfailed-to-parse-hook-json-data[0m  [38;5;160merror[0m:[1minvalid character 'i' looking for beginning of value[0m
+=== RUN   TestClaudeAdapter_HandleHookData/empty_JSON_object
+--- PASS: TestClaudeAdapter_HandleHookData (0.00s)
+    --- PASS: TestClaudeAdapter_HandleHookData/valid_hook_data_with_cwd (0.00s)
+    --- PASS: TestClaudeAdapter_HandleHookData/hook_data_with_prompt_and_response (0.00s)
+    --- PASS: TestClaudeAdapter_HandleHookData/invalid_JSON_data (0.00s)
+    --- PASS: TestClaudeAdapter_HandleHookData/empty_JSON_object (0.00s)
+=== RUN   TestExtractLatestSubagentFile_FileOperations
+=== RUN   TestExtractLatestSubagentFile_FileOperations/returns_error_for_non-existent_subagents_directory
+=== RUN   TestExtractLatestSubagentFile_FileOperations/returns_error_when_subagents_directory_exists_but_has_no_jsonl_files
+=== RUN   TestExtractLatestSubagentFile_FileOperations/finds_the_latest_jsonl_file_by_modification_time
+=== RUN   TestExtractLatestSubagentFile_FileOperations/ignores_non-jsonl_files_in_subagents_directory
+--- PASS: TestExtractLatestSubagentFile_FileOperations (0.03s)
+    --- PASS: TestExtractLatestSubagentFile_FileOperations/returns_error_for_non-existent_subagents_directory (0.00s)
+    --- PASS: TestExtractLatestSubagentFile_FileOperations/returns_error_when_subagents_directory_exists_but_has_no_jsonl_files (0.00s)
+    --- PASS: TestExtractLatestSubagentFile_FileOperations/finds_the_latest_jsonl_file_by_modification_time (0.03s)
+    --- PASS: TestExtractLatestSubagentFile_FileOperations/ignores_non-jsonl_files_in_subagents_directory (0.00s)
+=== RUN   TestComputeProjectHash
+=== RUN   TestComputeProjectHash/returns_a_valid_SHA256_hash
+=== RUN   TestComputeProjectHash/returns_consistent_hash_for_same_path
+=== RUN   TestComputeProjectHash/returns_different_hashes_for_different_paths
+=== RUN   TestComputeProjectHash/handles_relative_paths
+--- PASS: TestComputeProjectHash (0.00s)
+    --- PASS: TestComputeProjectHash/returns_a_valid_SHA256_hash (0.00s)
+    --- PASS: TestComputeProjectHash/returns_consistent_hash_for_same_path (0.00s)
+    --- PASS: TestComputeProjectHash/returns_different_hashes_for_different_paths (0.00s)
+    --- PASS: TestComputeProjectHash/handles_relative_paths (0.00s)
+=== RUN   TestNewGeminiAdapter
+=== RUN   TestNewGeminiAdapter/creates_adapter_with_default_config
+--- PASS: TestNewGeminiAdapter (0.00s)
+    --- PASS: TestNewGeminiAdapter/creates_adapter_with_default_config (0.00s)
+=== RUN   TestGeminiAdapter_HandleHookData
+=== RUN   TestGeminiAdapter_HandleHookData/valid_hook_data_with_cwd
+[38;5;242m[16:59:28][0m [38;5;214m鈿狅笍  [1mWARN[0m [38;5;196mfailed-to-extract-gemini-response[0m  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;160merror[0m:[1mfailed to read session file: open /path/to/session.json: The system cannot find the path specified.[0m [38;5;37mtranscript_path[0m:[1m/path/to/session.json[0m
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m response-extracted-from-gemini-history  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;37mprompt_len[0m:[1m0[0m [38;5;37mresponse_len[0m:[1m0[0m
+=== RUN   TestGeminiAdapter_HandleHookData/hook_data_with_notification_event
+[38;5;242m[16:59:28][0m [38;5;214m鈿狅笍  [1mWARN[0m [38;5;196mfailed-to-extract-gemini-response[0m  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;160merror[0m:[1mfailed to read session file: open /path/to/session.json: The system cannot find the path specified.[0m [38;5;37mtranscript_path[0m:[1m/path/to/session.json[0m
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m response-extracted-from-gemini-history  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;37mprompt_len[0m:[1m0[0m [38;5;37mresponse_len[0m:[1m0[0m
+=== RUN   TestGeminiAdapter_HandleHookData/invalid_JSON
+[38;5;242m[16:59:28][0m [38;5;196m鉂?[1mERRO[0m [38;5;196mfailed-to-parse-hook-json-data[0m  [38;5;160merror[0m:[1minvalid character 'i' looking for beginning of value[0m
+=== RUN   TestGeminiAdapter_HandleHookData/missing_cwd_in_hook_data
+[38;5;242m[16:59:28][0m [38;5;214m鈿狅笍  [1mWARN[0m missing-cwd-in-hook-data            
+=== RUN   TestGeminiAdapter_HandleHookData/empty_hook_data
+[38;5;242m[16:59:28][0m [38;5;214m鈿狅笍  [1mWARN[0m missing-cwd-in-hook-data            
+--- PASS: TestGeminiAdapter_HandleHookData (0.00s)
+    --- PASS: TestGeminiAdapter_HandleHookData/valid_hook_data_with_cwd (0.00s)
+    --- PASS: TestGeminiAdapter_HandleHookData/hook_data_with_notification_event (0.00s)
+    --- PASS: TestGeminiAdapter_HandleHookData/invalid_JSON (0.00s)
+    --- PASS: TestGeminiAdapter_HandleHookData/missing_cwd_in_hook_data (0.00s)
+    --- PASS: TestGeminiAdapter_HandleHookData/empty_hook_data (0.00s)
+=== RUN   TestGeminiAdapter_LastSessionFile
+=== RUN   TestGeminiAdapter_LastSessionFile/directory_does_not_exist
+=== RUN   TestGeminiAdapter_LastSessionFile/directory_exists_but_no_session_files
+--- PASS: TestGeminiAdapter_LastSessionFile (0.01s)
+    --- PASS: TestGeminiAdapter_LastSessionFile/directory_does_not_exist (0.00s)
+    --- PASS: TestGeminiAdapter_LastSessionFile/directory_exists_but_no_session_files (0.00s)
+=== RUN   TestGeminiAdapter_ExtractLatestInteraction
+=== RUN   TestGeminiAdapter_ExtractLatestInteraction/transcript_path_provided
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m extracted-gemini-response-from-session-file  [38;5;37mgemini_messages[0m:[1m1[0m [38;5;37mlast_user_index[0m:[1m0[0m [38;5;37mresponse_length[0m:[1m9[0m [38;5;37mtotal_messages[0m:[1m2[0m
+=== RUN   TestGeminiAdapter_ExtractLatestInteraction/no_messages_in_session
+=== RUN   TestGeminiAdapter_ExtractLatestInteraction/no_user_message_in_session
+=== RUN   TestGeminiAdapter_ExtractLatestInteraction/multiple_gemini_responses
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m extracted-gemini-response-from-session-file  [38;5;37mgemini_messages[0m:[1m2[0m [38;5;37mlast_user_index[0m:[1m0[0m [38;5;37mresponse_length[0m:[1m14[0m [38;5;37mtotal_messages[0m:[1m3[0m
+=== RUN   TestGeminiAdapter_ExtractLatestInteraction/file_does_not_exist
+--- PASS: TestGeminiAdapter_ExtractLatestInteraction (0.01s)
+    --- PASS: TestGeminiAdapter_ExtractLatestInteraction/transcript_path_provided (0.00s)
+    --- PASS: TestGeminiAdapter_ExtractLatestInteraction/no_messages_in_session (0.00s)
+    --- PASS: TestGeminiAdapter_ExtractLatestInteraction/no_user_message_in_session (0.00s)
+    --- PASS: TestGeminiAdapter_ExtractLatestInteraction/multiple_gemini_responses (0.00s)
+    --- PASS: TestGeminiAdapter_ExtractLatestInteraction/file_does_not_exist (0.00s)
+=== RUN   TestGeminiAdapter_ContextUsageStats
+    gemini_test.go:371: Skipping direct GetSessionStats call check due to watchdog.GetCWD failure: failed to get CWD for session test: exec: "tmux": executable file not found in %PATH%
+--- PASS: TestGeminiAdapter_ContextUsageStats (0.01s)
+=== RUN   TestClaudeAdapter_CLIAdapterInterface
+--- PASS: TestClaudeAdapter_CLIAdapterInterface (0.00s)
+=== RUN   TestNewOpenCodeAdapter
+=== RUN   TestNewOpenCodeAdapter/creates_adapter_with_default_config
+--- PASS: TestNewOpenCodeAdapter (0.00s)
+    --- PASS: TestNewOpenCodeAdapter/creates_adapter_with_default_config (0.00s)
+=== RUN   TestOpenCodeAdapter_HandleHookData
+=== RUN   TestOpenCodeAdapter_HandleHookData/valid_hook_data_with_cwd
+[38;5;242m[16:59:28][0m [38;5;214m鈿狅笍  [1mWARN[0m [38;5;196mfailed-to-extract-interaction-from-storage[0m  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;160merror[0m:[1mno messages found for session test-session[0m
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m response-extracted-from-storage      [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;37mprompt_len[0m:[1m0[0m [38;5;37mresponse_len[0m:[1m0[0m
+=== RUN   TestOpenCodeAdapter_HandleHookData/invalid_JSON
+[38;5;242m[16:59:28][0m [38;5;196m鉂?[1mERRO[0m [38;5;196mfailed-to-parse-hook-json-data[0m  [38;5;160merror[0m:[1minvalid character 'i' looking for beginning of value[0m
+=== RUN   TestOpenCodeAdapter_HandleHookData/missing_cwd_in_hook_data
+=== RUN   TestOpenCodeAdapter_HandleHookData/notification_event_clears_response
+[38;5;242m[16:59:28][0m [38;5;214m鈿狅笍  [1mWARN[0m [38;5;196mfailed-to-extract-interaction-from-storage[0m  [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;160merror[0m:[1mno messages found for session test-session[0m
+[38;5;242m[16:59:28][0m [38;5;75m鈩癸笍  [1mINFO[0m response-extracted-from-storage      [38;5;37mcwd[0m:[1m/home/user/project[0m [38;5;37mprompt_len[0m:[1m0[0m [38;5;37mresponse_len[0m:[1m0[0m
+--- PASS: TestOpenCodeAdapter_HandleHookData (0.00s)
+    --- PASS: TestOpenCodeAdapter_HandleHookData/valid_hook_data_with_cwd (0.00s)
+    --- PASS: TestOpenCodeAdapter_HandleHookData/invalid_JSON (0.00s)
+    --- PASS: TestOpenCodeAdapter_HandleHookData/missing_cwd_in_hook_data (0.00s)
+    --- PASS: TestOpenCodeAdapter_HandleHookData/notification_event_clears_response (0.00s)
+=== RUN   TestGetOpencodeMessageText
+=== RUN   TestGetOpencodeMessageText/extracts_text_from_message_with_single_text_part
+=== RUN   TestGetOpencodeMessageText/extracts_and_joins_multiple_text_parts
+=== RUN   TestGetOpencodeMessageText/returns_empty_string_for_message_with_no_text_parts
+=== RUN   TestGetOpencodeMessageText/returns_empty_string_for_message_with_empty_parts
+--- PASS: TestGetOpencodeMessageText (0.00s)
+    --- PASS: TestGetOpencodeMessageText/extracts_text_from_message_with_single_text_part (0.00s)
+    --- PASS: TestGetOpencodeMessageText/extracts_and_joins_multiple_text_parts (0.00s)
+    --- PASS: TestGetOpencodeMessageText/returns_empty_string_for_message_with_no_text_parts (0.00s)
+    --- PASS: TestGetOpencodeMessageText/returns_empty_string_for_message_with_empty_parts (0.00s)
+=== RUN   TestExtractLatestInteractionFromFile
+=== RUN   TestExtractLatestInteractionFromFile/extracts_text_from_valid_OpenCode_message_file
+=== RUN   TestExtractLatestInteractionFromFile/returns_error_for_non-existent_file
+=== RUN   TestExtractLatestInteractionFromFile/returns_error_for_invalid_JSON
+--- PASS: TestExtractLatestInteractionFromFile (0.00s)
+    --- PASS: TestExtractLatestInteractionFromFile/extracts_text_from_valid_OpenCode_message_file (0.00s)
+    --- PASS: TestExtractLatestInteractionFromFile/returns_error_for_non-existent_file (0.00s)
+    --- PASS: TestExtractLatestInteractionFromFile/returns_error_for_invalid_JSON (0.00s)
+=== RUN   TestGetProjectID
+=== RUN   TestGetProjectID/returns_global_for_non-git_directory
+--- PASS: TestGetProjectID (0.03s)
+    --- PASS: TestGetProjectID/returns_global_for_non-git_directory (0.03s)
+=== RUN   TestExpandHome_WithTilde
+--- PASS: TestExpandHome_WithTilde (0.00s)
+=== RUN   TestExpandHome_WithoutTilde
+--- PASS: TestExpandHome_WithoutTilde (0.00s)
+=== RUN   TestExpandHome_WithTildeOnly
+--- PASS: TestExpandHome_WithTildeOnly (0.00s)
+=== RUN   TestExpandHome_ErrorHandling
+--- PASS: TestExpandHome_ErrorHandling (0.00s)
+=== RUN   TestExpandHome_WindowsPaths
+    utils_test.go:59: Skipping Windows-specific test
+--- SKIP: TestExpandHome_WindowsPaths (0.00s)
+=== RUN   TestBuildShellCommand_Unix
+    utils_test.go:72: Skipping Unix-specific test
+--- SKIP: TestBuildShellCommand_Unix (0.00s)
+=== RUN   TestBuildShellCommand_Windows
+--- PASS: TestBuildShellCommand_Windows (0.00s)
+=== RUN   TestBuildShellCommand_EmptyCommand
+--- PASS: TestBuildShellCommand_EmptyCommand (0.00s)
+PASS
+ok  	github.com/keepmind9/clibot/internal/cli	(cached)
+=== RUN   TestConfig_StructFields
+--- PASS: TestConfig_StructFields (0.00s)
+=== RUN   TestConfig_EmptyMaps
+--- PASS: TestConfig_EmptyMaps (0.00s)
+=== RUN   TestConfig_NilMaps
+--- PASS: TestConfig_NilMaps (0.00s)
+=== RUN   TestSessionState_StringConversion
+=== RUN   TestSessionState_StringConversion/idle
+=== RUN   TestSessionState_StringConversion/processing
+=== RUN   TestSessionState_StringConversion/waiting_input
+=== RUN   TestSessionState_StringConversion/error
+=== RUN   TestSessionState_StringConversion/custom
+--- PASS: TestSessionState_StringConversion (0.00s)
+    --- PASS: TestSessionState_StringConversion/idle (0.00s)
+    --- PASS: TestSessionState_StringConversion/processing (0.00s)
+    --- PASS: TestSessionState_StringConversion/waiting_input (0.00s)
+    --- PASS: TestSessionState_StringConversion/error (0.00s)
+    --- PASS: TestSessionState_StringConversion/custom (0.00s)
+=== RUN   TestSession_IsDynamic
+--- PASS: TestSession_IsDynamic (0.00s)
+=== RUN   TestSession_CreatedBy
+--- PASS: TestSession_CreatedBy (0.00s)
+=== RUN   TestSession_CancelContext
+--- PASS: TestSession_CancelContext (0.00s)
+=== RUN   TestResponseEvent_Fields
+--- PASS: TestResponseEvent_Fields (0.00s)
+=== RUN   TestResponseEvent_EmptyFields
+--- PASS: TestResponseEvent_EmptyFields (0.00s)
+=== RUN   TestSessionConfig_AutoStart
+--- PASS: TestSessionConfig_AutoStart (0.00s)
+=== RUN   TestGetBotConfig_ReturnsBotConfig
+--- PASS: TestGetBotConfig_ReturnsBotConfig (0.00s)
+=== RUN   TestGetBotConfig_BotNotFound
+--- PASS: TestGetBotConfig_BotNotFound (0.00s)
+=== RUN   TestGetCLIAdapterConfig_ReturnsConfig
+--- PASS: TestGetCLIAdapterConfig_ReturnsConfig (0.00s)
+=== RUN   TestGetCLIAdapterConfig_AdapterNotFound
+--- PASS: TestGetCLIAdapterConfig_AdapterNotFound (0.00s)
+=== RUN   TestGetSessionConfig_ReturnsConfig
+--- PASS: TestGetSessionConfig_ReturnsConfig (0.00s)
+=== RUN   TestGetSessionConfig_SessionNotFound
+--- PASS: TestGetSessionConfig_SessionNotFound (0.00s)
+=== RUN   TestIsUserAuthorized_WhitelistEnabled
+--- PASS: TestIsUserAuthorized_WhitelistEnabled (0.00s)
+=== RUN   TestIsUserAuthorized_WhitelistDisabled
+--- PASS: TestIsUserAuthorized_WhitelistDisabled (0.00s)
+=== RUN   TestIsAdmin_ChecksAdminStatus
+--- PASS: TestIsAdmin_ChecksAdminStatus (0.00s)
+=== RUN   TestLoadConfig_InvalidFile
+--- PASS: TestLoadConfig_InvalidFile (0.00s)
+=== RUN   TestLoadConfig_RequiresValidation
+--- PASS: TestLoadConfig_RequiresValidation (0.00s)
+=== RUN   TestConfig_Methods
+--- PASS: TestConfig_Methods (0.00s)
+=== RUN   TestSessionConfig_AllFieldsCoverage
+--- PASS: TestSessionConfig_AllFieldsCoverage (0.00s)
+=== RUN   TestBotConfig_AllFieldsCoverage
+--- PASS: TestBotConfig_AllFieldsCoverage (0.00s)
+=== RUN   TestWatchdogConfig_AllFieldsCoverage
+--- PASS: TestWatchdogConfig_AllFieldsCoverage (0.00s)
+=== RUN   TestLoggingConfig_AllFieldsCoverage
+--- PASS: TestLoggingConfig_AllFieldsCoverage (0.00s)
+=== RUN   TestSessionGlobalConfig_DefaultValues
+--- PASS: TestSessionGlobalConfig_DefaultValues (0.00s)
+=== RUN   TestHookServerConfig_DefaultValues
+--- PASS: TestHookServerConfig_DefaultValues (0.00s)
+=== RUN   TestLoadConfig_ValidConfig_ReturnsConfigStruct
+--- PASS: TestLoadConfig_ValidConfig_ReturnsConfigStruct (0.00s)
+=== RUN   TestLoadConfig_EnvExpansion_ExpandsVariables
+--- PASS: TestLoadConfig_EnvExpansion_ExpandsVariables (0.00s)
+=== RUN   TestLoadConfig_HomeDirectoryExpansion_DeprecatedFieldNoLongerProcessed
+--- PASS: TestLoadConfig_HomeDirectoryExpansion_DeprecatedFieldNoLongerProcessed (0.00s)
+=== RUN   TestLoadConfig_InvalidFile_ReturnsError
+--- PASS: TestLoadConfig_InvalidFile_ReturnsError (0.00s)
+=== RUN   TestGetBotConfig_ValidBot_ReturnsConfig
+--- PASS: TestGetBotConfig_ValidBot_ReturnsConfig (0.00s)
+=== RUN   TestGetBotConfig_DisabledBot_ReturnsError
+--- PASS: TestGetBotConfig_DisabledBot_ReturnsError (0.00s)
+=== RUN   TestGetBotConfig_NonExistentBot_ReturnsError
+--- PASS: TestGetBotConfig_NonExistentBot_ReturnsError (0.00s)
+=== RUN   TestGetCLIAdapterConfig_ValidAdapter_ReturnsConfig
+--- PASS: TestGetCLIAdapterConfig_ValidAdapter_ReturnsConfig (0.00s)
+=== RUN   TestGetCLIAdapterConfig_NonExistentAdapter_ReturnsError
+--- PASS: TestGetCLIAdapterConfig_NonExistentAdapter_ReturnsError (0.00s)
+=== RUN   TestIsUserAuthorized_WhitelistEnabled_UserInList_ReturnsTrue
+--- PASS: TestIsUserAuthorized_WhitelistEnabled_UserInList_ReturnsTrue (0.00s)
+=== RUN   TestIsUserAuthorized_WhitelistEnabled_UserNotInList_ReturnsFalse
+--- PASS: TestIsUserAuthorized_WhitelistEnabled_UserNotInList_ReturnsFalse (0.00s)
+=== RUN   TestIsUserAuthorized_WhitelistDisabled_AllowsAllUsers
+--- PASS: TestIsUserAuthorized_WhitelistDisabled_AllowsAllUsers (0.00s)
+=== RUN   TestIsAdmin_UserIsAdmin_ReturnsTrue
+--- PASS: TestIsAdmin_UserIsAdmin_ReturnsTrue (0.00s)
+=== RUN   TestIsAdmin_UserIsNotAdmin_ReturnsFalse
+--- PASS: TestIsAdmin_UserIsNotAdmin_ReturnsFalse (0.00s)
+=== RUN   TestGetSessionConfig_ValidSession_ReturnsConfig
+--- PASS: TestGetSessionConfig_ValidSession_ReturnsConfig (0.00s)
+=== RUN   TestGetSessionConfig_NonExistentSession_ReturnsError
+--- PASS: TestGetSessionConfig_NonExistentSession_ReturnsError (0.00s)
+=== RUN   TestValidateConfig_MissingBot_ReturnsError
+--- PASS: TestValidateConfig_MissingBot_ReturnsError (0.00s)
+=== RUN   TestValidateConfig_MissingSession_ReturnsError
+--- PASS: TestValidateConfig_MissingSession_ReturnsError (0.00s)
+=== RUN   TestExpandEnv_UndefinedVariable_ReturnsError
+--- PASS: TestExpandEnv_UndefinedVariable_ReturnsError (0.00s)
+=== RUN   TestExpandEnv_MultipleVariables_ExpandsAll
+--- PASS: TestExpandEnv_MultipleVariables_ExpandsAll (0.00s)
+=== RUN   TestExpandHome_RelativePath_ReturnsUnchanged
+--- PASS: TestExpandHome_RelativePath_ReturnsUnchanged (0.00s)
+=== RUN   TestExpandHome_AbsolutePath_ReturnsUnchanged
+--- PASS: TestExpandHome_AbsolutePath_ReturnsUnchanged (0.00s)
+=== RUN   TestEngine_HandleSpecialCommand_EmptyCommand
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m17[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleSpecialCommand_EmptyCommand (0.01s)
+=== RUN   TestEngine_HandleSpecialCommand_UnknownCommand
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1munknown-command[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m71[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleSpecialCommand_UnknownCommand (0.00s)
+=== RUN   TestEngine_HandleSpecialCommand_KnownCommands
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1mhelp[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m1168[0m [38;5;39mplatform[0m:[1mtestbot[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1mslist[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m70[0m [38;5;39mplatform[0m:[1mtestbot[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1mstatus[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m31[0m [38;5;39mplatform[0m:[1mtestbot[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1mwhoami[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m218[0m [38;5;39mplatform[0m:[1mtestbot[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1mecho[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m130[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleSpecialCommand_KnownCommands (0.00s)
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_EmptyCommand
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1m[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m56[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleSpecialCommandWithArgs_EmptyCommand (0.00s)
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_CommandRouting
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_CommandRouting/help
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1mhelp[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m1168[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_CommandRouting/slist
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1mslist[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m70[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_CommandRouting/status
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1mstatus[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m31[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_CommandRouting/whoami
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1mwhoami[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m218[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_CommandRouting/echo
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1mecho[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m130[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_CommandRouting/unknown
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1munknown[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m63[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleSpecialCommandWithArgs_CommandRouting (0.00s)
+    --- PASS: TestEngine_HandleSpecialCommandWithArgs_CommandRouting/help (0.00s)
+    --- PASS: TestEngine_HandleSpecialCommandWithArgs_CommandRouting/slist (0.00s)
+    --- PASS: TestEngine_HandleSpecialCommandWithArgs_CommandRouting/status (0.00s)
+    --- PASS: TestEngine_HandleSpecialCommandWithArgs_CommandRouting/whoami (0.00s)
+    --- PASS: TestEngine_HandleSpecialCommandWithArgs_CommandRouting/echo (0.00s)
+    --- PASS: TestEngine_HandleSpecialCommandWithArgs_CommandRouting/unknown (0.00s)
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_WithArgs
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_WithArgs/suse_with_session
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1msuse[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-use-session-command           [38;5;37margs[0m:[1m[session1][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m75[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_WithArgs/suse_no_args
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1msuse[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-use-session-command           [38;5;37margs[0m:[1m[][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m48[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_WithArgs/sstatus_with_session
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1msstatus[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-session-status-command        [38;5;37margs[0m:[1m[session1][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m73[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_WithArgs/sstatus_no_args
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1msstatus[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-session-status-command        [38;5;37margs[0m:[1m[][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m30[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_WithArgs/sdel_with_session
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1msdel[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-delete-session-command        [38;5;37margs[0m:[1m[session1][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m33[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_WithArgs/sdel_no_args
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1msdel[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-delete-session-command        [38;5;37margs[0m:[1m[][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m33[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_WithArgs/sclose_with_session
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1msclose[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m [38;5;214mhandle-close-session-command[0m  [38;5;37margs[0m:[1m[session1][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m32[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleSpecialCommandWithArgs_WithArgs/sclose_no_args
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handling-special-command             [38;5;220mcommand[0m:[1msclose[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m [38;5;214mhandle-close-session-command[0m  [38;5;37margs[0m:[1m[][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m57[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleSpecialCommandWithArgs_WithArgs (0.00s)
+    --- PASS: TestEngine_HandleSpecialCommandWithArgs_WithArgs/suse_with_session (0.00s)
+    --- PASS: TestEngine_HandleSpecialCommandWithArgs_WithArgs/suse_no_args (0.00s)
+    --- PASS: TestEngine_HandleSpecialCommandWithArgs_WithArgs/sstatus_with_session (0.00s)
+    --- PASS: TestEngine_HandleSpecialCommandWithArgs_WithArgs/sstatus_no_args (0.00s)
+    --- PASS: TestEngine_HandleSpecialCommandWithArgs_WithArgs/sdel_with_session (0.00s)
+    --- PASS: TestEngine_HandleSpecialCommandWithArgs_WithArgs/sdel_no_args (0.00s)
+    --- PASS: TestEngine_HandleSpecialCommandWithArgs_WithArgs/sclose_with_session (0.00s)
+    --- PASS: TestEngine_HandleSpecialCommandWithArgs_WithArgs/sclose_no_args (0.00s)
+=== RUN   TestIsSpecialCommand_ExactMatch
+=== RUN   TestIsSpecialCommand_ExactMatch/help_command
+=== RUN   TestIsSpecialCommand_ExactMatch/status_command
+=== RUN   TestIsSpecialCommand_ExactMatch/slist_command
+=== RUN   TestIsSpecialCommand_ExactMatch/snew_command
+=== RUN   TestIsSpecialCommand_ExactMatch/sdel_command
+=== RUN   TestIsSpecialCommand_ExactMatch/suse_command
+=== RUN   TestIsSpecialCommand_ExactMatch/whoami_command
+=== RUN   TestIsSpecialCommand_ExactMatch/echo_command
+=== RUN   TestIsSpecialCommand_ExactMatch/help_command_with_slash
+--- PASS: TestIsSpecialCommand_ExactMatch (0.00s)
+    --- PASS: TestIsSpecialCommand_ExactMatch/help_command (0.00s)
+    --- PASS: TestIsSpecialCommand_ExactMatch/status_command (0.00s)
+    --- PASS: TestIsSpecialCommand_ExactMatch/slist_command (0.00s)
+    --- PASS: TestIsSpecialCommand_ExactMatch/snew_command (0.00s)
+    --- PASS: TestIsSpecialCommand_ExactMatch/sdel_command (0.00s)
+    --- PASS: TestIsSpecialCommand_ExactMatch/suse_command (0.00s)
+    --- PASS: TestIsSpecialCommand_ExactMatch/whoami_command (0.00s)
+    --- PASS: TestIsSpecialCommand_ExactMatch/echo_command (0.00s)
+    --- PASS: TestIsSpecialCommand_ExactMatch/help_command_with_slash (0.00s)
+=== RUN   TestIsSpecialCommand_PerformanceFastPath
+--- PASS: TestIsSpecialCommand_PerformanceFastPath (0.00s)
+=== RUN   TestIsSpecialCommand_WithArgs
+=== RUN   TestIsSpecialCommand_WithArgs/sstatus_without_args
+=== RUN   TestIsSpecialCommand_WithArgs/sstatus_with_session_name
+=== RUN   TestIsSpecialCommand_WithArgs/sstatus_with_multiple_words
+=== RUN   TestIsSpecialCommand_WithArgs/sclose_without_args
+=== RUN   TestIsSpecialCommand_WithArgs/sclose_with_session_name
+=== RUN   TestIsSpecialCommand_WithArgs/sdel_without_args
+=== RUN   TestIsSpecialCommand_WithArgs/sdel_with_session_name
+=== RUN   TestIsSpecialCommand_WithArgs/suse_without_args
+=== RUN   TestIsSpecialCommand_WithArgs/suse_with_session_name
+=== RUN   TestIsSpecialCommand_WithArgs/echo_exact_match
+=== RUN   TestIsSpecialCommand_WithArgs/echo_with_args_is_not_a_command
+=== RUN   TestIsSpecialCommand_WithArgs/non-command_text
+=== RUN   TestIsSpecialCommand_WithArgs/empty_string
+=== RUN   TestIsSpecialCommand_WithArgs/command-like_but_not_exact
+=== RUN   TestIsSpecialCommand_WithArgs/snewg_with_args
+=== RUN   TestIsSpecialCommand_WithArgs/snewg_with_args_and_slash
+--- PASS: TestIsSpecialCommand_WithArgs (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/sstatus_without_args (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/sstatus_with_session_name (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/sstatus_with_multiple_words (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/sclose_without_args (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/sclose_with_session_name (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/sdel_without_args (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/sdel_with_session_name (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/suse_without_args (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/suse_with_session_name (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/echo_exact_match (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/echo_with_args_is_not_a_command (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/non-command_text (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/empty_string (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/command-like_but_not_exact (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/snewg_with_args (0.00s)
+    --- PASS: TestIsSpecialCommand_WithArgs/snewg_with_args_and_slash (0.00s)
+=== RUN   TestEngine_HandleEcho
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m130[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleEcho (0.00s)
+=== RUN   TestEngine_HandleShowHelp
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m1168[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleShowHelp (0.00s)
+=== RUN   TestEngine_HandleUseSession_NoArgs
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-use-session-command           [38;5;37margs[0m:[1m[][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m48[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleUseSession_NoArgs (0.00s)
+=== RUN   TestEngine_HandleUseSession_WithSession
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-use-session-command           [38;5;37margs[0m:[1m[session1][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;196m鉂?[1mERRO[0m [38;5;48mfailed-to-ensure-session-started[0m  [38;5;160merror[0m:[1mCLI adapter 'claude' not found[0m [38;5;120msession[0m:[1msession1[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m70[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleUseSession_WithSession (0.00s)
+=== RUN   TestEngine_HandleUseSession_NonExistingSession
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-use-session-command           [38;5;37margs[0m:[1m[nonexistent][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m78[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleUseSession_NonExistingSession (0.00s)
+=== RUN   TestEngine_HandleNewSession_NoArgs
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-new-session-command           [38;5;37margs[0m:[1m[][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m74[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleNewSession_NoArgs (0.00s)
+=== RUN   TestEngine_HandleNewSession_NotAdmin
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-new-session-command           [38;5;37margs[0m:[1m[newsession claude /tmp][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m33[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleNewSession_NotAdmin (0.00s)
+=== RUN   TestEngine_HandleDeleteSession_NoArgs
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-delete-session-command        [38;5;37margs[0m:[1m[][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m33[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleDeleteSession_NoArgs (0.00s)
+=== RUN   TestEngine_HandleNewSession_NonACPWithoutHookServer
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-new-session-command           [38;5;37margs[0m:[1m[newsession claude /tmp][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m364[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleNewSession_NonACPWithoutHookServer (0.00s)
+=== RUN   TestEngine_HandleNewSession_ACPWithoutHookServer
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-new-session-command           [38;5;37margs[0m:[1m[new-acp acp /tmp/test-acp][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m48[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleNewSession_ACPWithoutHookServer (0.01s)
+=== RUN   TestEngine_NewEngine_MinimalConfig
+--- PASS: TestEngine_NewEngine_MinimalConfig (0.00s)
+=== RUN   TestEngine_UpdateSessionState_MultipleUpdates
+--- PASS: TestEngine_UpdateSessionState_MultipleUpdates (0.00s)
+=== RUN   TestEngine_GetActiveSession_MultipleSessions
+--- PASS: TestEngine_GetActiveSession_MultipleSessions (0.00s)
+=== RUN   TestEngine_SendToBot_MultipleMessages
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m9[0m [38;5;39mplatform[0m:[1mtestbot[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m9[0m [38;5;39mplatform[0m:[1mtestbot[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m9[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_SendToBot_MultipleMessages (0.00s)
+=== RUN   TestEngine_SendToAllBots_WithRealBots
+--- PASS: TestEngine_SendToAllBots_WithRealBots (0.00s)
+=== RUN   TestEngine_NeedsHookServer_AllACPSessions_ReturnsFalse
+--- PASS: TestEngine_NeedsHookServer_AllACPSessions_ReturnsFalse (0.00s)
+=== RUN   TestEngine_NeedsHookServer_MixedSessionTypes_ReturnsTrue
+--- PASS: TestEngine_NeedsHookServer_MixedSessionTypes_ReturnsTrue (0.00s)
+=== RUN   TestEngine_NeedsHookServer_NonACPSessions_ReturnsTrue
+--- PASS: TestEngine_NeedsHookServer_NonACPSessions_ReturnsTrue (0.00s)
+=== RUN   TestEngine_NeedsHookServer_NoSessions_ReturnsFalse
+--- PASS: TestEngine_NeedsHookServer_NoSessions_ReturnsFalse (0.00s)
+=== RUN   TestEngine_GetActiveSession_NoSessions
+--- PASS: TestEngine_GetActiveSession_NoSessions (0.00s)
+=== RUN   TestEngine_GetActiveSession_WithSessions
+--- PASS: TestEngine_GetActiveSession_WithSessions (0.00s)
+=== RUN   TestEngine_UpdateSessionState_NonExistentSession
+--- PASS: TestEngine_UpdateSessionState_NonExistentSession (0.00s)
+=== RUN   TestEngine_UpdateSessionState_ValidSession
+--- PASS: TestEngine_UpdateSessionState_ValidSession (0.00s)
+=== RUN   TestEngine_SendToBot_NoActiveBots
+--- PASS: TestEngine_SendToBot_NoActiveBots (0.00s)
+=== RUN   TestEngine_SendToAllBots_NoActiveBots
+--- PASS: TestEngine_SendToAllBots_NoActiveBots (0.00s)
+=== RUN   TestEngine_RegisterBotAdapter
+--- PASS: TestEngine_RegisterBotAdapter (0.00s)
+=== RUN   TestEngine_RegisterMultipleBots
+--- PASS: TestEngine_RegisterMultipleBots (0.00s)
+=== RUN   TestEngine_OverwriteBotAdapter
+--- PASS: TestEngine_OverwriteBotAdapter (0.00s)
+=== RUN   TestEngine_SendToBot_WithRegisteredBot
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m12[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_SendToBot_WithRegisteredBot (0.00s)
+=== RUN   TestEngine_SendToAllBots_WithRegisteredBots
+--- PASS: TestEngine_SendToAllBots_WithRegisteredBots (0.00s)
+=== RUN   TestEngine_HandleCloseSession_NoArgs
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m [38;5;214mhandle-close-session-command[0m  [38;5;37margs[0m:[1m[][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m57[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleCloseSession_NoArgs (0.00s)
+=== RUN   TestEngine_HandleCloseSession_NonExistingSession
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m [38;5;214mhandle-close-session-command[0m  [38;5;37margs[0m:[1m[nonexistent][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m35[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleCloseSession_NonExistingSession (0.00s)
+=== RUN   TestEngine_HandleSessionStatus_NoArgs
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-session-status-command        [38;5;37margs[0m:[1m[][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m30[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleSessionStatus_NoArgs (0.00s)
+=== RUN   TestEngine_HandleSessionStatus_WithSession
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-session-status-command        [38;5;37margs[0m:[1m[test][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1muser123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m69[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleSessionStatus_WithSession (0.00s)
+=== RUN   TestEngine_SendToBot_NoRegisteredBot
+--- PASS: TestEngine_SendToBot_NoRegisteredBot (0.00s)
+=== RUN   TestEngine_SendToAllBots_NoRegisteredBots
+--- PASS: TestEngine_SendToAllBots_NoRegisteredBots (0.00s)
+=== RUN   TestEngine_HandleBotMessage_MessageChannel
+--- PASS: TestEngine_HandleBotMessage_MessageChannel (0.00s)
+=== RUN   TestEngine_UpdateSessionState_ExistingSession
+--- PASS: TestEngine_UpdateSessionState_ExistingSession (0.00s)
+=== RUN   TestEngine_UpdateSessionState_NonExistingSession
+--- PASS: TestEngine_UpdateSessionState_NonExistingSession (0.00s)
+=== RUN   TestEngine_GetActiveSession_WithIdleSessions
+--- PASS: TestEngine_GetActiveSession_WithIdleSessions (0.00s)
+=== RUN   TestEngine_GetActiveSession_WithProcessingSession
+--- PASS: TestEngine_GetActiveSession_WithProcessingSession (0.00s)
+=== RUN   TestEngine_HandleNewGeminiACPSession
+=== RUN   TestEngine_HandleNewGeminiACPSession/Success
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-snewg-command                 [38;5;37margs[0m:[1m[mysess C:\Users\Xcz\AppData\Local\Temp\clibot-test-2185000013][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1madmin123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m admin-created-snewg-session          [38;5;147maction[0m:[1mcreate_snewg_session[0m [38;5;37mis_dynamic[0m:[1mtrue[0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;120msession[0m:[1mmysess[0m [38;5;170muser_id[0m:[1madmin123[0m [38;5;37mwork_dir[0m:[1mC:\Users\Xcz\AppData\Local\Temp\clibot-test-2185000013[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m116[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleNewGeminiACPSession/NotAdmin
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-snewg-command                 [38;5;37margs[0m:[1m[fail C:\Users\Xcz\AppData\Local\Temp\clibot-test-2185000013][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1mregular-user[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mch1[0m [38;5;37mlength[0m:[1m33[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleNewGeminiACPSession/InvalidArgs
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-snewg-command                 [38;5;37margs[0m:[1m[only-one-arg][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1madmin123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m51[0m [38;5;39mplatform[0m:[1mtestbot[0m
+=== RUN   TestEngine_HandleNewGeminiACPSession/DirNotFound
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m handle-snewg-command                 [38;5;37margs[0m:[1m[bad-dir /non/existent/path/clibot][0m [38;5;39mplatform[0m:[1mtestbot[0m [38;5;170muser_id[0m:[1madmin123[0m
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m82[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_HandleNewGeminiACPSession (0.00s)
+    --- PASS: TestEngine_HandleNewGeminiACPSession/Success (0.00s)
+    --- PASS: TestEngine_HandleNewGeminiACPSession/NotAdmin (0.00s)
+    --- PASS: TestEngine_HandleNewGeminiACPSession/InvalidArgs (0.00s)
+    --- PASS: TestEngine_HandleNewGeminiACPSession/DirNotFound (0.00s)
+=== RUN   TestIsSpecialCommand_Snewg
+=== RUN   TestIsSpecialCommand_Snewg/Normal
+=== RUN   TestIsSpecialCommand_Snewg/WithSlash
+=== RUN   TestIsSpecialCommand_Snewg/HelpWithSlash
+--- PASS: TestIsSpecialCommand_Snewg (0.00s)
+    --- PASS: TestIsSpecialCommand_Snewg/Normal (0.00s)
+    --- PASS: TestIsSpecialCommand_Snewg/WithSlash (0.00s)
+    --- PASS: TestIsSpecialCommand_Snewg/HelpWithSlash (0.00s)
+=== RUN   TestFormatUptime
+=== RUN   TestFormatUptime/less_than_1_minute
+=== RUN   TestFormatUptime/exactly_1_minute
+=== RUN   TestFormatUptime/5_minutes
+=== RUN   TestFormatUptime/1_hour
+=== RUN   TestFormatUptime/2_hours_30_minutes
+=== RUN   TestFormatUptime/24_hours
+=== RUN   TestFormatUptime/large_value
+--- PASS: TestFormatUptime (0.00s)
+    --- PASS: TestFormatUptime/less_than_1_minute (0.00s)
+    --- PASS: TestFormatUptime/exactly_1_minute (0.00s)
+    --- PASS: TestFormatUptime/5_minutes (0.00s)
+    --- PASS: TestFormatUptime/1_hour (0.00s)
+    --- PASS: TestFormatUptime/2_hours_30_minutes (0.00s)
+    --- PASS: TestFormatUptime/24_hours (0.00s)
+    --- PASS: TestFormatUptime/large_value (0.00s)
+=== RUN   TestIsSpecialCommandWithSstatus
+=== RUN   TestIsSpecialCommandWithSstatus/sstatus_without_args
+=== RUN   TestIsSpecialCommandWithSstatus/sstatus_with_session_name
+=== RUN   TestIsSpecialCommandWithSstatus/sstatus_with_extra_spaces
+=== RUN   TestIsSpecialCommandWithSstatus/sstatus_with_slash
+=== RUN   TestIsSpecialCommandWithSstatus/non-special_command
+=== RUN   TestIsSpecialCommandWithSstatus/empty_string
+--- PASS: TestIsSpecialCommandWithSstatus (0.00s)
+    --- PASS: TestIsSpecialCommandWithSstatus/sstatus_without_args (0.00s)
+    --- PASS: TestIsSpecialCommandWithSstatus/sstatus_with_session_name (0.00s)
+    --- PASS: TestIsSpecialCommandWithSstatus/sstatus_with_extra_spaces (0.00s)
+    --- PASS: TestIsSpecialCommandWithSstatus/sstatus_with_slash (0.00s)
+    --- PASS: TestIsSpecialCommandWithSstatus/non-special_command (0.00s)
+    --- PASS: TestIsSpecialCommandWithSstatus/empty_string (0.00s)
+=== RUN   TestEngine_ProxyManagerInitialized
+--- PASS: TestEngine_ProxyManagerInitialized (0.00s)
+=== RUN   TestEngine_GetProxyClient
+--- PASS: TestEngine_GetProxyClient (0.00s)
+=== RUN   TestEngine_InitializeSessions
+2026/03/14 16:59:46 Warning: CLI adapter claude not found for session session1
+2026/03/14 16:59:46 Warning: CLI adapter gemini not found for session session2
+--- PASS: TestEngine_InitializeSessions (0.00s)
+=== RUN   TestEngine_InitializeSessions_EmptyConfig
+--- PASS: TestEngine_InitializeSessions_EmptyConfig (0.00s)
+=== RUN   TestEngine_RegisterBotAdapter_DuplicateRegistration
+--- PASS: TestEngine_RegisterBotAdapter_DuplicateRegistration (0.00s)
+=== RUN   TestEngine_InitializeSessions_DuplicateNames
+2026/03/14 16:59:46 Warning: CLI adapter claude not found for session dup
+2026/03/14 16:59:46 Warning: CLI adapter gemini not found for session dup
+--- PASS: TestEngine_InitializeSessions_DuplicateNames (0.00s)
+=== RUN   TestEngine_GetUserKey
+=== RUN   TestEngine_GetUserKey/discord_user
+=== RUN   TestEngine_GetUserKey/telegram_user
+=== RUN   TestEngine_GetUserKey/feishu_user
+=== RUN   TestEngine_GetUserKey/empty_platform
+=== RUN   TestEngine_GetUserKey/empty_userID
+--- PASS: TestEngine_GetUserKey (0.00s)
+    --- PASS: TestEngine_GetUserKey/discord_user (0.00s)
+    --- PASS: TestEngine_GetUserKey/telegram_user (0.00s)
+    --- PASS: TestEngine_GetUserKey/feishu_user (0.00s)
+    --- PASS: TestEngine_GetUserKey/empty_platform (0.00s)
+    --- PASS: TestEngine_GetUserKey/empty_userID (0.00s)
+=== RUN   TestEngine_ListSessions_WithUserSession
+[38;5;242m[16:59:46][0m [38;5;75m鈩癸笍  [1mINFO[0m message-sent-to-bot                  [38;5;37mchannel[0m:[1mtest-channel[0m [38;5;37mlength[0m:[1m184[0m [38;5;39mplatform[0m:[1mtestbot[0m
+--- PASS: TestEngine_ListSessions_WithUserSession (0.00s)
+=== RUN   TestEngine_EnsureSessionStarted_NonExistentSession
+--- PASS: TestEngine_EnsureSessionStarted_NonExistentSession (0.00s)
+=== RUN   TestIsValidSessionName_ValidNames
+=== RUN   TestIsValidSessionName_ValidNames/session
+=== RUN   TestIsValidSessionName_ValidNames/my-session
+=== RUN   TestIsValidSessionName_ValidNames/my_session
+=== RUN   TestIsValidSessionName_ValidNames/session123
+=== RUN   TestIsValidSessionName_ValidNames/123session
+=== RUN   TestIsValidSessionName_ValidNames/a
+=== RUN   TestIsValidSessionName_ValidNames/test-session-123
+=== RUN   TestIsValidSessionName_ValidNames/UPPERCASE
+=== RUN   TestIsValidSessionName_ValidNames/MixedCase
+--- PASS: TestIsValidSessionName_ValidNames (0.00s)
+    --- PASS: TestIsValidSessionName_ValidNames/session (0.00s)
+    --- PASS: TestIsValidSessionName_ValidNames/my-session (0.00s)
+    --- PASS: TestIsValidSessionName_ValidNames/my_session (0.00s)
+    --- PASS: TestIsValidSessionName_ValidNames/session123 (0.00s)
+    --- PASS: TestIsValidSessionName_ValidNames/123session (0.00s)
+    --- PASS: TestIsValidSessionName_ValidNames/a (0.00s)
+    --- PASS: TestIsValidSessionName_ValidNames/test-session-123 (0.00s)
+    --- PASS: TestIsValidSessionName_ValidNames/UPPERCASE (0.00s)
+    --- PASS: TestIsValidSessionName_ValidNames/MixedCase (0.00s)
+=== RUN   TestIsValidSessionName_InvalidNames
+=== RUN   TestIsValidSessionName_InvalidNames/#00
+=== RUN   TestIsValidSessionName_InvalidNames/session_with_spaces
+=== RUN   TestIsValidSessionName_InvalidNames/session/with/slash
+=== RUN   TestIsValidSessionName_InvalidNames/session\with\backslash
+=== RUN   TestIsValidSessionName_InvalidNames/session.with.dots
+=== RUN   TestIsValidSessionName_InvalidNames/session@with@special
+=== RUN   TestIsValidSessionName_InvalidNames/session:with:colon
+=== RUN   TestIsValidSessionName_InvalidNames/session;with;semicolon
+--- PASS: TestIsValidSessionName_InvalidNames (0.00s)
+    --- PASS: TestIsValidSessionName_InvalidNames/#00 (0.00s)
+    --- PASS: TestIsValidSessionName_InvalidNames/session_with_spaces (0.00s)
+    --- PASS: TestIsValidSessionName_InvalidNames/session/with/slash (0.00s)
+    --- PASS: TestIsValidSessionName_InvalidNames/session\with\backslash (0.00s)
+    --- PASS: TestIsValidSessionName_InvalidNames/session.with.dots (0.00s)
+    --- PASS: TestIsValidSessionName_InvalidNames/session@with@special (0.00s)
+    --- PASS: TestIsValidSessionName_InvalidNames/session:with:colon (0.00s)
+    --- PASS: TestIsValidSessionName_InvalidNames/session;with;semicolon (0.00s)
+=== RUN   TestIsValidSessionName_LengthLimits
+=== RUN   TestIsValidSessionName_LengthLimits/exactly_100_characters_is_valid
+=== RUN   TestIsValidSessionName_LengthLimits/101_characters_is_invalid
+--- PASS: TestIsValidSessionName_LengthLimits (0.00s)
+    --- PASS: TestIsValidSessionName_LengthLimits/exactly_100_characters_is_valid (0.00s)
+    --- PASS: TestIsValidSessionName_LengthLimits/101_characters_is_invalid (0.00s)
+=== RUN   TestTruncateString
+=== RUN   TestTruncateString/string_shorter_than_max
+=== RUN   TestTruncateString/string_equal_to_max
+=== RUN   TestTruncateString/string_longer_than_max
+=== RUN   TestTruncateString/empty_string
+=== RUN   TestTruncateString/max_length_zero
+=== RUN   TestTruncateString/unicode_characters
+=== RUN   TestTruncateString/unicode_characters_truncated_mid-character
+--- PASS: TestTruncateString (0.00s)
+    --- PASS: TestTruncateString/string_shorter_than_max (0.00s)
+    --- PASS: TestTruncateString/string_equal_to_max (0.00s)
+    --- PASS: TestTruncateString/string_longer_than_max (0.00s)
+    --- PASS: TestTruncateString/empty_string (0.00s)
+    --- PASS: TestTruncateString/max_length_zero (0.00s)
+    --- PASS: TestTruncateString/unicode_characters (0.00s)
+    --- PASS: TestTruncateString/unicode_characters_truncated_mid-character (0.00s)
+=== RUN   TestEngine_RegisterCLIAdapter
+--- PASS: TestEngine_RegisterCLIAdapter (0.00s)
+=== RUN   TestEngine_RegisterCLIAdapter_MultipleAdapters
+--- PASS: TestEngine_RegisterCLIAdapter_MultipleAdapters (0.00s)
+=== RUN   TestEngine_RegisterCLIAdapter_Overwrite
+--- PASS: TestEngine_RegisterCLIAdapter_Overwrite (0.00s)
+=== RUN   TestEngine_FmtCmd
+--- PASS: TestEngine_FmtCmd (0.00s)
+=== RUN   TestSessionState_Values
+=== RUN   TestSessionState_Values/StateIdle
+=== RUN   TestSessionState_Values/StateProcessing
+=== RUN   TestSessionState_Values/StateWaitingInput
+=== RUN   TestSessionState_Values/StateError
+--- PASS: TestSessionState_Values (0.00s)
+    --- PASS: TestSessionState_Values/StateIdle (0.00s)
+    --- PASS: TestSessionState_Values/StateProcessing (0.00s)
+    --- PASS: TestSessionState_Values/StateWaitingInput (0.00s)
+    --- PASS: TestSessionState_Values/StateError (0.00s)
+=== RUN   TestSession_Struct
+--- PASS: TestSession_Struct (0.00s)
+=== RUN   TestResponseEvent_Struct
+--- PASS: TestResponseEvent_Struct (0.00s)
+=== RUN   TestSessionConfig_Struct
+--- PASS: TestSessionConfig_Struct (0.00s)
+=== RUN   TestBotConfig_Struct
+--- PASS: TestBotConfig_Struct (0.00s)
+=== RUN   TestCLIAdapterConfig_Struct
+--- PASS: TestCLIAdapterConfig_Struct (0.00s)
+=== RUN   TestSecurityConfig_Struct
+--- PASS: TestSecurityConfig_Struct (0.00s)
+=== RUN   TestHookServerConfig_Struct
+--- PASS: TestHookServerConfig_Struct (0.00s)
+=== RUN   TestWatchdogConfig_Struct
+--- PASS: TestWatchdogConfig_Struct (0.00s)
+=== RUN   TestSessionGlobalConfig_Struct
+--- PASS: TestSessionGlobalConfig_Struct (0.00s)
+=== RUN   TestLoggingConfig_Struct
+--- PASS: TestLoggingConfig_Struct (0.00s)
+=== RUN   TestProxyConfig_FullConfig
+--- PASS: TestProxyConfig_FullConfig (0.00s)
+=== RUN   TestProxyConfig_OptionalAuth
+--- PASS: TestProxyConfig_OptionalAuth (0.00s)
+=== RUN   TestExpandPath
+=== RUN   TestExpandPath/expand_tilde_with_path
+=== RUN   TestExpandPath/expand_tilde_only
+=== RUN   TestExpandPath/absolute_path_unchanged
+=== RUN   TestExpandPath/relative_path_unchanged
+=== RUN   TestExpandPath/empty_path
+--- PASS: TestExpandPath (0.00s)
+    --- PASS: TestExpandPath/expand_tilde_with_path (0.00s)
+    --- PASS: TestExpandPath/expand_tilde_only (0.00s)
+    --- PASS: TestExpandPath/absolute_path_unchanged (0.00s)
+    --- PASS: TestExpandPath/relative_path_unchanged (0.00s)
+    --- PASS: TestExpandPath/empty_path (0.00s)
+=== RUN   TestNormalizePath
+=== RUN   TestNormalizePath/path_with_trailing_slash
+=== RUN   TestNormalizePath/path_without_trailing_slash
+=== RUN   TestNormalizePath/path_with_multiple_trailing_slashes
+=== RUN   TestNormalizePath/root_path
+=== RUN   TestNormalizePath/empty_path
+=== RUN   TestNormalizePath/relative_path_with_trailing_slash
+--- PASS: TestNormalizePath (0.00s)
+    --- PASS: TestNormalizePath/path_with_trailing_slash (0.00s)
+    --- PASS: TestNormalizePath/path_without_trailing_slash (0.00s)
+    --- PASS: TestNormalizePath/path_with_multiple_trailing_slashes (0.00s)
+    --- PASS: TestNormalizePath/root_path (0.00s)
+    --- PASS: TestNormalizePath/empty_path (0.00s)
+    --- PASS: TestNormalizePath/relative_path_with_trailing_slash (0.00s)
+=== RUN   TestGetUserKey
+=== RUN   TestGetUserKey/discord_user
+=== RUN   TestGetUserKey/telegram_user
+=== RUN   TestGetUserKey/feishu_user
+=== RUN   TestGetUserKey/empty_platform
+=== RUN   TestGetUserKey/empty_userID
+--- PASS: TestGetUserKey (0.00s)
+    --- PASS: TestGetUserKey/discord_user (0.00s)
+    --- PASS: TestGetUserKey/telegram_user (0.00s)
+    --- PASS: TestGetUserKey/feishu_user (0.00s)
+    --- PASS: TestGetUserKey/empty_platform (0.00s)
+    --- PASS: TestGetUserKey/empty_userID (0.00s)
+=== RUN   TestSetServerDefaults
+=== RUN   TestSetServerDefaults/sets_default_port_when_zero
+=== RUN   TestSetServerDefaults/preserves_existing_port
+--- PASS: TestSetServerDefaults (0.00s)
+    --- PASS: TestSetServerDefaults/sets_default_port_when_zero (0.00s)
+    --- PASS: TestSetServerDefaults/preserves_existing_port (0.00s)
+=== RUN   TestValidateSecuritySettings
+=== RUN   TestValidateSecuritySettings/whitelist_enabled_with_allowed_users
+=== RUN   TestValidateSecuritySettings/whitelist_enabled_without_allowed_users
+=== RUN   TestValidateSecuritySettings/whitelist_disabled
+=== RUN   TestValidateSecuritySettings/whitelist_disabled_with_nil_allowed_users
+--- PASS: TestValidateSecuritySettings (0.00s)
+    --- PASS: TestValidateSecuritySettings/whitelist_enabled_with_allowed_users (0.00s)
+    --- PASS: TestValidateSecuritySettings/whitelist_enabled_without_allowed_users (0.00s)
+    --- PASS: TestValidateSecuritySettings/whitelist_disabled (0.00s)
+    --- PASS: TestValidateSecuritySettings/whitelist_disabled_with_nil_allowed_users (0.00s)
+=== RUN   TestExpandHome
+    utils_test.go:231: Skipping on Windows
+--- SKIP: TestExpandHome (0.00s)
+PASS
+ok  	github.com/keepmind9/clibot/internal/core	0.098s

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -303,6 +304,22 @@ func (f *FeishuBot) SetMessageHandler(handler func(BotMessage)) {
 // GetBotUsername returns the Feishu bot's identifier (AppID)
 func (f *FeishuBot) GetBotUsername() string {
 	return f.appID
+}
+
+// FormatCommandLink formats a command as a clickable link (default for Feishu)
+func (f *FeishuBot) FormatCommandLink(cmd string, args ...string) string {
+	if len(args) > 0 {
+		return cmd + " " + strings.Join(args, " ")
+	}
+	return cmd
+}
+
+// FormatSessionLink formats a session ID/Summary as a clickable link (default for Feishu)
+func (f *FeishuBot) FormatSessionLink(sessionID string, summary string) string {
+	if summary != "" {
+		return sessionID + ": " + summary
+	}
+	return sessionID
 }
 
 // GetMessageHandler gets the message handler in a thread-safe manner

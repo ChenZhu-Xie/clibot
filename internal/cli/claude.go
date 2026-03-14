@@ -32,7 +32,7 @@ func NewClaudeAdapter(config ClaudeAdapterConfig) (*ClaudeAdapter, error) {
 }
 
 // ListSessions returns a list of available CLI-native sessions (not implemented for Claude)
-func (c *ClaudeAdapter) ListSessions(sessionName string, botUsername string) ([]string, error) {
+func (c *ClaudeAdapter) ListSessions(sessionName string, formatter LinkFormatter) ([]string, error) {
 	return nil, nil
 }
 
@@ -368,6 +368,6 @@ func extractLatestSubagentFile(transcriptPath string) (string, error) {
 
 	return filepath.Join(subagentsDir, jsonlFiles[0].Name()), nil
 }
-func (c *ClaudeAdapter) GetSessionStats(sessionName string, botUsername string) (map[string]interface{}, error) {
+func (c *ClaudeAdapter) GetSessionStats(sessionName string, formatter LinkFormatter) (map[string]interface{}, error) {
 	return nil, nil
 }
