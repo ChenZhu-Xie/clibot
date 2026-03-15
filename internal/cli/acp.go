@@ -325,6 +325,10 @@ func (a *ACPAdapter) SwitchSession(sessionName, cliSessionID string) (string, er
 	sess, ok := a.sessions[sessionName]
 	var workDir string
 	if ok {
+		if !sess.active {
+			a.mu.Unlock()
+			return "", fmt.Errorf("session %s is inactive", sessionName)
+		}
 		workDir = sess.workDir
 	}
 	a.mu.Unlock()
@@ -341,19 +345,42 @@ func (a *ACPAdapter) SwitchSession(sessionName, cliSessionID string) (string, er
 		cliSessionID = fullID
 	}
 
-	// In ACP, we don't modify the generic ACP session ID just to switch history.
-	// Instead, we explicitly tell the AI agent to resume the history via a slash command.
-	// Note: We don't change sess.sessionId here; the server maintains the active session via ACP,
-	// and the prompt command triggers internal state changes.
+	// In ACP mode, simulateGeminiResume (which uses tmux) will fail if tmux isn't available.
+	// Sending `/resume` to the LLM agent is extremely slow because it processes it as a prompt.
+	// The fastest way to switch sessions in ACP is to restart the agent process
+	// with the `--resume <fullID>` flag appended.
+	
+	a.mu.Lock()
+	startCmd := sess.startCmd
+	transportURL := ""
+	// For stdio transport
+	if !sess.isRemote {
+		transportURL = "stdio://"
+	} else if sess.conn != nil {
+		// Just a fallback, though remote ACP session switching isn't fully robust
+		transportURL = "tcp://127.0.0.1:9000" // A placeholder, remote restarts are tricky
+	}
+	a.mu.Unlock()
 
-	// Optimization: instead of /resume <UUID>, we use interactive menu if possible
-	if err := simulateGeminiResume(sessionName, workDir, cliSessionID); err != nil {
-		logger.WithField("error", err).Warn("failed-optimized-resume-falling-back-to-legacy")
-		// Fallback to old slow method if optimization fails. 
-		// For ACP, the correct command to trigger history load is /resume <fullID>
-		if err := a.SendInput(sessionName, fmt.Sprintf("/resume %s\n", cliSessionID)); err != nil {
-			return "", err
-		}
+	// Update startCmd to include or replace the --resume flag
+	if strings.Contains(startCmd, "--resume") {
+		// Very simple string replace for demo, assuming `--resume <uuid>` is at the end or well formed
+		// In a real robust implementation, a regex should be used
+		// For now, let's just use regex to replace it
+		re := regexp.MustCompile(`--resume\s+[^\s]+`)
+		startCmd = re.ReplaceAllString(startCmd, "--resume "+cliSessionID)
+	} else {
+		startCmd = startCmd + " --resume " + cliSessionID
+	}
+
+	logger.WithField("new_cmd", startCmd).Debug("acp-restarting-session-for-resume")
+
+	if err := a.DeleteSession(sessionName); err != nil {
+		logger.WithField("error", err).Warn("failed-to-delete-session-during-switch")
+	}
+
+	if err := a.CreateSession(sessionName, workDir, startCmd, transportURL); err != nil {
+		return "", fmt.Errorf("failed to recreate session with new history: %w", err)
 	}
 
 	return getGeminiSessionContext(workDir, cliSessionID), nil

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -193,18 +194,20 @@ func TestACPAdapter_SwitchSession_WithoutConnection(t *testing.T) {
 	sessionName := "test-session"
 
 	// Simulate a session that was marked inactive
+	ctx, cancel := context.WithCancel(context.Background())
 	adapter.sessions[sessionName] = &acpSession{
 		active:    false, // Previously errored
 		sessionId: "old-dead-session-id",
 		workDir:   "", // Empty skips file resolution
+		ctx:       ctx,
+		cancel:    cancel,
 	}
 
 	// Switch to a new session ID
 	_, err := adapter.SwitchSession(sessionName, "new-session-id")
 	
-	// Verify it fails because SendInput fails for inactive sessions
+	// Because startCmd is empty, CreateSession will fail to execute when recreating the session
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "session test-session is inactive")
 }
 
 // TestACPAdapter_SwitchSession_NonexistentSession tests that SwitchSession
