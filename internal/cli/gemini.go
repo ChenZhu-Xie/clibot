@@ -142,7 +142,7 @@ func (g *GeminiAdapter) SwitchSession(sessionName, cliSessionID string) (string,
 	cliSessionID = fullID
 
 	// Optimization: instead of /resume <UUID>, we use interactive menu
-	if err := simulateGeminiResume(g.SendInput, sessionName, cwd, cliSessionID); err != nil {
+	if err := simulateGeminiResume(sessionName, cwd, cliSessionID); err != nil {
 		logger.WithField("error", err).Warn("failed-optimized-resume-falling-back-to-legacy")
 		// Fallback to old slow method if optimization fails
 		if err := g.SendInput(sessionName, fmt.Sprintf("gemini --resume %s\n", cliSessionID)); err != nil {
@@ -155,7 +155,7 @@ func (g *GeminiAdapter) SwitchSession(sessionName, cliSessionID string) (string,
 
 // simulateGeminiResume implements the fast session switching strategy by simulating
 // interactive keystrokes in the Gemini CLI.
-func simulateGeminiResume(sendInput func(string, string) error, sessionName, cwd, cliSessionID string) error {
+func simulateGeminiResume(sessionName, cwd, cliSessionID string) error {
 	sessions, err := listGeminiSessionsByWorkDir(cwd)
 	if err != nil {
 		return err
@@ -173,8 +173,11 @@ func simulateGeminiResume(sendInput func(string, string) error, sessionName, cwd
 		return fmt.Errorf("session %s not found in history", cliSessionID)
 	}
 
-	// 1. Send /resume to trigger the menu (SendInput appends \n which is Enter)
-	if err := sendInput(sessionName, "/resume"); err != nil {
+	// 1. Send /resume to trigger the menu.
+	// We MUST use watchdog.SendKeys directly instead of g.SendInput/a.SendInput, 
+	// otherwise ACP or other layers might intercept it and send it to the LLM.
+	// watchdog.SendKeys with regular text automatically appends an Enter key (C-m).
+	if err := watchdog.SendKeys(sessionName, "/resume"); err != nil {
 		return err
 	}
 

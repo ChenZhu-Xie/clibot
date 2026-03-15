@@ -347,10 +347,11 @@ func (a *ACPAdapter) SwitchSession(sessionName, cliSessionID string) (string, er
 	// and the prompt command triggers internal state changes.
 
 	// Optimization: instead of /resume <UUID>, we use interactive menu if possible
-	if err := simulateGeminiResume(a.SendInput, sessionName, workDir, cliSessionID); err != nil {
+	if err := simulateGeminiResume(sessionName, workDir, cliSessionID); err != nil {
 		logger.WithField("error", err).Warn("failed-optimized-resume-falling-back-to-legacy")
-		// Fallback to old slow method if optimization fails
-		if err := a.SendInput(sessionName, fmt.Sprintf("gemini --resume %s\n", cliSessionID)); err != nil {
+		// Fallback to old slow method if optimization fails. 
+		// For ACP, the correct command to trigger history load is /resume <fullID>
+		if err := a.SendInput(sessionName, fmt.Sprintf("/resume %s\n", cliSessionID)); err != nil {
 			return "", err
 		}
 	}

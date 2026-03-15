@@ -1,0 +1,21 @@
+# Test config with global proxy
+proxy:
+  enabled: true
+  url: "http://127.0.0.1:8080"
+
+security:
+  whitelist_enabled: true
+  allowed_users:
+    telegram:
+      - "123456"
+
+bots:
+  telegram:
+    enabled: true
+    token: "test-token"
+
+sessions:
+  - name: "test"
+    cli_type: "acp"
+    work_dir: "."
+    start_cmd: "echo"

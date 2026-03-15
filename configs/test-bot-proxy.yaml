@@ -1,0 +1,24 @@
+# Test config with bot-level proxy override
+proxy:
+  enabled: true
+  url: "http://127.0.0.1:8080" # Global proxy
+
+security:
+  whitelist_enabled: true
+  allowed_users:
+    telegram:
+      - "123456"
+
+bots:
+  telegram:
+    enabled: true
+    token: "test-token"
+    proxy:
+      enabled: true
+      url: "socks5://127.0.0.1:1080" # Bot-level override
+
+sessions:
+  - name: "test"
+    cli_type: "acp"
+    work_dir: "."
+    start_cmd: "echo"
