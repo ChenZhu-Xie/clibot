@@ -350,7 +350,7 @@ func (a *ACPAdapter) SwitchSession(sessionName, cliSessionID string) (string, er
 	if err := simulateGeminiResume(a.SendInput, sessionName, workDir, cliSessionID); err != nil {
 		logger.WithField("error", err).Warn("failed-optimized-resume-falling-back-to-legacy")
 		// Fallback to old slow method if optimization fails
-		if err := a.SendInput(sessionName, fmt.Sprintf("/resume %s\n", cliSessionID)); err != nil {
+		if err := a.SendInput(sessionName, fmt.Sprintf("gemini --resume %s\n", cliSessionID)); err != nil {
 			return "", err
 		}
 	}
