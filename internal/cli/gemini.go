@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/keepmind9/clibot/internal/bot"
@@ -121,12 +122,13 @@ func (g *GeminiAdapter) GetSessionStats(sessionName string, botUsername string) 
 	return stats, nil
 }
 
-// SwitchSession switches to a specific Gemini session using the /resume command.
+// SwitchSession switches to a specific Gemini session using an optimized
+// keyboard simulation sequence (/resume -> Down... -> Enter).
 func (g *GeminiAdapter) SwitchSession(sessionName, cliSessionID string) (string, error) {
 	logger.WithFields(logger.Fields{
 		"session":     sessionName,
 		"cli_session": cliSessionID,
-	}).Info("switching-gemini-session-natively")
+	}).Info("switching-gemini-session-optimized")
 
 	cwd, err := watchdog.GetCWD(sessionName)
 	if err != nil {
@@ -139,11 +141,57 @@ func (g *GeminiAdapter) SwitchSession(sessionName, cliSessionID string) (string,
 	}
 	cliSessionID = fullID
 
-	if err := g.SendInput(sessionName, fmt.Sprintf("/resume %s\n", cliSessionID)); err != nil {
-		return "", err
+	// Optimization: instead of /resume <UUID>, we use interactive menu
+	if err := simulateGeminiResume(g.SendInput, sessionName, cwd, cliSessionID); err != nil {
+		logger.WithField("error", err).Warn("failed-optimized-resume-falling-back-to-legacy")
+		// Fallback to old slow method if optimization fails
+		if err := g.SendInput(sessionName, fmt.Sprintf("/resume %s\n", cliSessionID)); err != nil {
+			return "", err
+		}
 	}
 
 	return getGeminiSessionContext(cwd, cliSessionID), nil
+}
+
+// simulateGeminiResume implements the fast session switching strategy by simulating
+// interactive keystrokes in the Gemini CLI.
+func simulateGeminiResume(sendInput func(string, string) error, sessionName, cwd, cliSessionID string) error {
+	sessions, err := listGeminiSessionsByWorkDir(cwd)
+	if err != nil {
+		return err
+	}
+
+	targetIdx := -1
+	for i, s := range sessions {
+		if s.ID == cliSessionID {
+			targetIdx = i
+			break
+		}
+	}
+
+	if targetIdx == -1 {
+		return fmt.Errorf("session %s not found in history", cliSessionID)
+	}
+
+	// 1. Send /resume to trigger the menu (SendInput appends \n which is Enter)
+	if err := sendInput(sessionName, "/resume"); err != nil {
+		return err
+	}
+
+	// 2. Wait for UI to render
+	time.Sleep(300 * time.Millisecond)
+
+	// 3. Select session with Down keys
+	if targetIdx > 0 {
+		// \x1b[B is Arrow Down
+		downSequence := strings.Repeat("\x1b[B", targetIdx)
+		if err := watchdog.SendKeys(sessionName, downSequence); err != nil {
+			return err
+		}
+	}
+
+	// 4. Confirm selection with Enter
+	return watchdog.SendKeys(sessionName, "C-m")
 }
 
 // getGeminiSessionContext extracts the latest interaction to use as preview context

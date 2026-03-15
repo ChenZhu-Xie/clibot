@@ -345,9 +345,14 @@ func (a *ACPAdapter) SwitchSession(sessionName, cliSessionID string) (string, er
 	// Instead, we explicitly tell the AI agent to resume the history via a slash command.
 	// Note: We don't change sess.sessionId here; the server maintains the active session via ACP,
 	// and the prompt command triggers internal state changes.
-	
-	if err := a.SendInput(sessionName, fmt.Sprintf("/resume %s\n", cliSessionID)); err != nil {
-		return "", err
+
+	// Optimization: instead of /resume <UUID>, we use interactive menu if possible
+	if err := simulateGeminiResume(a.SendInput, sessionName, workDir, cliSessionID); err != nil {
+		logger.WithField("error", err).Warn("failed-optimized-resume-falling-back-to-legacy")
+		// Fallback to old slow method if optimization fails
+		if err := a.SendInput(sessionName, fmt.Sprintf("/resume %s\n", cliSessionID)); err != nil {
+			return "", err
+		}
 	}
 
 	return getGeminiSessionContext(workDir, cliSessionID), nil
