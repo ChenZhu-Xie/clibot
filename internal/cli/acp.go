@@ -168,20 +168,73 @@ func (a *ACPAdapter) IsSessionAlive(sessionName string) bool {
 	return alive
 }
 
+// requestNewSessionId calls the ACP NewSession endpoint with retries and saves the ID
+func (a *ACPAdapter) requestNewSessionId(sess *acpSession, sessionName string) error {
+	if sess.conn == nil {
+		return fmt.Errorf("ACP connection not established")
+	}
+
+	var err error
+	var newSessionResp acp.NewSessionResponse
+	maxRetries := acpNewSessionMaxRetries
+	retryDelay := acpNewSessionRetryDelay
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		ctx, cancel := context.WithTimeout(context.Background(), acpNewSessionTimeout)
+
+		logger.WithFields(logger.Fields{
+			"session": sessionName,
+			"attempt": attempt,
+		}).Info("acp-calling-new-session")
+
+		newSessionResp, err = sess.conn.NewSession(ctx, acp.NewSessionRequest{
+			Cwd:        sess.workDir,
+			McpServers: []acp.McpServer{}, // Pass empty array instead of nil
+		})
+		cancel()
+
+		if err == nil {
+			a.mu.Lock()
+			sess.sessionId = string(newSessionResp.SessionId)
+			a.mu.Unlock()
+			logger.WithFields(logger.Fields{
+				"session":    sessionName,
+				"session_id": sess.sessionId,
+				"attempt":    attempt,
+			}).Info("acp-session-id-saved")
+			return nil
+		}
+
+		logger.WithFields(logger.Fields{
+			"session": sessionName,
+			"attempt": attempt,
+			"error":   err,
+		}).Warn("acp-new-session-attempt-failed")
+
+		if attempt < maxRetries {
+			time.Sleep(retryDelay)
+		}
+	}
+	return err
+}
+
 // ResetSession clears the session ID in memory to start a new conversation.
 // This makes the reset instant and ensures the next user interaction
 // automatically starts a fresh session.
 func (a *ACPAdapter) ResetSession(sessionName string) error {
-	logger.WithField("session", sessionName).Info("starting-new-acp-conversation-by-clearing-id")
+	logger.WithField("session", sessionName).Info("starting-new-acp-conversation-requesting-id")
 
 	a.mu.Lock()
 	sess, ok := a.sessions[sessionName]
+	a.mu.Unlock()
+	
 	if !ok {
-		a.mu.Unlock()
 		return fmt.Errorf("session %s not found", sessionName)
 	}
-	sess.sessionId = ""
-	a.mu.Unlock()
+
+	if err := a.requestNewSessionId(sess, sessionName); err != nil {
+		return fmt.Errorf("failed to get new session ID: %w", err)
+	}
 
 	return nil
 }
@@ -288,12 +341,14 @@ func (a *ACPAdapter) SwitchSession(sessionName, cliSessionID string) (string, er
 		cliSessionID = fullID
 	}
 
-	a.mu.Lock()
-	sess.sessionId = cliSessionID
-	// Re-activate session so it's usable again after a previous ACP error
-	// (e.g., "Session not found" from a bad session switch had set active=false)
-	sess.active = true
-	a.mu.Unlock()
+	// In ACP, we don't modify the generic ACP session ID just to switch history.
+	// Instead, we explicitly tell the AI agent to resume the history via a slash command.
+	// Note: We don't change sess.sessionId here; the server maintains the active session via ACP,
+	// and the prompt command triggers internal state changes.
+	
+	if err := a.SendInput(sessionName, fmt.Sprintf("/resume %s\n", cliSessionID)); err != nil {
+		return "", err
+	}
 
 	return getGeminiSessionContext(workDir, cliSessionID), nil
 }
@@ -497,38 +552,43 @@ func (a *ACPAdapter) SendInput(sessionName, input string) error {
 			{Text: &acp.ContentBlockText{Text: input}},
 		},
 	})
-	if err != nil {
-		errMsg := err.Error()
-		isSessionNotFound := strings.Contains(errMsg, "Session not found")
+	if err != nil && strings.Contains(err.Error(), "Session not found") {
+		// Recoverable: the session ID is stale but the ACP connection is alive.
+		// Call NewSession to get a valid ID and retry once.
+		logger.WithFields(logger.Fields{
+			"session":    sessionName,
+			"session_id": sess.sessionId,
+			"error":      err,
+		}).Warn("acp-session-not-found-recreating")
 
+		if retryErr := a.requestNewSessionId(sess, sessionName); retryErr == nil {
+			logger.WithField("session", sessionName).Info("acp-session-recreated-retrying-prompt")
+			resp, err = sess.conn.Prompt(ctx, acp.PromptRequest{
+				SessionId: acp.SessionId(sess.sessionId),
+				Prompt: []acp.ContentBlock{
+					{Text: &acp.ContentBlockText{Text: input}},
+				},
+			})
+		} else {
+			err = fmt.Errorf("failed to recreate session: %w", retryErr)
+		}
+	}
+
+	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return fmt.Errorf("request cancelled due to inactivity (idle timeout: %v)", a.config.IdleTimeout)
 		}
 
 		if !errors.Is(err, context.DeadlineExceeded) {
-			if isSessionNotFound {
-				// Recoverable: the session ID is stale but the ACP connection is alive.
-				// Clear the ID so the next prompt auto-creates a new session.
-				logger.WithFields(logger.Fields{
-					"session":    sessionName,
-					"session_id": sess.sessionId,
-					"error":      err,
-				}).Warn("acp-session-not-found-clearing-stale-id")
+			// Fatal: connection-level error, mark session inactive
+			logger.WithFields(logger.Fields{
+				"session": sessionName,
+				"error":   err,
+			}).Error("acp-connection-error-marking-session-inactive")
 
-				a.mu.Lock()
-				sess.sessionId = ""
-				a.mu.Unlock()
-			} else {
-				// Fatal: connection-level error, mark session inactive
-				logger.WithFields(logger.Fields{
-					"session": sessionName,
-					"error":   err,
-				}).Error("acp-connection-error-marking-session-inactive")
-
-				a.mu.Lock()
-				sess.active = false
-				a.mu.Unlock()
-			}
+			a.mu.Lock()
+			sess.active = false
+			a.mu.Unlock()
 		}
 		return fmt.Errorf("ACP prompt failed: %w", err)
 	}
@@ -830,7 +890,16 @@ func (a *ACPAdapter) GetSessionStats(sessionName string, botUsername string) (ma
 	stats["work_dir"] = sess.workDir
 	stats["usage_perc"] = sess.lastUsagePerc
 
-	title, actualID := a.getSessionTitle(sess.workDir, sess.sessionId, botUsername)
+	// Find the most recently modified session file to show actual active session
+	actualID := sess.sessionId
+	if sess.workDir != "" {
+		sessions, err := listGeminiSessionsByWorkDir(sess.workDir)
+		if err == nil && len(sessions) > 0 {
+			actualID = sessions[0].ID
+		}
+	}
+
+	title, actualID := a.getSessionTitle(sess.workDir, actualID, botUsername)
 	stats["session_title"] = title
 	stats["session_id"] = actualID
 
@@ -938,51 +1007,7 @@ func (a *ACPAdapter) startStdioServer(sess *acpSession, workDir, command string,
 			// Try to call NewSession to get sessionId with retries
 			time.Sleep(acpConnectionStabilizeDelay)
 
-			var newSessionResp acp.NewSessionResponse
-			var err error
-			maxRetries := acpNewSessionMaxRetries
-			retryDelay := acpNewSessionRetryDelay
-
-			for attempt := 1; attempt <= maxRetries; attempt++ {
-				ctx, cancel := context.WithTimeout(context.Background(), acpNewSessionTimeout)
-
-				logger.WithFields(logger.Fields{
-					"session": sessionName,
-					"attempt": attempt,
-				}).Info("acp-calling-new-session")
-
-				newSessionResp, err = conn.NewSession(ctx, acp.NewSessionRequest{
-					Cwd:        workDir,
-					McpServers: []acp.McpServer{}, // Pass empty array instead of nil
-				})
-				cancel()
-
-				if err == nil {
-					// Success - save sessionId and break
-					sess.sessionId = string(newSessionResp.SessionId)
-					logger.WithFields(logger.Fields{
-						"session":   sessionName,
-						"sessionId": sess.sessionId,
-						"attempt":   attempt,
-					}).Info("acp-session-id-saved")
-					return // Success
-				}
-
-				// Log failure
-				logger.WithFields(logger.Fields{
-					"session": sessionName,
-					"attempt": attempt,
-					"error":   err,
-				}).Warn("acp-new-session-attempt-failed")
-
-				if attempt < maxRetries {
-					logger.WithFields(logger.Fields{
-						"session": sessionName,
-						"delay":   retryDelay,
-					}).Info("acp-retrying-new-session")
-					time.Sleep(retryDelay)
-				}
-			}
+			err := a.requestNewSessionId(sess, sessionName)
 
 			// If NewSession failed after all retries, mark session as inactive
 			// so that SendInput won't attempt to use an empty sessionId.
@@ -1075,51 +1100,7 @@ func (a *ACPAdapter) connectRemoteServer(sess *acpSession, workDir string, trans
 			// Try to call NewSession to get sessionId with retries
 			time.Sleep(acpConnectionStabilizeDelay)
 
-			var newSessionResp acp.NewSessionResponse
-			var err error
-			maxRetries := acpNewSessionMaxRetries
-			retryDelay := acpNewSessionRetryDelay
-
-			for attempt := 1; attempt <= maxRetries; attempt++ {
-				ctx, cancel := context.WithTimeout(context.Background(), acpNewSessionTimeout)
-
-				logger.WithFields(logger.Fields{
-					"session": sessionName,
-					"attempt": attempt,
-				}).Info("acp-calling-new-session")
-
-				newSessionResp, err = conn.NewSession(ctx, acp.NewSessionRequest{
-					Cwd:        workDir,
-					McpServers: []acp.McpServer{}, // Pass empty array instead of nil
-				})
-				cancel()
-
-				if err == nil {
-					// Success - save sessionId and break
-					sess.sessionId = string(newSessionResp.SessionId)
-					logger.WithFields(logger.Fields{
-						"session_name": sessionName,
-						"id":           sess.sessionId,
-						"attempt":      attempt,
-					}).Info("acp-session-id-saved")
-					return // Success
-				}
-
-				// Log failure
-				logger.WithFields(logger.Fields{
-					"session": sessionName,
-					"attempt": attempt,
-					"error":   err,
-				}).Warn("acp-new-session-attempt-failed")
-
-				if attempt < maxRetries {
-					logger.WithFields(logger.Fields{
-						"session": sessionName,
-						"delay":   retryDelay,
-					}).Info("acp-retrying-new-session")
-					time.Sleep(retryDelay)
-				}
-			}
+			err := a.requestNewSessionId(sess, sessionName)
 
 			// If NewSession failed after all retries, mark session as inactive
 			// so that SendInput won't attempt to use an empty sessionId.
