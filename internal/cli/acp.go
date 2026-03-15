@@ -290,6 +290,9 @@ func (a *ACPAdapter) SwitchSession(sessionName, cliSessionID string) (string, er
 
 	a.mu.Lock()
 	sess.sessionId = cliSessionID
+	// Re-activate session so it's usable again after a previous ACP error
+	// (e.g., "Session not found" from a bad session switch had set active=false)
+	sess.active = true
 	a.mu.Unlock()
 
 	return getGeminiSessionContext(workDir, cliSessionID), nil
@@ -495,18 +498,37 @@ func (a *ACPAdapter) SendInput(sessionName, input string) error {
 		},
 	})
 	if err != nil {
-		// If error is not a timeout, mark session as inactive to prevent further requests
-		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
-			logger.WithFields(logger.Fields{
-				"session": sessionName,
-				"error":   err,
-			}).Error("acp-connection-error-marking-session-inactive")
+		errMsg := err.Error()
+		isSessionNotFound := strings.Contains(errMsg, "Session not found")
 
-			a.mu.Lock()
-			sess.active = false
-			a.mu.Unlock()
-		} else if errors.Is(err, context.Canceled) {
+		if errors.Is(err, context.Canceled) {
 			return fmt.Errorf("request cancelled due to inactivity (idle timeout: %v)", a.config.IdleTimeout)
+		}
+
+		if !errors.Is(err, context.DeadlineExceeded) {
+			if isSessionNotFound {
+				// Recoverable: the session ID is stale but the ACP connection is alive.
+				// Clear the ID so the next prompt auto-creates a new session.
+				logger.WithFields(logger.Fields{
+					"session":    sessionName,
+					"session_id": sess.sessionId,
+					"error":      err,
+				}).Warn("acp-session-not-found-clearing-stale-id")
+
+				a.mu.Lock()
+				sess.sessionId = ""
+				a.mu.Unlock()
+			} else {
+				// Fatal: connection-level error, mark session inactive
+				logger.WithFields(logger.Fields{
+					"session": sessionName,
+					"error":   err,
+				}).Error("acp-connection-error-marking-session-inactive")
+
+				a.mu.Lock()
+				sess.active = false
+				a.mu.Unlock()
+			}
 		}
 		return fmt.Errorf("ACP prompt failed: %w", err)
 	}

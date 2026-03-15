@@ -185,3 +185,38 @@ func TestACPAdapter_ResetSession(t *testing.T) {
 	// Verify sessionId is cleared
 	assert.Empty(t, adapter.sessions[sessionName].sessionId)
 }
+
+// TestACPAdapter_SwitchSession_ReactivatesInactiveSession tests that SwitchSession
+// resets sess.active to true, preventing a single ACP error from permanently
+// killing the session for all future messages.
+func TestACPAdapter_SwitchSession_ReactivatesInactiveSession(t *testing.T) {
+	adapter, _ := NewACPAdapter(ACPAdapterConfig{})
+	sessionName := "test-session"
+
+	// Simulate a session that was marked inactive after a previous ACP error.
+	// Use empty workDir to skip resolveFullSessionID (which reads from disk).
+	adapter.sessions[sessionName] = &acpSession{
+		active:    false, // Previously errored
+		sessionId: "old-dead-session-id",
+		workDir:   "", // Empty skips file resolution
+	}
+
+	// Switch to a new session ID
+	_, err := adapter.SwitchSession(sessionName, "new-session-id")
+	require.NoError(t, err)
+
+	// Verify session is now active again and ID is updated
+	sess := adapter.sessions[sessionName]
+	assert.True(t, sess.active, "SwitchSession must re-activate an inactive session")
+	assert.Equal(t, "new-session-id", sess.sessionId)
+}
+
+// TestACPAdapter_SwitchSession_NonexistentSession tests that SwitchSession
+// returns an error for a nonexistent session.
+func TestACPAdapter_SwitchSession_NonexistentSession(t *testing.T) {
+	adapter, _ := NewACPAdapter(ACPAdapterConfig{})
+
+	_, err := adapter.SwitchSession("nonexistent", "some-id")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not found")
+}
