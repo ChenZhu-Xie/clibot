@@ -109,7 +109,7 @@ func NewACPAdapter(config ACPAdapterConfig) (*ACPAdapter, error) {
 	return &ACPAdapter{
 		config:            config,
 		sessions:          make(map[string]*acpSession),
-		contextUsageLimit: 0.6, // Default to 60%
+		contextUsageLimit: 0.5, // Default to 60%
 	}, nil
 }
 
@@ -227,7 +227,7 @@ func (a *ACPAdapter) ResetSession(sessionName string) error {
 	a.mu.Lock()
 	sess, ok := a.sessions[sessionName]
 	a.mu.Unlock()
-	
+
 	if !ok {
 		return fmt.Errorf("session %s not found", sessionName)
 	}
@@ -349,7 +349,7 @@ func (a *ACPAdapter) SwitchSession(sessionName, cliSessionID string) (string, er
 	// Sending `/resume` to the LLM agent is extremely slow because it processes it as a prompt.
 	// The fastest way to switch sessions in ACP is to restart the agent process
 	// with the `--resume <fullID>` flag appended.
-	
+
 	a.mu.Lock()
 	startCmd := sess.startCmd
 	transportURL := ""
